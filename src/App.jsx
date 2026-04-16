@@ -2883,17 +2883,11 @@ Return this exact structure:
 Rules: convert all quantities to grams in qty_g; USDA values; round to integers; assume standard serving if qty missing.`;
 
 async function parseMacrosWithAI(rawInput, mealName) {
-  const apiKey = import.meta.env.VITE_ANTHROPIC_KEY;
-  if (!apiKey) return parseLocalFallback(rawInput); // no key → local immediately
-
   try {
-    const res = await fetch("/api/ai/v1/messages", {
+    const res = await fetch("/api/chat", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        "x-api-key": apiKey,
-        "anthropic-version": "2023-06-01",
-        "anthropic-dangerous-direct-browser-access": "true",
       },
       body: JSON.stringify({
         model: "claude-sonnet-4-20250514",
@@ -4013,9 +4007,9 @@ function CoachScreen({user}) {
         currentContent=txt.trim();
       }
 
-      const res=await fetch("/api/ai/v1/messages",{
+      const res=await fetch("/api/chat",{
         method:"POST",
-        headers:{"Content-Type":"application/json","x-api-key":import.meta.env.VITE_ANTHROPIC_KEY||"","anthropic-version":"2023-06-01","anthropic-dangerous-direct-browser-access":"true"},
+        headers:{"Content-Type":"application/json"},
         body:JSON.stringify({
           model:"claude-sonnet-4-20250514",
           max_tokens:1200,
