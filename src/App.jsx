@@ -1,15 +1,17 @@
-import { useState, useRef, useEffect, useCallback } from "react";
+import { useState, useRef, useEffect, useCallback, createContext, useContext } from "react";
 
 // Canvas-only color tokens — CSS vars can't be read by the Canvas 2D API.
 // Call getCanvasC() inside useEffect (after mount) to read the live system theme.
 const CANVAS_DARK = {
   bg:"#09090B", surface:"#111315", up:"#191D22", border:"#232B35",
+  card:"#151C28", brutal:"#F5A623",
   accent:"#F5A623", accentDim:"#C47D10",
   red:"#E84545", green:"#3DDC84", blue:"#5B8FF9",
   purple:"#A78BFA", text:"#F0EDE8", muted:"#868C96", faint:"#4A525C",
 };
 const CANVAS_LIGHT = {
   bg:"#F5F3EF", surface:"#FFFFFF", up:"#EDEAE4", border:"#DDD9D0",
+  card:"#EDE5CF", brutal:"#1A1917",
   accent:"#C48A00", accentDim:"#946B00",
   red:"#C43030", green:"#1A9E58", blue:"#3A6AD4",
   purple:"#6B52C8", text:"#1A1917", muted:"#706C64", faint:"#B0ACA4",
@@ -36,16 +38,20 @@ const styles = `
 
 :root{
   --bg:#F5F3EF;--surface:#FFFFFF;--up:#EDEAE4;--border:#DDD9D0;
+  --card:#EDE5CF;
   --text:#1A1917;--muted:#706C64;--faint:#B0ACA4;
   --accent:#C48A00;--accent-dim:#946B00;
   --red:#C43030;--green:#1A9E58;--blue:#3A6AD4;--purple:#6B52C8;
+  --brutal:#1A1917;
 }
 @media(prefers-color-scheme:dark){
   :root{
     --bg:#09090B;--surface:#111315;--up:#191D22;--border:#232B35;
+    --card:#151C28;
     --text:#F0EDE8;--muted:#868C96;--faint:#4A525C;
     --accent:#F5A623;--accent-dim:#C47D10;
     --red:#E84545;--green:#3DDC84;--blue:#5B8FF9;--purple:#A78BFA;
+    --brutal:#F5A623;
   }
 }
 *{box-sizing:border-box;margin:0;padding:0;}
@@ -71,6 +77,7 @@ body{background:var(--bg);color:var(--text);font-family:'Inter',sans-serif;-webk
   width:44px;height:2px;
   background:var(--accent);
   margin-bottom:16px;
+  position:relative;z-index:1;
 }
 .ob2-eyebrow{
   font-size:10px;letter-spacing:3px;
@@ -78,6 +85,7 @@ body{background:var(--bg);color:var(--text);font-family:'Inter',sans-serif;-webk
   color:var(--accent);
   margin-bottom:14px;
   font-weight:600;
+  position:relative;z-index:1;
 }
 .ob2-wordmark{
   font-family:'Bebas Neue',sans-serif;
@@ -85,6 +93,7 @@ body{background:var(--bg);color:var(--text);font-family:'Inter',sans-serif;-webk
   letter-spacing:-1px;
   line-height:.88;
   color:#F0EDE8;
+  position:relative;z-index:1;
 }
 @media(prefers-color-scheme:dark){
   .ob2-wordmark{color:var(--text);}
@@ -231,47 +240,74 @@ body{background:var(--bg);color:var(--text);font-family:'Inter',sans-serif;-webk
   color:var(--muted);
 }
 .ob2-input{
-  background:var(--surface);
-  border:1.5px solid var(--border);
+  background:var(--up);
+  border:2px solid var(--brutal);
   border-radius:10px;
   padding:13px 16px;
   color:var(--text);
   font-size:16px;
   font-family:'Inter',sans-serif;
   outline:none;
-  transition:border-color .2s;
+  transition:border-color .2s,box-shadow .2s;
   width:100%;
 }
-.ob2-input:focus{border-color:var(--accent);}
+.ob2-input:focus{border-color:var(--accent);box-shadow:3px 3px 0 var(--accent);}
 
-/* Shared CTA */
+/* Shared CTA — Pearl glass */
 .ob2-cta{
   width:100%;padding:16px;
   background:var(--accent);color:#FFF;
-  border:none;border-radius:12px;
+  border:none;border-radius:100px;
   font-family:'Bebas Neue',sans-serif;
   font-size:18px;letter-spacing:2px;
-  cursor:pointer;transition:opacity .2s;
+  cursor:pointer;
+  position:relative;overflow:hidden;
   flex-shrink:0;
+  transition:all 0.2s ease;
+  box-shadow:
+    inset 0 0.3rem 0.9rem rgba(255,255,255,0.35),
+    inset 0 -0.1rem 0.3rem rgba(0,0,0,0.5),
+    inset 0 -0.4rem 0.9rem rgba(255,255,255,0.45),
+    0 1rem 1.2rem -0.6rem rgba(0,0,0,0.7);
 }
+.ob2-cta::before{content:"";position:absolute;left:-15%;right:-15%;bottom:25%;top:-100%;border-radius:50%;background-color:rgba(255,255,255,0.13);pointer-events:none;transition:all 0.3s ease;}
+.ob2-cta::after{content:"";position:absolute;left:6%;right:6%;top:10%;bottom:42%;border-radius:22px 22px 0 0;box-shadow:inset 0 10px 8px -10px rgba(255,255,255,0.85);background:linear-gradient(180deg,rgba(255,255,255,0.28) 0%,rgba(0,0,0,0) 100%);pointer-events:none;transition:all 0.3s ease;}
 .ob2-cta:disabled{opacity:.32;cursor:not-allowed;}
-.ob2-cta:not(:disabled):active{opacity:.85;}
+.ob2-cta:not(:disabled):hover::before{transform:translateY(-5%);}
+.ob2-cta:not(:disabled):hover::after{opacity:0.4;transform:translateY(5%);}
+.ob2-cta:not(:disabled):hover{box-shadow:inset 0 0.3rem 0.5rem rgba(255,255,255,0.45),inset 0 -0.1rem 0.3rem rgba(0,0,0,0.5),inset 0 -0.4rem 0.9rem rgba(255,255,255,0.65),0 1rem 1.2rem -0.6rem rgba(0,0,0,0.7);}
 
-/* SHARED BUTTONS */
-.btn{width:100%;padding:15px;border:none;border-radius:12px;font-family:'Bebas Neue',sans-serif;font-size:17px;letter-spacing:2px;cursor:pointer;transition:all .2s;}
+/* SHARED BUTTONS — Pearl glass */
+.btn{
+  width:100%;padding:15px;
+  border:none;border-radius:100px;
+  font-family:'Bebas Neue',sans-serif;font-size:17px;letter-spacing:2px;
+  cursor:pointer;
+  position:relative;overflow:hidden;
+  transition:all 0.2s ease;
+  box-shadow:
+    inset 0 0.3rem 0.9rem rgba(255,255,255,0.35),
+    inset 0 -0.1rem 0.3rem rgba(0,0,0,0.5),
+    inset 0 -0.4rem 0.9rem rgba(255,255,255,0.45),
+    0 1rem 1.2rem -0.6rem rgba(0,0,0,0.7);
+}
+.btn::before{content:"";position:absolute;left:-15%;right:-15%;bottom:25%;top:-100%;border-radius:50%;background-color:rgba(255,255,255,0.13);pointer-events:none;transition:all 0.3s ease;}
+.btn::after{content:"";position:absolute;left:6%;right:6%;top:10%;bottom:42%;border-radius:22px 22px 0 0;box-shadow:inset 0 10px 8px -10px rgba(255,255,255,0.85);background:linear-gradient(180deg,rgba(255,255,255,0.28) 0%,rgba(0,0,0,0) 100%);pointer-events:none;transition:all 0.3s ease;}
 .btn:disabled{opacity:.35;cursor:not-allowed;}
 .btn-gold{background:var(--accent);color:#FFF;}
-.btn-gold:not(:disabled):hover{opacity:.88;}
 .btn-purple{background:var(--purple);color:#FFF;}
 .btn-green{background:var(--green);color:#FFF;}
-.btn-outline{background:transparent;border:1px solid var(--border);color:var(--muted);padding:10px 18px;border-radius:10px;font-family:'Inter',sans-serif;font-size:13px;cursor:pointer;transition:all .2s;}
+.btn:not(:disabled):hover::before{transform:translateY(-5%);}
+.btn:not(:disabled):hover::after{opacity:0.4;transform:translateY(5%);}
+.btn:not(:disabled):hover{box-shadow:inset 0 0.3rem 0.5rem rgba(255,255,255,0.45),inset 0 -0.1rem 0.3rem rgba(0,0,0,0.5),inset 0 -0.4rem 0.9rem rgba(255,255,255,0.65),0 1rem 1.2rem -0.6rem rgba(0,0,0,0.7);}
+.btn-outline{background:var(--up);border:2px solid var(--brutal);color:var(--muted);padding:10px 18px;border-radius:100px;font-family:'Inter',sans-serif;font-size:13px;cursor:pointer;transition:all .15s ease;box-shadow:inset 0 0.2rem 0.5rem rgba(255,255,255,0.15),inset 0 -0.2rem 0.4rem rgba(0,0,0,0.3);}
 .btn-outline:hover{border-color:var(--accent);color:var(--accent);}
 
 /* INPUTS */
 .igroup{display:flex;flex-direction:column;gap:6px;}
 .ilabel{font-size:11px;font-weight:500;letter-spacing:.3px;color:var(--muted);}
-.ifield{background:var(--surface);border:1.5px solid var(--border);border-radius:10px;padding:13px 16px;color:var(--text);font-size:15px;font-family:'Inter',sans-serif;outline:none;transition:border-color .2s;width:100%;}
-.ifield:focus{border-color:var(--accent);}
+.ifield{background:var(--up);border:2px solid var(--brutal);border-radius:10px;padding:13px 16px;color:var(--text);font-size:15px;font-family:'Inter',sans-serif;outline:none;transition:border-color .2s,box-shadow .2s;width:100%;}
+.ifield:focus{border-color:var(--accent);box-shadow:3px 3px 0 var(--accent);}
 .irow{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
 
 /* NAV */
@@ -290,6 +326,7 @@ body{background:var(--bg);color:var(--text);font-family:'Inter',sans-serif;-webk
 @keyframes screenIn{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
 @keyframes fadeIn{from{opacity:0}to{opacity:1}}
 @keyframes pulse{0%,100%{opacity:1}50%{opacity:.45}}
+@keyframes musclePulse{0%,100%{opacity:.82}50%{opacity:1;filter:drop-shadow(0 0 6px rgba(220,60,60,.75))}}
 .sh{padding:54px 24px 20px;display:flex;align-items:center;justify-content:space-between;}
 .sh-label{font-size:12px;color:var(--muted);font-weight:500;}
 .sh-title{font-family:'Bebas Neue',sans-serif;font-size:28px;letter-spacing:1.5px;color:var(--text);}
@@ -299,9 +336,9 @@ body{background:var(--bg);color:var(--text);font-family:'Inter',sans-serif;-webk
 
 /* DASHBOARD */
 /* Weight hero — dominant full-width block */
-.wt-hero{margin:0 24px 16px;background:var(--surface);border:1.5px solid var(--border);border-radius:18px;padding:22px 22px 18px;transition:border-color .2s;}
-.wt-hero.focused{border-color:var(--accent);}
-.wt-hero.logged{border-color:var(--green);}
+.wt-hero{margin:0 24px 16px;background:var(--card);border:2px solid var(--brutal);border-radius:14px;padding:22px 22px 18px;box-shadow:4px 4px 0 var(--brutal);transition:border-color .2s,box-shadow .2s;}
+.wt-hero.focused{border-color:var(--accent);box-shadow:4px 4px 0 var(--accent);}
+.wt-hero.logged{border-color:var(--green);box-shadow:4px 4px 0 var(--green);}
 .wt-hero-top{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:18px;}
 .wt-label{font-size:11px;font-weight:600;letter-spacing:.5px;text-transform:uppercase;color:var(--muted);margin-bottom:6px;}
 .wt-number{font-family:'Bebas Neue',sans-serif;font-size:64px;letter-spacing:2px;line-height:1;color:var(--text);transition:color .4s ease;}
@@ -315,22 +352,25 @@ body{background:var(--bg);color:var(--text);font-family:'Inter',sans-serif;-webk
 .wt-bar-wrap{display:flex;flex-direction:column;align-items:center;flex:1;}
 .wt-bar{border-radius:3px 3px 0 0;min-height:4px;transition:height .5s ease;width:100%;max-width:18px;}
 .wt-input-row{display:flex;gap:8px;}
-.wt-input{flex:1;background:var(--up);border:1px solid var(--border);border-radius:10px;padding:11px 44px 11px 14px;color:var(--text);font-size:18px;font-family:'Bebas Neue',sans-serif;letter-spacing:2px;outline:none;transition:border-color .2s;}
-.wt-input:focus{border-color:var(--accent);}
+.wt-input{flex:1;background:var(--up);border:2px solid var(--brutal);border-radius:10px;padding:11px 44px 11px 14px;color:var(--text);font-size:18px;font-family:'Bebas Neue',sans-serif;letter-spacing:2px;outline:none;transition:border-color .2s,box-shadow .2s;}
+.wt-input:focus{border-color:var(--accent);box-shadow:3px 3px 0 var(--accent);}
 .wt-input-unit{position:absolute;right:14px;top:50%;transform:translateY(-50%);font-size:11px;color:var(--muted);}
-.wt-log-btn{padding:0 18px;background:var(--accent);color:#FFF;border:none;border-radius:10px;font-family:'Bebas Neue',sans-serif;font-size:14px;letter-spacing:1.5px;cursor:pointer;transition:all .3s;flex-shrink:0;}
+.wt-log-btn{padding:0 20px;background:var(--accent);color:#FFF;border:none;border-radius:100px;font-family:'Bebas Neue',sans-serif;font-size:14px;letter-spacing:1.5px;cursor:pointer;flex-shrink:0;position:relative;overflow:hidden;transition:all 0.2s ease;box-shadow:inset 0 0.3rem 0.7rem rgba(255,255,255,0.35),inset 0 -0.1rem 0.3rem rgba(0,0,0,0.5),inset 0 -0.35rem 0.7rem rgba(255,255,255,0.4),0 0.6rem 0.8rem -0.4rem rgba(0,0,0,0.7);}
+.wt-log-btn::before{content:"";position:absolute;left:-15%;right:-15%;bottom:25%;top:-100%;border-radius:50%;background-color:rgba(255,255,255,0.13);pointer-events:none;transition:all 0.3s ease;}
+.wt-log-btn::after{content:"";position:absolute;left:8%;right:8%;top:10%;bottom:42%;border-radius:16px 16px 0 0;box-shadow:inset 0 8px 6px -8px rgba(255,255,255,0.85);background:linear-gradient(180deg,rgba(255,255,255,0.28) 0%,rgba(0,0,0,0) 100%);pointer-events:none;transition:all 0.3s ease;}
 .wt-log-btn:disabled{opacity:.35;cursor:not-allowed;}
 .wt-log-btn.saved{background:var(--green);}
+.wt-log-btn:not(:disabled):hover{box-shadow:inset 0 0.3rem 0.5rem rgba(255,255,255,0.45),inset 0 -0.1rem 0.3rem rgba(0,0,0,0.5),inset 0 -0.35rem 0.7rem rgba(255,255,255,0.6),0 0.6rem 0.8rem -0.4rem rgba(0,0,0,0.7);}
 /* Secondary stat strip */
-.stat-strip{display:grid;grid-template-columns:1fr 1fr 1fr;gap:1px;margin:0 24px 20px;background:var(--border);border-radius:14px;overflow:hidden;}
-.stat-cell{background:var(--surface);padding:14px 14px 12px;}
+.stat-strip{display:grid;grid-template-columns:1fr 1fr 1fr;gap:1px;margin:0 24px 20px;background:var(--brutal);border-radius:10px;overflow:hidden;border:2px solid var(--brutal);box-shadow:4px 4px 0 var(--brutal);}
+.stat-cell{background:var(--card);padding:14px 14px 12px;}
 .stat-cell:first-child{border-radius:13px 0 0 13px;}
 .stat-cell:last-child{border-radius:0 13px 13px 0;}
 .stat-label{font-size:10px;font-weight:600;letter-spacing:.5px;text-transform:uppercase;color:var(--muted);margin-bottom:5px;}
 .stat-val{font-family:'Bebas Neue',sans-serif;font-size:24px;letter-spacing:1px;line-height:1;color:var(--text);}
 .stat-sub{font-size:10px;color:var(--muted);margin-top:3px;line-height:1.3;}
 /* Training block */
-.dash-banner{margin:0 24px 20px;background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:20px;}
+.dash-banner{margin:0 24px 20px;background:var(--card);border:2px solid var(--brutal);border-radius:12px;padding:20px;box-shadow:4px 4px 0 var(--brutal);}
 .db-tag{font-size:11px;font-weight:600;letter-spacing:.3px;color:var(--accent);margin-bottom:5px;}
 .db-title{font-family:'Bebas Neue',sans-serif;font-size:22px;letter-spacing:1px;color:var(--text);}
 .db-sub{font-size:13px;color:var(--muted);margin-top:3px;}
@@ -342,21 +382,22 @@ body{background:var(--bg);color:var(--text);font-family:'Inter',sans-serif;-webk
 /* TRAINING */
 .wscroll{display:flex;gap:8px;padding:0 24px;overflow-x:auto;margin-bottom:20px;scrollbar-width:none;}
 .wscroll::-webkit-scrollbar{display:none;}
-.dchip{flex-shrink:0;padding:8px 14px;border-radius:10px;background:var(--surface);border:1.5px solid var(--border);cursor:pointer;text-align:center;transition:all .2s;min-width:56px;}
-.dchip.on{background:var(--accent);border-color:var(--accent);}
+.dchip{flex-shrink:0;padding:8px 14px;border-radius:8px;background:var(--surface);border:2px solid var(--brutal);box-shadow:3px 3px 0 var(--brutal);cursor:pointer;text-align:center;transition:all .15s cubic-bezier(.22,1,.36,1);min-width:56px;}
+.dchip.on{background:var(--accent);border-color:var(--brutal);box-shadow:3px 3px 0 var(--brutal);}
+.dchip:active{transform:translate(3px,3px);box-shadow:0 0 0 var(--brutal);}
 .dchip-l{font-size:10px;color:var(--muted);font-weight:500;}
 .dchip.on .dchip-l{color:#FFF;}
 .mbadge{display:inline-block;font-size:10px;font-weight:500;padding:3px 10px;border-radius:20px;margin:2px 3px;background:var(--up);color:var(--muted);border:1px solid var(--border);}
 .mbadge.pri{color:var(--accent);}
-.ecard{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:16px 18px;margin:0 24px 12px;transition:border-color .2s;}
-.ecard:hover{border-color:var(--accent);}
+.ecard{background:var(--card);border:2px solid var(--brutal);border-radius:10px;padding:16px 18px;margin:0 24px 12px;box-shadow:4px 4px 0 var(--brutal);transition:border-color .15s,box-shadow .15s,transform .15s;}
+.ecard:hover{border-color:var(--accent);box-shadow:4px 4px 0 var(--accent);}
 .ec-head{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:4px;}
 .ec-name{font-size:15px;font-weight:600;color:var(--text);}
 .ec-num{font-family:'Bebas Neue',sans-serif;font-size:28px;color:var(--accent);line-height:1;}
 
 
 /* NUTRITION */
-.mcard{margin:0 24px 12px;background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:16px 18px;}
+.mcard{margin:0 24px 12px;background:var(--card);border:2px solid var(--brutal);border-radius:10px;padding:16px 18px;box-shadow:4px 4px 0 var(--brutal);}
 .mc-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;}
 .mc-time{font-size:11px;font-weight:600;letter-spacing:.3px;color:var(--accent);}
 .mc-name{font-size:15px;font-weight:600;margin-top:2px;color:var(--text);}
@@ -401,8 +442,8 @@ body{background:var(--bg);color:var(--text);font-family:'Inter',sans-serif;-webk
 
 /* CHAT INPUT */
 .ci-area{position:fixed;left:50%;transform:translateX(-50%);width:100%;max-width:430px;padding:10px 14px;background:var(--surface);border-top:1px solid var(--border);display:flex;gap:8px;align-items:flex-end;z-index:50;transition:bottom .2s;}
-.ci{flex:1;background:var(--up);border:1.5px solid var(--border);border-radius:12px;padding:11px 14px;color:var(--text);font-size:14px;font-family:'Inter',sans-serif;outline:none;resize:none;max-height:100px;line-height:1.4;transition:border-color .2s;}
-.ci:focus{border-color:var(--accent);}
+.ci{flex:1;background:var(--up);border:2px solid var(--brutal);border-radius:10px;padding:11px 14px;color:var(--text);font-size:14px;font-family:'Inter',sans-serif;outline:none;resize:none;max-height:100px;line-height:1.4;transition:border-color .2s,box-shadow .2s;}
+.ci:focus{border-color:var(--accent);box-shadow:3px 3px 0 var(--accent);}
 .ci-send{width:40px;height:40px;border-radius:12px;background:var(--accent);border:none;display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0;transition:all .2s;color:#FFF;}
 .ci-send svg{width:18px;height:18px;}
 .ci-send:hover{opacity:.85;}
@@ -413,21 +454,22 @@ body{background:var(--bg);color:var(--text);font-family:'Inter',sans-serif;-webk
 .photo-input{display:none;}
 
 /* POST-PREP */
-.pp-hero{margin:0 24px 20px;background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:22px;}
+.pp-hero{margin:0 24px 20px;background:var(--card);border:2px solid var(--brutal);border-radius:12px;padding:22px;box-shadow:4px 4px 0 var(--brutal);}
 .pp-badge{font-size:10px;font-weight:600;letter-spacing:1.5px;text-transform:uppercase;margin-bottom:6px;}
 .pp-title{font-family:'Bebas Neue',sans-serif;font-size:26px;letter-spacing:1.5px;line-height:1.1;color:var(--text);}
 .pp-sub{font-size:13px;color:var(--muted);margin-top:8px;line-height:1.6;}
-.pp-card{margin:0 24px 16px;background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:20px;}
+.pp-card{margin:0 24px 16px;background:var(--card);border:2px solid var(--brutal);border-radius:12px;padding:20px;box-shadow:4px 4px 0 var(--brutal);}
 .pp-section-label{font-size:10px;font-weight:600;letter-spacing:1.5px;text-transform:uppercase;margin-bottom:14px;}
 .pp-results{animation:slideUp .4s ease-out forwards;}
 
 /* SAVED BANNER */
-.saved-banner{margin:0 24px 16px;background:var(--surface);border:1px solid var(--border);border-left:3px solid var(--green);border-radius:14px;padding:16px 18px;display:flex;align-items:center;justify-content:space-between;gap:12px;}
+.saved-banner{margin:0 24px 16px;background:var(--card);border:2px solid var(--brutal);border-left:4px solid var(--green);border-radius:10px;padding:16px 18px;display:flex;align-items:center;justify-content:space-between;gap:12px;box-shadow:4px 4px 0 var(--brutal);}
 .sb-tag{font-size:10px;font-weight:600;letter-spacing:1px;text-transform:uppercase;color:var(--green);margin-bottom:4px;}
 .sb-title{font-family:'Bebas Neue',sans-serif;font-size:17px;letter-spacing:1px;color:var(--text);}
 .sb-sub{font-size:12px;color:var(--muted);margin-top:2px;}
-.btn-edit{background:transparent;border:1px solid var(--border);color:var(--muted);padding:8px 16px;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;flex-shrink:0;transition:all .2s;}
-.btn-edit:hover{border-color:var(--accent);color:var(--accent);}
+.btn-edit{background:transparent;border:2px solid var(--brutal);color:var(--muted);padding:8px 16px;border-radius:8px;box-shadow:2px 2px 0 var(--brutal);font-size:12px;font-weight:600;cursor:pointer;flex-shrink:0;transition:all .15s cubic-bezier(.22,1,.36,1);}
+.btn-edit:hover{border-color:var(--accent);color:var(--accent);box-shadow:2px 2px 0 var(--accent);}
+.btn-edit:active{transform:translate(2px,2px);box-shadow:0 0 0 var(--brutal);}
 
 /* PHASE TIMELINE */
 .ptl{margin:0 24px 20px;position:relative;}
@@ -438,7 +480,7 @@ body{background:var(--bg);color:var(--text);font-family:'Inter',sans-serif;-webk
 .pidot.p2{background:var(--surface);border-color:var(--accent);color:var(--accent);}
 .pidot.p3{background:var(--surface);border-color:var(--green);color:var(--green);}
 .pidot.p4{background:var(--surface);border-color:var(--blue);color:var(--blue);}
-.picnt{flex:1;background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:14px;}
+.picnt{flex:1;background:var(--card);border:2px solid var(--brutal);border-radius:8px;padding:14px;box-shadow:3px 3px 0 var(--brutal);}
 .pi-wk{font-size:10px;font-weight:600;letter-spacing:.3px;color:var(--muted);margin-bottom:3px;}
 .pi-name{font-family:'Bebas Neue',sans-serif;font-size:16px;letter-spacing:1px;margin-bottom:8px;color:var(--text);}
 .pi-tags{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px;}
@@ -447,18 +489,18 @@ body{background:var(--bg);color:var(--text);font-family:'Inter',sans-serif;-webk
 
 /* KEY NUMBER CARDS */
 .knum-grid{display:grid;gap:12px;margin:0 24px 14px;}
-.knum{border-radius:14px;padding:16px 18px;border:1px solid;}
+.knum{border-radius:10px;padding:16px 18px;border:2px solid;box-shadow:4px 4px 0 var(--brutal);}
 .knum-label{font-size:10px;font-weight:600;letter-spacing:1px;text-transform:uppercase;margin-bottom:8px;}
 .knum-main{font-family:'Bebas Neue',sans-serif;font-size:34px;letter-spacing:1px;line-height:1;}
 .knum-sub{font-size:11px;color:var(--muted);margin-top:3px;}
 .knum-note{font-size:12px;color:var(--muted);margin-top:10px;padding-top:10px;border-top:1px solid var(--border);line-height:1.55;}
 .knum-pair{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:0 24px 14px;}
 .knum-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin:0 24px 14px;}
-.knum-mini{background:var(--surface);border-radius:12px;padding:12px 10px;text-align:center;border:1px solid;}
+.knum-mini{background:var(--card);border-radius:8px;padding:12px 10px;text-align:center;border:2px solid;box-shadow:3px 3px 0 var(--brutal);}
 
 /* VITALS */
 .vgrid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:0 24px 20px;}
-.vcard{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:14px;text-align:center;}
+.vcard{background:var(--card);border:2px solid var(--brutal);border-radius:8px;padding:14px;text-align:center;box-shadow:3px 3px 0 var(--brutal);}
 .v-icon{width:8px;height:8px;border-radius:50%;margin:0 auto 7px;}
 .v-name{font-size:11px;color:var(--muted);margin-bottom:4px;font-weight:500;}
 .v-status{font-size:12px;font-weight:600;}
@@ -470,7 +512,7 @@ body{background:var(--bg);color:var(--text);font-family:'Inter',sans-serif;-webk
 .vfill{height:100%;border-radius:2px;}
 
 /* RULES */
-.rules-card{margin:0 24px 16px;background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:18px;}
+.rules-card{margin:0 24px 16px;background:var(--card);border:2px solid var(--brutal);border-radius:10px;padding:18px;box-shadow:4px 4px 0 var(--brutal);}
 .rule-row{display:flex;gap:12px;padding:10px 0;border-bottom:1px solid var(--border);}
 .rule-row:last-child{border-bottom:none;padding-bottom:0;}
 .rule-icon{font-size:15px;flex-shrink:0;margin-top:2px;}
@@ -490,7 +532,8 @@ body{background:var(--bg);color:var(--text);font-family:'Inter',sans-serif;-webk
 
 /* MODE TOGGLE */
 .mode-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
-.mode-card{background:var(--surface);border:1.5px solid var(--border);border-radius:14px;padding:14px 14px 12px;cursor:pointer;transition:all .2s;position:relative;overflow:hidden;}
+.mode-card{background:var(--card);border:2px solid var(--brutal);border-radius:10px;padding:14px 14px 12px;cursor:pointer;transition:all .15s cubic-bezier(.22,1,.36,1);position:relative;overflow:hidden;box-shadow:3px 3px 0 var(--brutal);}
+.mode-card:active{transform:translate(3px,3px);box-shadow:0 0 0 var(--brutal);}
 .mode-check{position:absolute;top:8px;right:10px;width:16px;height:16px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:9px;color:#FFF;font-weight:700;}
 
 /* LOADING */
@@ -498,15 +541,142 @@ body{background:var(--bg);color:var(--text);font-family:'Inter',sans-serif;-webk
 
 ::-webkit-scrollbar{width:0;}
 
-/* BUTTON ACTIVE — tactile press */
-.btn:not(:disabled):active{transform:scale(0.97);}
-.ob2-cta:not(:disabled):active{transform:scale(0.97);}
-.wt-log-btn:not(:disabled):active{transform:scale(0.97);}
-.ob2-row:active{transform:scale(0.99);}
-.ecard:active{transform:scale(0.99);}
-.btn{transition:all .15s cubic-bezier(.22,1,.36,1);}
-.ob2-cta{transition:opacity .2s,transform .12s cubic-bezier(.22,1,.36,1);}
-.wt-log-btn{transition:all .15s cubic-bezier(.22,1,.36,1);}
+/* CARD HOVER — lift + shadow extend */
+.dash-banner:hover,.mcard:hover,.pp-hero:hover,.pp-card:hover,.saved-banner:hover,
+.rules-card:hover,.picnt:hover,.vcard:hover,.knum:hover,.knum-mini:hover{
+  transform:translate(-2px,-2px);
+  box-shadow:6px 6px 0 var(--brutal);
+  transition:transform .15s cubic-bezier(.22,1,.36,1),box-shadow .15s cubic-bezier(.22,1,.36,1);
+}
+.ecard:hover{
+  transform:translate(-2px,-2px);
+  border-color:var(--accent);
+  box-shadow:6px 6px 0 var(--accent);
+}
+.mode-card:hover{
+  transform:translate(-2px,-2px);
+  box-shadow:6px 6px 0 var(--brutal);
+}
+.wt-hero:hover{
+  transform:translate(-2px,-2px);
+  box-shadow:6px 6px 0 var(--brutal);
+}
+/* override: active collapses the lifted shadow back */
+.dash-banner:active,.mcard:active,.pp-hero:active,.pp-card:active,
+.rules-card:active,.picnt:active,.vcard:active,.knum:active,.knum-mini:active{
+  transform:translate(4px,4px);
+  box-shadow:0 0 0 var(--brutal);
+}
+
+/* BUTTON ACTIVE — pearl press */
+.btn:not(:disabled):active{transform:translateY(4px);box-shadow:inset 0 0.3rem 0.5rem rgba(255,255,255,0.5),inset 0 -0.1rem 0.3rem rgba(0,0,0,0.8),inset 0 -0.4rem 0.9rem rgba(255,255,255,0.4),0 0.5rem 0.5rem -0.4rem rgba(0,0,0,0.8);}
+.ob2-cta:not(:disabled):active{transform:translateY(4px);box-shadow:inset 0 0.3rem 0.5rem rgba(255,255,255,0.5),inset 0 -0.1rem 0.3rem rgba(0,0,0,0.8),inset 0 -0.4rem 0.9rem rgba(255,255,255,0.4),0 0.5rem 0.5rem -0.4rem rgba(0,0,0,0.8);}
+.wt-log-btn:not(:disabled):active{transform:translateY(3px);box-shadow:inset 0 0.3rem 0.5rem rgba(255,255,255,0.5),inset 0 -0.1rem 0.3rem rgba(0,0,0,0.8),inset 0 -0.35rem 0.7rem rgba(255,255,255,0.3);}
+.ob2-row:active{transform:translate(2px,2px);}
+.ecard:active{transform:translate(4px,4px);box-shadow:0 0 0 var(--brutal);}
+
+/* MINI SESSION VIEW */
+.msv{
+  position:fixed;
+  left:50%;transform:translateX(-50%);
+  width:calc(100% - 24px);max-width:406px;
+  bottom:90px;
+  z-index:95;
+  border-radius:18px;
+  overflow:hidden;
+  animation:msvIn .35s cubic-bezier(.22,1,.36,1);
+  /* Lift above everything with a real elevation shadow */
+  filter:drop-shadow(0 4px 20px rgba(0,0,0,0.35)) drop-shadow(0 1px 4px rgba(0,0,0,0.2));
+}
+@keyframes msvIn{
+  from{opacity:0;transform:translateX(-50%) translateY(20px) scale(.97);}
+  to{opacity:1;transform:translateX(-50%) translateY(0) scale(1);}
+}
+.msv-inner{
+  background:var(--surface);
+  border:1px solid var(--border);
+  border-radius:18px;
+  display:grid;
+  grid-template-columns:auto 1fr auto;
+  align-items:stretch;
+  overflow:hidden;
+}
+@media(prefers-color-scheme:dark){
+  .msv-inner{
+    background:#1C2030;
+    border-color:rgba(255,255,255,.08);
+  }
+}
+.msv-timer{
+  padding:13px 16px;
+  border-right:1px solid var(--border);
+  font-family:'JetBrains Mono',monospace;
+  font-size:16px;font-weight:700;
+  color:var(--accent);
+  letter-spacing:.5px;
+  white-space:nowrap;
+  display:flex;align-items:center;gap:7px;
+  background:transparent;
+}
+@media(prefers-color-scheme:dark){
+  .msv-timer{border-right-color:rgba(255,255,255,.07);}
+}
+.msv-timer-dot{
+  width:7px;height:7px;border-radius:50%;
+  background:var(--accent);
+  flex-shrink:0;
+  animation:msvPulse 1.6s ease-in-out infinite;
+}
+@keyframes msvPulse{
+  0%,100%{opacity:1;transform:scale(1);}
+  50%{opacity:.35;transform:scale(.6);}
+}
+.msv-info{
+  padding:11px 14px;
+  min-width:0;
+  display:flex;flex-direction:column;justify-content:center;
+}
+.msv-exname{
+  font-size:13px;font-weight:600;color:var(--text);
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+  line-height:1.2;
+  margin-bottom:3px;
+}
+.msv-meta{
+  font-size:10px;color:var(--muted);letter-spacing:.2px;
+  line-height:1;
+}
+.msv-actions{
+  display:flex;align-items:stretch;
+  border-left:1px solid var(--border);
+}
+@media(prefers-color-scheme:dark){
+  .msv-actions{border-left-color:rgba(255,255,255,.07);}
+}
+.msv-btn{
+  padding:0 14px;
+  background:none;border:none;cursor:pointer;
+  color:var(--muted);
+  font-size:9px;font-weight:700;letter-spacing:.8px;text-transform:uppercase;
+  transition:color .15s,background .15s;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;
+  min-width:52px;
+}
+.msv-btn:hover{color:var(--text);background:var(--up);}
+.msv-btn:first-child{color:var(--accent);}
+.msv-btn:first-child:hover{background:rgba(var(--accent-rgb,196,138,0),.08);}
+.msv-btn-end{color:var(--muted);}
+.msv-btn-end:hover{color:var(--red);background:rgba(196,48,48,.06);}
+.msv-progress{
+  height:2px;
+  background:var(--up);
+}
+.msv-progress-fill{
+  height:100%;
+  background:var(--accent);
+  transition:width .5s cubic-bezier(.22,1,.36,1);
+  border-radius:0 2px 2px 0;
+}
 
 /* MACRORING entrance */
 @keyframes macroSegIn{from{opacity:0}to{opacity:.85}}
@@ -1167,6 +1337,93 @@ function MacroRing({protein,carbs,fat,calories}) {
   );
 }
 
+// ─── WAVE FIELD ───────────────────────────────────────────────────────────────
+
+function WaveField({ opacity = 0.55, fixed = false }) {
+  const canvasRef = useRef(null);
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext("2d");
+    const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    let raf;
+    const t0 = performance.now();
+
+    const resize = () => {
+      canvas.width  = (fixed ? window.innerWidth  : canvas.offsetWidth)  * (window.devicePixelRatio || 1);
+      canvas.height = (fixed ? window.innerHeight : canvas.offsetHeight) * (window.devicePixelRatio || 1);
+    };
+    resize();
+    if (fixed) {
+      window.addEventListener("resize", resize);
+    } else {
+      const ro = new ResizeObserver(resize);
+      ro.observe(canvas);
+    }
+
+    const SPACING = 26;
+    const BASE_R  = 1.4;
+
+    const draw = (ts) => {
+      const t   = reduced ? 0 : (ts - t0) / 1000;
+      const dpr = window.devicePixelRatio || 1;
+      const { width, height } = canvas;
+      ctx.clearRect(0, 0, width, height);
+
+      const cols = Math.ceil(width  / (SPACING * dpr)) + 2;
+      const rows = Math.ceil(height / (SPACING * dpr)) + 2;
+
+      for (let r = 0; r < rows; r++) {
+        for (let c = 0; c < cols; c++) {
+          const bx = c * SPACING * dpr;
+          const by = r * SPACING * dpr;
+
+          const dx =
+            Math.sin(c * 0.38 + t * 0.72) * 5 * dpr +
+            Math.sin(r * 0.27 + t * 0.51 + 1.3) * 3.2 * dpr +
+            Math.sin((c + r) * 0.19 + t * 0.93 + 2.5) * 1.8 * dpr;
+          const dy =
+            Math.cos(r * 0.33 + t * 0.61) * 5 * dpr +
+            Math.cos(c * 0.29 + t * 0.44 + 0.9) * 3.2 * dpr +
+            Math.cos((c - r) * 0.21 + t * 0.82 + 1.7) * 1.8 * dpr;
+
+          const mag   = Math.hypot(dx, dy) / (10 * dpr);
+          const rad   = (BASE_R + mag * 0.9) * dpr;
+          const alpha = Math.min(0.12 + mag * 0.42, 0.72);
+
+          ctx.beginPath();
+          ctx.arc(bx + dx, by + dy, rad, 0, Math.PI * 2);
+          ctx.fillStyle = `rgba(255,255,255,${alpha})`;
+          ctx.fill();
+        }
+      }
+
+      if (!reduced) raf = requestAnimationFrame(draw);
+    };
+
+    raf = requestAnimationFrame(draw);
+    return () => {
+      cancelAnimationFrame(raf);
+      if (fixed) window.removeEventListener("resize", resize);
+    };
+  }, [fixed]);
+
+  return (
+    <canvas
+      ref={canvasRef}
+      style={{
+        position: fixed ? "fixed" : "absolute",
+        inset: 0,
+        width: fixed ? "100vw" : "100%",
+        height: fixed ? "100vh" : "100%",
+        opacity,
+        pointerEvents: "none",
+        zIndex: fixed ? 0 : undefined,
+      }}
+    />
+  );
+}
+
 // ─── ONBOARD ──────────────────────────────────────────────────────────────────
 
 function OnboardScreen({onComplete}) {
@@ -1207,6 +1464,7 @@ function OnboardScreen({onComplete}) {
       {step === 0 && (
         <div className="ob2-land">
           <div className="ob2-band">
+            <WaveField />
             <div className="ob2-eyebrow">Performance Coaching System</div>
             <div className="ob2-wordmark">APEX</div>
           </div>
@@ -1343,69 +1601,141 @@ function OnboardScreen({onComplete}) {
 // ─── ADAPTIVE TRAINING ENGINE v2 — DUAL PATH + HIMBO STAT CHART ───────────────
 // ═══════════════════════════════════════════════════════════════════════════════
 
-const TRAINING_KEY = "apex_training_v2";
+const TRAINING_KEY  = "apex_training_v2";
+const FEEDBACK_KEY  = "apex_session_feedback_v1";
+const SESSION_KEY   = "apex_live_session_v1";
+
+// ── GLOBAL SESSION CONTEXT ────────────────────────────────────────────────────
+const SessionContext = createContext(null);
+
+function SessionProvider({ children }) {
+  const [session, setSession] = useState(() => {
+    try {
+      const raw = localStorage.getItem(SESSION_KEY);
+      if (!raw) return null;
+      const parsed = JSON.parse(raw);
+      // Only restore sessions started within the last 6 hours
+      if (parsed?.startedAt && Date.now() - parsed.startedAt < 6 * 60 * 60 * 1000) return parsed;
+    } catch {}
+    return null;
+  });
+
+  const updateSession = useCallback((updates) => {
+    setSession(prev => {
+      if (!prev) return prev;
+      const next = typeof updates === "function" ? updates(prev) : { ...prev, ...updates };
+      try { localStorage.setItem(SESSION_KEY, JSON.stringify(next)); } catch {}
+      return next;
+    });
+  }, []);
+
+  const startSession = useCallback((type, payload) => {
+    const s = { type, startedAt: Date.now(), activeEx: null, ...payload };
+    setSession(s);
+    try { localStorage.setItem(SESSION_KEY, JSON.stringify(s)); } catch {}
+  }, []);
+
+  const endSession = useCallback(() => {
+    setSession(null);
+    try { localStorage.removeItem(SESSION_KEY); } catch {}
+  }, []);
+
+  return (
+    <SessionContext.Provider value={{ session, startSession, updateSession, endSession }}>
+      {children}
+    </SessionContext.Provider>
+  );
+}
+
+function useSession() { return useContext(SessionContext); }
 
 // ── ENHANCED EXERCISE DATABASE — full tagging: primary, secondary[], movement, stim ──
 const EX_DB = {
-  "Barbell Bench Press":   {primary:"chest",  secondary:["triceps","front_delt"],movement:"horizontal_push",stim:9},
-  "Incline Barbell Press": {primary:"chest",  secondary:["triceps","front_delt"],movement:"incline_push",   stim:9},
-  "Incline DB Press":      {primary:"chest",  secondary:["triceps","front_delt"],movement:"incline_push",   stim:8},
-  "DB Bench Press":        {primary:"chest",  secondary:["triceps","front_delt"],movement:"horizontal_push",stim:8},
-  "Weighted Dips":         {primary:"chest",  secondary:["triceps"],             movement:"vertical_push",  stim:8},
-  "Cable Fly":             {primary:"chest",  secondary:[],                      movement:"fly",            stim:8},
-  "Incline DB Fly":        {primary:"chest",  secondary:["front_delt"],          movement:"incline_fly",    stim:7},
-  "Pec Dec":               {primary:"chest",  secondary:[],                      movement:"fly",            stim:7},
-  "Low-to-High Cable Fly": {primary:"chest",  secondary:[],                      movement:"fly",            stim:8},
-  "Deadlift":              {primary:"back",   secondary:["hams","glutes","traps"],movement:"hinge",          stim:10},
-  "Barbell Row":           {primary:"back",   secondary:["biceps","rear_delt"],  movement:"horizontal_pull",stim:9},
-  "T-Bar Row":             {primary:"back",   secondary:["biceps"],              movement:"horizontal_pull",stim:9},
-  "Weighted Pull-Up":      {primary:"back",   secondary:["biceps"],              movement:"vertical_pull",  stim:9},
-  "Lat Pulldown":          {primary:"back",   secondary:["biceps"],              movement:"vertical_pull",  stim:8},
-  "Seated Cable Row":      {primary:"back",   secondary:["biceps","rear_delt"],  movement:"horizontal_pull",stim:8},
-  "Single-Arm DB Row":     {primary:"back",   secondary:["biceps"],              movement:"horizontal_pull",stim:8},
-  "Face Pull":             {primary:"rear_delt",secondary:["back","traps"],      movement:"horizontal_pull",stim:7},
-  "Straight-Arm Pulldown": {primary:"back",   secondary:[],                      movement:"vertical_pull",  stim:7},
-  "Back Squat":            {primary:"quads",  secondary:["glutes","hams"],       movement:"squat",          stim:10},
-  "Front Squat":           {primary:"quads",  secondary:["glutes"],              movement:"squat",          stim:9},
-  "Hack Squat":            {primary:"quads",  secondary:["glutes","hams"],       movement:"squat",          stim:9},
-  "Leg Press":             {primary:"quads",  secondary:["glutes","hams"],       movement:"squat",          stim:8},
-  "Leg Extension":         {primary:"quads",  secondary:[],                      movement:"isolation",      stim:7},
-  "Bulgarian Split Squat": {primary:"quads",  secondary:["glutes"],              movement:"lunge",          stim:9},
-  "Walking Lunge":         {primary:"quads",  secondary:["glutes","hams"],       movement:"lunge",          stim:7},
-  "Romanian Deadlift":     {primary:"hams",   secondary:["glutes","lower_back"], movement:"hinge",          stim:9},
-  "Stiff-Leg Deadlift":    {primary:"hams",   secondary:["glutes","lower_back"], movement:"hinge",          stim:8},
-  "Leg Curl":              {primary:"hams",   secondary:[],                      movement:"isolation",      stim:8},
-  "Nordic Curl":           {primary:"hams",   secondary:[],                      movement:"isolation",      stim:9},
-  "Hip Thrust":            {primary:"glutes", secondary:["hams"],                movement:"hip_extension",  stim:9},
-  "Standing Calf Raise":   {primary:"calves", secondary:[],                      movement:"isolation",      stim:8},
-  "Seated Calf Raise":     {primary:"calves", secondary:[],                      movement:"isolation",      stim:8},
-  "Leg Press Calf Raise":  {primary:"calves", secondary:[],                      movement:"isolation",      stim:7},
-  "Overhead Press":        {primary:"delts",  secondary:["triceps","traps"],     movement:"vertical_push",  stim:9},
-  "DB Arnold Press":       {primary:"delts",  secondary:["triceps"],             movement:"vertical_push",  stim:8},
-  "Push Press":            {primary:"delts",  secondary:["triceps","traps"],     movement:"vertical_push",  stim:8},
-  "Lateral Raise":         {primary:"delts",  secondary:[],                      movement:"isolation",      stim:8},
-  "Cable Lateral Raise":   {primary:"delts",  secondary:[],                      movement:"isolation",      stim:8},
-  "Rear Delt Fly":         {primary:"rear_delt",secondary:["back"],              movement:"fly",            stim:7},
-  "Upright Row":           {primary:"delts",  secondary:["traps","biceps"],      movement:"vertical_pull",  stim:7},
-  "Close-Grip Bench":      {primary:"triceps",secondary:["chest","front_delt"],  movement:"horizontal_push",stim:8},
-  "Dips":                  {primary:"triceps",secondary:["chest"],               movement:"vertical_push",  stim:8},
-  "Tricep Pushdown":       {primary:"triceps",secondary:[],                      movement:"isolation",      stim:7},
-  "Overhead Extension":    {primary:"triceps",secondary:[],                      movement:"isolation",      stim:8},
-  "Skull Crusher":         {primary:"triceps",secondary:[],                      movement:"isolation",      stim:8},
-  "DB Kickback":           {primary:"triceps",secondary:[],                      movement:"isolation",      stim:6},
-  "Barbell Curl":          {primary:"biceps", secondary:["forearms"],            movement:"isolation",      stim:8},
-  "EZ Bar Curl":           {primary:"biceps", secondary:["forearms"],            movement:"isolation",      stim:8},
-  "Incline DB Curl":       {primary:"biceps", secondary:[],                      movement:"isolation",      stim:9},
-  "Hammer Curl":           {primary:"biceps", secondary:["forearms"],            movement:"isolation",      stim:7},
-  "Cable Curl":            {primary:"biceps", secondary:[],                      movement:"isolation",      stim:8},
-  "Preacher Curl":         {primary:"biceps", secondary:[],                      movement:"isolation",      stim:8},
-  "Concentration Curl":    {primary:"biceps", secondary:[],                      movement:"isolation",      stim:7},
-  "Plank":                 {primary:"abs",    secondary:["lower_back"],          movement:"isometric",      stim:5},
-  "Hanging Leg Raise":     {primary:"abs",    secondary:[],                      movement:"isolation",      stim:8},
-  "Cable Crunch":          {primary:"abs",    secondary:[],                      movement:"isolation",      stim:8},
-  "Ab Wheel":              {primary:"abs",    secondary:["lower_back"],          movement:"isolation",      stim:8},
-  "Decline Crunch":        {primary:"abs",    secondary:[],                      movement:"isolation",      stim:6},
-  "Russian Twist":         {primary:"abs",    secondary:[],                      movement:"rotation",       stim:6},
+  // ── CHEST ─────────────────────────────────────────────────────────────────────
+  // A-day compound: Incline Barbell Press (matches your push day primary)
+  // B-day compound: Machine Incline Press → Machine Chest Press rotation
+  "Incline Barbell Press":    {primary:"chest",    secondary:["triceps","front_delt"],  movement:"incline_push",    stim:9},
+  "Machine Incline Press":    {primary:"chest",    secondary:["triceps","front_delt"],  movement:"incline_push",    stim:8},
+  "Machine Chest Press":      {primary:"chest",    secondary:["triceps","front_delt"],  movement:"horizontal_push", stim:8},
+  "Incline DB Press":         {primary:"chest",    secondary:["triceps","front_delt"],  movement:"incline_push",    stim:8},
+  "DB Bench Press":           {primary:"chest",    secondary:["triceps","front_delt"],  movement:"horizontal_push", stim:7},
+  "Dips":                     {primary:"chest",    secondary:["triceps"],               movement:"vertical_push",   stim:8},
+  "Pec Deck":                 {primary:"chest",    secondary:[],                        movement:"fly",             stim:8},
+  "Cable Fly":                {primary:"chest",    secondary:[],                        movement:"fly",             stim:8},
+  "Low-to-High Cable Fly":    {primary:"chest",    secondary:[],                        movement:"fly",             stim:7},
+  "Incline DB Fly":           {primary:"chest",    secondary:["front_delt"],            movement:"incline_fly",     stim:7},
+
+  // ── BACK ──────────────────────────────────────────────────────────────────────
+  // A-day compound: Deadlift / Barbell Row  |  B-day: T-Bar Row / Machine Row
+  "Deadlift":                 {primary:"back",     secondary:["hams","glutes","traps"],  movement:"hinge",           stim:10},
+  "Barbell Row":              {primary:"back",     secondary:["biceps","rear_delt"],     movement:"horizontal_pull", stim:9},
+  "T-Bar Row":                {primary:"back",     secondary:["biceps","rear_delt"],     movement:"horizontal_pull", stim:9},
+  "Machine Row":              {primary:"back",     secondary:["biceps","rear_delt"],     movement:"horizontal_pull", stim:8},
+  "Seated Cable Row":         {primary:"back",     secondary:["biceps","rear_delt"],     movement:"horizontal_pull", stim:8},
+  "Lying Machine Row":        {primary:"back",     secondary:["biceps","rear_delt"],     movement:"horizontal_pull", stim:8},
+  "Single-Arm DB Row":        {primary:"back",     secondary:["biceps"],                 movement:"horizontal_pull", stim:8},
+  "Machine Lat Pulldown":     {primary:"back",     secondary:["biceps"],                 movement:"vertical_pull",   stim:8},
+  "Cable Lat Pulldown":       {primary:"back",     secondary:["biceps"],                 movement:"vertical_pull",   stim:8},
+  "Straight-Arm Pulldown":    {primary:"back",     secondary:[],                         movement:"vertical_pull",   stim:7},
+  "Face Pull":                {primary:"rear_delt",secondary:["back","traps"],           movement:"horizontal_pull", stim:8},
+  "Rear Delt Machine":        {primary:"rear_delt",secondary:["back"],                   movement:"fly",             stim:7},
+
+  // ── SHOULDERS ─────────────────────────────────────────────────────────────────
+  // A-day compound: DB Shoulder Press (your push day movement, 60 lbs)
+  // Lateral Raise: your push day isolation (20 lbs DB)
+  "DB Shoulder Press":        {primary:"delts",    secondary:["triceps"],                movement:"vertical_push",   stim:9},
+  "Overhead Press":           {primary:"delts",    secondary:["triceps","traps"],         movement:"vertical_push",   stim:9},
+  "Machine Shoulder Press":   {primary:"delts",    secondary:["triceps"],                movement:"vertical_push",   stim:8},
+  "DB Arnold Press":          {primary:"delts",    secondary:["triceps"],                movement:"vertical_push",   stim:8},
+  "Lateral Raise":            {primary:"delts",    secondary:[],                         movement:"isolation",       stim:8},
+  "Cable Lateral Raise":      {primary:"delts",    secondary:[],                         movement:"isolation",       stim:8},
+  "Upright Row":              {primary:"delts",    secondary:["traps","biceps"],          movement:"vertical_pull",   stim:7},
+
+  // ── TRICEPS ───────────────────────────────────────────────────────────────────
+  // A-day isolation: Cable Rope Pushdown (your push day finisher)
+  // B-day isolation: Skull Crusher
+  "Close-Grip Bench":         {primary:"triceps",  secondary:["chest","front_delt"],     movement:"horizontal_push", stim:8},
+  "Cable Rope Pushdown":      {primary:"triceps",  secondary:[],                         movement:"isolation",       stim:9},
+  "Skull Crusher":            {primary:"triceps",  secondary:[],                         movement:"isolation",       stim:8},
+  "Overhead Cable Extension": {primary:"triceps",  secondary:[],                         movement:"isolation",       stim:8},
+  "Tricep Machine":           {primary:"triceps",  secondary:[],                         movement:"isolation",       stim:7},
+  "DB Overhead Extension":    {primary:"triceps",  secondary:[],                         movement:"isolation",       stim:7},
+
+  // ── BICEPS ────────────────────────────────────────────────────────────────────
+  // A-day: Incline DB Curl (peak stretch) | B-day: Barbell Curl
+  "Incline DB Curl":          {primary:"biceps",   secondary:[],                         movement:"isolation",       stim:9},
+  "Barbell Curl":             {primary:"biceps",   secondary:["forearms"],               movement:"isolation",       stim:8},
+  "Preacher Curl":            {primary:"biceps",   secondary:[],                         movement:"isolation",       stim:8},
+  "Cable Curl":               {primary:"biceps",   secondary:[],                         movement:"isolation",       stim:8},
+  "Dumbbell Curl":            {primary:"biceps",   secondary:["forearms"],               movement:"isolation",       stim:7},
+  "Hammer Curl":              {primary:"biceps",   secondary:["forearms"],               movement:"isolation",       stim:7},
+
+  // ── QUADS ─────────────────────────────────────────────────────────────────────
+  // A-day compound: Back Squat | B-day: Pendulum Squat / Hack Squat
+  "Back Squat":               {primary:"quads",    secondary:["glutes","hams"],          movement:"squat",           stim:10},
+  "Pendulum Squat":           {primary:"quads",    secondary:["glutes"],                 movement:"squat",           stim:9},
+  "Hack Squat":               {primary:"quads",    secondary:["glutes","hams"],          movement:"squat",           stim:9},
+  "Leg Press":                {primary:"quads",    secondary:["glutes","hams"],          movement:"squat",           stim:8},
+  "Bulgarian Split Squat":    {primary:"quads",    secondary:["glutes"],                 movement:"lunge",           stim:9},
+  "Leg Extension":            {primary:"quads",    secondary:[],                         movement:"isolation",       stim:7},
+
+  // ── HAMSTRINGS ────────────────────────────────────────────────────────────────
+  "Romanian Deadlift":        {primary:"hams",     secondary:["glutes","lower_back"],    movement:"hinge",           stim:9},
+  "Stiff-Leg Deadlift":       {primary:"hams",     secondary:["glutes","lower_back"],    movement:"hinge",           stim:8},
+  "Leg Curl":                 {primary:"hams",     secondary:[],                         movement:"isolation",       stim:8},
+  "Hip Thrust":               {primary:"glutes",   secondary:["hams"],                   movement:"hip_extension",   stim:9},
+
+  // ── CALVES ────────────────────────────────────────────────────────────────────
+  "Standing Calf Raise":      {primary:"calves",   secondary:[],                         movement:"isolation",       stim:8},
+  "Seated Calf Raise":        {primary:"calves",   secondary:[],                         movement:"isolation",       stim:8},
+  "Leg Press Calf Raise":     {primary:"calves",   secondary:[],                         movement:"isolation",       stim:7},
+
+  // ── ABS ───────────────────────────────────────────────────────────────────────
+  "Cable Crunch":             {primary:"abs",      secondary:[],                         movement:"isolation",       stim:8},
+  "Hanging Leg Raise":        {primary:"abs",      secondary:[],                         movement:"isolation",       stim:8},
+  "Ab Wheel":                 {primary:"abs",      secondary:["lower_back"],             movement:"isolation",       stim:8},
+  "Decline Crunch":           {primary:"abs",      secondary:[],                         movement:"isolation",       stim:6},
+  "Plank":                    {primary:"abs",      secondary:["lower_back"],             movement:"isometric",       stim:5},
 };
 
 // ── EXERCISE RESOLVER — fuzzy muscle classification ───────────────────────────
@@ -1425,23 +1755,23 @@ function resolveExerciseTag(name) {
   const reversed = Object.entries(EX_DB).find(([k]) => k.toLowerCase().split(" ").every(w => lower.includes(w)));
   if (reversed) return reversed[1];
   // Keyword inference by movement pattern
-  if (/\b(bench|chest press|pec dec|cable fly|incline press|chest fly)\b/.test(lower))
+  if (/\b(bench|chest press|pec dec?k?|cable fly|incline press|chest fly|machine chest|machine incline)\b/.test(lower))
     return {primary:"chest",  secondary:["triceps"],   movement:"horizontal_push",stim:7};
-  if (/\b(row|lat pull|pulldown|pull-?up|chin-?up|pullover)\b/.test(lower))
+  if (/\b(row|lat pull|pulldown|pull-?up|chin-?up|pullover|lying machine)\b/.test(lower))
     return {primary:"back",   secondary:["biceps"],    movement:"horizontal_pull",stim:7};
-  if (/\b(squat|leg press|lunge|hack|leg ext)\b/.test(lower))
+  if (/\b(squat|leg press|lunge|hack|pendulum|leg ext)\b/.test(lower))
     return {primary:"quads",  secondary:["glutes"],    movement:"squat",stim:7};
   if (/\b(rdl|romanian|stiff.?leg|leg curl|hamstring|nordic)\b/.test(lower))
     return {primary:"hams",   secondary:["glutes"],    movement:"hinge",stim:7};
   if (/\b(hip thrust|glute bridge|glute)\b/.test(lower))
     return {primary:"hams",   secondary:["glutes"],    movement:"hip_extension",stim:7};
-  if (/\b(overhead press|ohp|shoulder press|arnold|lateral raise|side raise|upright)\b/.test(lower))
+  if (/\b(overhead press|ohp|shoulder press|arnold|lateral raise|side raise|upright|machine shoulder)\b/.test(lower))
     return {primary:"delts",  secondary:["triceps"],   movement:"vertical_push",stim:7};
-  if (/\b(rear delt|face pull|reverse fly|rear fly)\b/.test(lower))
+  if (/\b(rear delt|face pull|reverse fly|rear fly|rear delt machine)\b/.test(lower))
     return {primary:"rear_delt",secondary:["back"],    movement:"fly",stim:7};
-  if (/\b(tricep|skull crusher|pushdown|overhead ext|jm press)\b/.test(lower))
+  if (/\b(tricep|skull crusher|pushdown|rope push|overhead ext|jm press|tricep machine)\b/.test(lower))
     return {primary:"triceps",secondary:[],            movement:"isolation",stim:7};
-  if (/\b(curl|bicep|preacher|concentration)\b/.test(lower))
+  if (/\b(curl|bicep|preacher|concentration|hammer)\b/.test(lower))
     return {primary:"biceps", secondary:[],            movement:"isolation",stim:7};
   if (/\b(calf|calves)\b/.test(lower))
     return {primary:"calves", secondary:[],            movement:"isolation",stim:7};
@@ -1798,15 +2128,23 @@ function PathSelector({dayTag,onSelectGenerated,onSelectCustom}) {
     <div style={{animation:"slideUp .3s ease"}}>
       <div style={{fontSize:10,letterSpacing:2,textTransform:"uppercase",color:C.muted,marginBottom:14}}>● Choose your approach for {dayTag}</div>
       <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12}}>
-        <div onClick={onSelectGenerated} style={{background:C.surface,border:`1px solid ${C.accent}40`,borderRadius:16,padding:18,cursor:"pointer",transition:"all .2s"}}
-          onMouseOver={e=>e.currentTarget.style.borderColor=C.accent} onMouseOut={e=>e.currentTarget.style.borderColor=`${C.accent}40`}>
+        <div onClick={onSelectGenerated}
+          style={{background:C.card||C.surface,border:`2px solid ${C.brutal||C.accent}`,borderRadius:10,padding:18,cursor:"pointer",transition:"all .15s cubic-bezier(.22,1,.36,1)",boxShadow:`4px 4px 0 ${C.brutal||C.accent}`}}
+          onMouseOver={e=>{e.currentTarget.style.transform="translate(-2px,-2px)";e.currentTarget.style.boxShadow=`6px 6px 0 ${C.brutal||C.accent}`;}}
+          onMouseOut={e=>{e.currentTarget.style.transform="";e.currentTarget.style.boxShadow=`4px 4px 0 ${C.brutal||C.accent}`;}}
+          onMouseDown={e=>{e.currentTarget.style.transform="translate(4px,4px)";e.currentTarget.style.boxShadow="none";}}
+          onMouseUp={e=>{e.currentTarget.style.transform="translate(-2px,-2px)";e.currentTarget.style.boxShadow=`6px 6px 0 ${C.brutal||C.accent}`;}}>
           <div style={{marginBottom:10,color:C.accent}}><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" style={{width:22,height:22}}><path d="M13 10V3L4 14h7v7l9-11h-7z"/></svg></div>
           <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:16,letterSpacing:1,color:C.accent,marginBottom:6}}>GENERATE WORKOUT</div>
           <div style={{fontSize:12,color:C.faint,lineHeight:1.5}}>AI-designed. Evidence-based selection, balanced stimulus, adaptive sets.</div>
           <div style={{marginTop:10,fontSize:10,letterSpacing:1,textTransform:"uppercase",color:C.accent}}>Recommended →</div>
         </div>
-        <div onClick={onSelectCustom} style={{background:C.surface,border:`1px solid ${C.blue}40`,borderRadius:16,padding:18,cursor:"pointer",transition:"all .2s"}}
-          onMouseOver={e=>e.currentTarget.style.borderColor=C.blue} onMouseOut={e=>e.currentTarget.style.borderColor=`${C.blue}40`}>
+        <div onClick={onSelectCustom}
+          style={{background:C.card||C.surface,border:`2px solid ${C.brutal||C.blue}`,borderRadius:10,padding:18,cursor:"pointer",transition:"all .15s cubic-bezier(.22,1,.36,1)",boxShadow:`4px 4px 0 ${C.brutal||C.blue}`}}
+          onMouseOver={e=>{e.currentTarget.style.transform="translate(-2px,-2px)";e.currentTarget.style.boxShadow=`6px 6px 0 ${C.brutal||C.blue}`;}}
+          onMouseOut={e=>{e.currentTarget.style.transform="";e.currentTarget.style.boxShadow=`4px 4px 0 ${C.brutal||C.blue}`;}}
+          onMouseDown={e=>{e.currentTarget.style.transform="translate(4px,4px)";e.currentTarget.style.boxShadow="none";}}
+          onMouseUp={e=>{e.currentTarget.style.transform="translate(-2px,-2px)";e.currentTarget.style.boxShadow=`6px 6px 0 ${C.brutal||C.blue}`;}}>
           <div style={{marginBottom:10,color:C.blue}}><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" style={{width:22,height:22}}><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></div>
           <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:16,letterSpacing:1,color:C.blue,marginBottom:6}}>LOG CUSTOM</div>
           <div style={{fontSize:12,color:C.faint,lineHeight:1.5}}>Full control. Any exercise. System tracks muscle balance automatically.</div>
@@ -1973,7 +2311,7 @@ function CustomWorkoutLogger({onComplete,onBack,muscleVol,level}) {
         const bench=MUSCLE_BENCHMARKS[ex.tag?.primary],done=ex.loggedSets.filter(s=>s.reps&&s.weight).length;
         return (
           <div key={ex.id} style={{margin:"14px 24px 0"}}>
-            <div style={{background:C.surface,border:`1px solid ${bench?.color?bench.color+"30":C.border}`,borderRadius:14,padding:16}}>
+            <div style={{background:C.card||C.surface,border:`2px solid ${C.brutal||C.border}`,borderRadius:10,padding:16,boxShadow:`4px 4px 0 ${C.brutal||C.border}`}}>
               <div style={{display:"flex",alignItems:"flex-start",justifyContent:"space-between",marginBottom:12}}>
                 <div>
                   <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:3}}>
@@ -2017,27 +2355,110 @@ function CustomWorkoutLogger({onComplete,onBack,muscleVol,level}) {
   );
 }
 
+// ── EXERCISE IMAGES — static map to free-exercise-db frames ──────────────────
+// ── MUSCLE ANATOMY DIAGRAM ────────────────────────────────────────────────────
+// Uses WGER open-source anatomical SVGs (CC-BY-SA).
+// Base body illustration + per-muscle red overlays stacked via CSS.
+// Primary: main/ overlay with pulse glow animation.
+// Secondary: secondary/ overlay at 50% opacity.
+
+const WGER_BASE = "https://raw.githubusercontent.com/wger-project/wger/master/wger/core/static/images/muscles/";
+
+// Maps EX_DB muscle keys → WGER muscle IDs
+const MUSCLE_WGER = {
+  chest:      [4],
+  back:       [12, 9],   // lats + traps
+  quads:      [10],
+  hams:       [11],
+  delts:      [2],
+  rear_delt:  [2],
+  front_delt: [2],
+  triceps:    [5],
+  biceps:     [1],
+  calves:     [7],
+  abs:        [6],
+  glutes:     [8],
+  traps:      [9],
+  lower_back: [9],
+  forearms:   [13],
+};
+
+const BACK_VIEW_MUSCLES = new Set(["back","rear_delt","hams","glutes","lower_back","traps","triceps"]);
+
+function MuscleDiagram({ name }) {
+  const tag = EX_DB[name];
+  if (!tag) return null;
+  const { primary, secondary = [] } = tag;
+  const C = useThemeColors();
+
+  const showBack   = BACK_VIEW_MUSCLES.has(primary);
+  const bodyImg    = `${WGER_BASE}muscular_system_${showBack ? "back" : "front"}.svg`;
+  const primaryIds = MUSCLE_WGER[primary] || [];
+  const secondaryIds = [...new Set(
+    (secondary || []).flatMap(m => MUSCLE_WGER[m] || [])
+      .filter(id => !primaryIds.includes(id))
+  )];
+
+  const label = MUSCLE_BENCHMARKS[primary]?.label || primary;
+  const overlay = { position:"absolute", top:0, left:0, width:"100%", height:"100%", objectFit:"contain" };
+
+  return (
+    <div style={{ borderRadius:12, marginBottom:14, background:"#f5f0eb", border:`1px solid ${C.border}`, overflow:"hidden" }}>
+      {/* label bar */}
+      <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", padding:"8px 14px 6px", background:C.surface }}>
+        <span style={{ fontSize:9, letterSpacing:2, textTransform:"uppercase", color:C.muted }}>
+          {showBack ? "Posterior" : "Anterior"} View
+        </span>
+        <span style={{ fontSize:9, letterSpacing:1.5, textTransform:"uppercase", color:"#cc2020", fontWeight:700 }}>
+          {label}
+        </span>
+      </div>
+
+      {/* anatomy stack */}
+      <div style={{ position:"relative", width:"100%", aspectRatio:"200 / 369", maxHeight:260, margin:"0 auto" }}>
+        {/* base anatomical illustration */}
+        <img src={bodyImg} alt="anatomy" style={{ width:"100%", height:"100%", objectFit:"contain", display:"block" }}/>
+
+        {/* secondary muscle overlays — shown dimly */}
+        {secondaryIds.map(id => (
+          <img key={`s${id}`} alt="" src={`${WGER_BASE}secondary/muscle-${id}.svg`} style={{ ...overlay, opacity:0.6 }}/>
+        ))}
+
+        {/* primary muscle overlays — animated pulse */}
+        {primaryIds.map(id => (
+          <img key={`p${id}`} alt="" src={`${WGER_BASE}main/muscle-${id}.svg`}
+               style={{ ...overlay, animation:"musclePulse 2s ease-in-out infinite" }}/>
+        ))}
+      </div>
+
+      {/* legend */}
+      <div style={{ display:"flex", gap:14, justifyContent:"center", padding:"6px 0 8px", background:C.surface }}>
+        <div style={{ display:"flex", alignItems:"center", gap:5 }}>
+          <div style={{ width:8, height:8, borderRadius:"50%", background:"#cc2020" }}/>
+          <span style={{ fontSize:9, color:C.muted, letterSpacing:1 }}>PRIMARY</span>
+        </div>
+        {secondaryIds.length > 0 && (
+          <div style={{ display:"flex", alignItems:"center", gap:5 }}>
+            <div style={{ width:8, height:8, borderRadius:"50%", background:"#e07050" }}/>
+            <span style={{ fontSize:9, color:C.muted, letterSpacing:1 }}>SECONDARY</span>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
 // ── WORKOUT SESSION VIEW ──────────────────────────────────────────────────────
 function WorkoutSession({ dayKey, dayPlan, adaptation, onComplete, onBack }) {
   const C = useThemeColors();
+  const { session, updateSession } = useSession();
   const adj = adaptation?.adjustments?.[dayKey];
-  // Build initial logged sets state: { exId: [{weight:"", reps:"", rpe:""}] }
-  const initSets = () => {
-    const s = {};
-    dayPlan.exercises.forEach(ex => {
-      const setCount = adj?.setDelta
-        ? Math.max(1, ex.sets + adj.setDelta)
-        : ex.sets;
-      s[ex.id] = Array.from({ length: setCount }, () => ({ weight: "", reps: "", rpe: "" }));
-    });
-    return s;
-  };
 
-  const [loggedSets, setLoggedSets] = useState(initSets);
-  const [activeEx, setActiveEx] = useState(null);
+  // All persistent state lives in context — local state only for UI
+  const loggedSets = session?.loggedSets || {};
+  const activeEx   = session?.activeEx || null;
   const [completing, setCompleting] = useState(false);
   const [timer, setTimer] = useState(0);
-  const [timerActive, setTimerActive] = useState(false);
   const timerRef = useRef(null);
   const [toastResult, setToastResult] = useState(null);
   const [toastCountdown, setToastCountdown] = useState(4);
@@ -2045,36 +2466,41 @@ function WorkoutSession({ dayKey, dayPlan, adaptation, onComplete, onBack }) {
   const toastCountRef = useRef(null);
   const [showAbandonConfirm, setShowAbandonConfirm] = useState(false);
 
+  // Derive elapsed time from startedAt so it survives remounts
   useEffect(() => {
-    if (timerActive) {
-      timerRef.current = setInterval(() => setTimer(t => t + 1), 1000);
-    } else {
-      clearInterval(timerRef.current);
-    }
+    if (!session?.startedAt) return;
+    const tick = () => setTimer(Math.floor((Date.now() - session.startedAt) / 1000));
+    tick();
+    timerRef.current = setInterval(tick, 1000);
     return () => clearInterval(timerRef.current);
-  }, [timerActive]);
+  }, [session?.startedAt]);
 
-  useEffect(() => { setTimerActive(true); return () => setTimerActive(false); }, []);
+  const setActiveEx = (id) => updateSession({ activeEx: id });
 
   const updateSet = (exId, setIdx, field, val) => {
-    setLoggedSets(prev => {
-      const copy = { ...prev, [exId]: prev[exId].map((s, i) => i === setIdx ? { ...s, [field]: val } : s) };
-      return copy;
+    updateSession(prev => {
+      const prevSets = prev.loggedSets?.[exId] || [];
+      const updated = prevSets.map((s, i) => i === setIdx ? { ...s, [field]: val } : s);
+      return { ...prev, loggedSets: { ...prev.loggedSets, [exId]: updated } };
     });
   };
 
   const addSet = (exId) => {
-    setLoggedSets(prev => ({ ...prev, [exId]: [...prev[exId], { weight: "", reps: "", rpe: "" }] }));
+    updateSession(prev => ({
+      ...prev,
+      loggedSets: { ...prev.loggedSets, [exId]: [...(prev.loggedSets?.[exId] || []), { weight: "", reps: "", rpe: "" }] }
+    }));
   };
 
   const removeSet = (exId) => {
-    setLoggedSets(prev => {
-      if (prev[exId].length <= 1) return prev;
-      return { ...prev, [exId]: prev[exId].slice(0, -1) };
+    updateSession(prev => {
+      const sets = prev.loggedSets?.[exId] || [];
+      if (sets.length <= 1) return prev;
+      return { ...prev, loggedSets: { ...prev.loggedSets, [exId]: sets.slice(0, -1) } };
     });
   };
 
-  const totalSets = Object.values(loggedSets).reduce((s, sets) => s + sets.filter(x => x.reps && x.weight).length, 0);
+  const totalSets = Object.values(loggedSets).reduce((s, sets) => s + (sets?.filter(x => x.reps && x.weight).length || 0), 0);
   const totalExercises = dayPlan.exercises.length;
 
   const formatTime = (s) => `${Math.floor(s/60)}:${String(s%60).padStart(2,"0")}`;
@@ -2083,7 +2509,7 @@ function WorkoutSession({ dayKey, dayPlan, adaptation, onComplete, onBack }) {
     setCompleting(true);
     const completedExercises = dayPlan.exercises.map(ex => ({
       id: ex.id, name: ex.name, muscle: ex.muscle,
-      loggedSets: loggedSets[ex.id].filter(s => s.reps && s.weight),
+      loggedSets: (loggedSets[ex.id] || []).filter(s => s.reps && s.weight),
     }));
     const result = { dayKey, completedExercises, duration: timer, ts: Date.now() };
     setToastResult(result);
@@ -2143,7 +2569,7 @@ function WorkoutSession({ dayKey, dayPlan, adaptation, onComplete, onBack }) {
             <div style={{ fontFamily: "'Bebas Neue',sans-serif", fontSize: 30, letterSpacing: 2, lineHeight: 1 }}>ACTIVE SESSION</div>
           </div>
           <div style={{ textAlign: "right" }}>
-            <div style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: 22, color: timerActive ? C.accent : C.muted }}>{formatTime(timer)}</div>
+            <div style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: 22, color: C.accent }}>{formatTime(timer)}</div>
             <div style={{ fontSize: 10, color: C.muted, marginTop: 2 }}>{totalSets} sets logged</div>
           </div>
         </div>
@@ -2173,7 +2599,9 @@ function WorkoutSession({ dayKey, dayPlan, adaptation, onComplete, onBack }) {
               {/* Exercise header — tap to expand */}
               <div
                 onClick={() => setActiveEx(isOpen ? null : ex.id)}
-                style={{ background: isOpen ? `${C.accent}0D` : C.surface, border: `1px solid ${isOpen ? C.accent + "40" : C.border}`, borderRadius: 14, padding: "14px 16px", cursor: "pointer", transition: "all 0.2s" }}>
+                style={{ background: isOpen ? `${C.accent}15` : C.card||C.surface, border: `2px solid ${isOpen ? C.accent : C.brutal||C.border}`, borderRadius: 10, padding: "14px 16px", cursor: "pointer", transition: "all 0.15s cubic-bezier(.22,1,.36,1)", boxShadow: isOpen ? `4px 4px 0 ${C.accent}` : `4px 4px 0 ${C.brutal||C.border}` }}
+                onMouseOver={e=>{if(!isOpen){e.currentTarget.style.transform="translate(-2px,-2px)";e.currentTarget.style.boxShadow=`6px 6px 0 ${C.brutal||C.border}`;}}}
+                onMouseOut={e=>{e.currentTarget.style.transform="";e.currentTarget.style.boxShadow=isOpen?`4px 4px 0 ${C.accent}`:`4px 4px 0 ${C.brutal||C.border}`;}}>
                 <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
                   <div style={{ flex: 1 }}>
                     <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
@@ -2201,7 +2629,10 @@ function WorkoutSession({ dayKey, dayPlan, adaptation, onComplete, onBack }) {
 
               {/* Set Logger — expanded */}
               {isOpen && (
-                <div style={{ background: C.up, border: `1px solid ${C.border}`, borderTop: "none", borderRadius: "0 0 14px 14px", padding: "0 16px 14px", animation: "slideUp .2s ease" }}>
+                <div style={{ background: C.up, border: `1px solid ${C.border}`, borderTop: "none", borderRadius: "0 0 14px 14px", padding: "14px 16px 14px", animation: "slideUp .2s ease" }}>
+
+                  {/* Muscle anatomy diagram */}
+                  <MuscleDiagram name={ex.name} />
 
                   {/* Column headers */}
                   <div style={{ display: "grid", gridTemplateColumns: "28px 1fr 1fr 1fr 28px", gap: 6, padding: "10px 0 6px", borderBottom: `1px solid ${C.border}`, marginBottom: 8 }}>
@@ -2299,18 +2730,98 @@ function WorkoutSession({ dayKey, dayPlan, adaptation, onComplete, onBack }) {
   );
 }
 
-// ── TRAINING SCREEN ───────────────────────────────────────────────────────────
-function TrainingScreen({ user }) {
+// ── MINI SESSION VIEW ─────────────────────────────────────────────────────────
+function MiniSessionView({ onExpand, onEnd, endConfirm }) {
+  const { session } = useSession();
   const C = useThemeColors();
+  const [elapsed, setElapsed] = useState(0);
+
+  useEffect(() => {
+    if (!session?.startedAt) return;
+    const tick = () => setElapsed(Math.floor((Date.now() - session.startedAt) / 1000));
+    tick();
+    const id = setInterval(tick, 1000);
+    return () => clearInterval(id);
+  }, [session?.startedAt]);
+
+  if (!session) return null;
+
+  const fmt = (s) => `${Math.floor(s/60)}:${String(s%60).padStart(2,"0")}`;
+
+  // Figure out current exercise and set progress
+  const exList = session.type === "generated"
+    ? (session.dayPlan?.exercises || [])
+    : (session.exercises || []);
+  const loggedSets = session.loggedSets || {};
+  const totalSets = Object.values(loggedSets).reduce((s, sets) => s + (sets?.filter(x => x.reps && x.weight).length || 0), 0);
+  const totalSetSlots = Object.values(loggedSets).reduce((s, sets) => s + (sets?.length || 0), 0);
+
+  // Current = first exercise with incomplete sets, or last
+  const currentEx = exList.find(ex => {
+    const sets = loggedSets[ex.id] || [];
+    return sets.some(s => !s.reps || !s.weight);
+  }) || exList[exList.length - 1];
+  const currentExName = currentEx?.name || (session.type === "custom" ? "Custom Session" : session.dayPlan?.tag || "Active Session");
+
+  const currentExSets = currentEx ? (loggedSets[currentEx.id] || []) : [];
+  const currentDone = currentExSets.filter(s => s.reps && s.weight).length;
+  const currentTotal = currentExSets.length;
+
+  const progressPct = totalSetSlots > 0 ? (totalSets / totalSetSlots) * 100 : 0;
+  const exIndex = exList.indexOf(currentEx);
+
+  return (
+    <div className="msv" onClick={onExpand}>
+      <div className="msv-inner">
+        <div className="msv-timer">
+          <div className="msv-timer-dot"/>
+          {fmt(elapsed)}
+        </div>
+        <div className="msv-info">
+          <div className="msv-exname">{currentExName}</div>
+          <div className="msv-meta">
+            {exList.length > 0
+              ? `Ex ${exIndex + 1}/${exList.length} · ${currentDone}/${currentTotal} sets · ${totalSets} total`
+              : `${totalSets} sets logged`
+            }
+          </div>
+        </div>
+        <div className="msv-actions" onClick={e => e.stopPropagation()}>
+          <button className="msv-btn" onClick={onExpand} title="Open session">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{width:14,height:14}}>
+              <path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"/>
+            </svg>
+            <span>OPEN</span>
+          </button>
+          <button className="msv-btn msv-btn-end" onClick={onEnd} title="End session"
+            style={endConfirm ? {background:"var(--red)",color:"#fff"} : {}}>
+            {endConfirm
+              ? <><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{width:14,height:14}}><polyline points="20 6 9 17 4 12"/></svg><span>SURE?</span></>
+              : <><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{width:14,height:14}}><rect x="3" y="3" width="18" height="18" rx="2"/></svg><span>END</span></>
+            }
+          </button>
+        </div>
+      </div>
+      <div className="msv-progress">
+        <div className="msv-progress-fill" style={{width:`${progressPct}%`}}/>
+      </div>
+    </div>
+  );
+}
+
+// ── TRAINING SCREEN ───────────────────────────────────────────────────────────
+function TrainingScreen({ user, onNavigate }) {
+  const C = useThemeColors();
+  const { session, startSession, endSession: endGlobalSession } = useSession();
   const [tState, setTState] = useState(null);
   const [loaded, setLoaded] = useState(false);
-  const [activeSession, setActiveSession] = useState(null); // {type:"generated"|"custom", dayKey} or null
   const [activeDay, setActiveDay] = useState(0);
   const [setupMode, setSetupMode] = useState(false);
   const [selectedSplit, setSelectedSplit] = useState("ppl");
   const [showPath, setShowPath] = useState(false);
   const [showStats, setShowStats] = useState(false);
   const [showChart, setShowChart] = useState(false);
+  const [sessionFeedback, setSessionFeedback] = useState(null); // {text, ts, loading}
 
   useEffect(() => {
     window.storage.get(TRAINING_KEY).then(r => {
@@ -2340,7 +2851,7 @@ function TrainingScreen({ user }) {
   };
 
   const handleSessionComplete = async (result) => {
-    setActiveSession(null); setShowPath(false);
+    endGlobalSession(); setShowPath(false);
     const newHistory = [...(tState.history || []), result];
     // Muscle compensation: detect neglected muscles and boost volume in next program
     const muscleVol = computeMuscleVolume(newHistory, 14);
@@ -2351,6 +2862,57 @@ function TrainingScreen({ user }) {
       : tState.program;
     const adaptation = runAdaptation({program:newProgram,history:newHistory,level:user.level||"intermediate"});
     await saveState({...tState,program:newProgram,history:newHistory,adaptation});
+
+    // ── POST-SESSION AI FEEDBACK ──────────────────────────────────────────────
+    setSessionFeedback({ text: null, ts: result.ts, loading: true });
+    try {
+      const exercises = result.completedExercises || [];
+      const sessionSummary = exercises.map(ex => {
+        const sets = (ex.loggedSets || []).filter(s => s.reps);
+        if (!sets.length) return `${ex.name}: (no sets logged)`;
+        return `${ex.name}: ${sets.map(s => `${s.weight||0}lbs×${s.reps}`).join(", ")}`;
+      }).join("\n");
+
+      const laggingLines = Object.entries(MUSCLE_BENCHMARKS)
+        .filter(([k, b]) => (muscleVol[k]?.sets || 0) < b.mev * levelMod)
+        .map(([, b]) => `  • ${b.label}: ${Math.round(muscleVol[Object.keys(MUSCLE_BENCHMARKS).find(k => MUSCLE_BENCHMARKS[k] === b)]?.sets || 0)} sets (needs ${Math.round(b.mev * levelMod)} MEV)`);
+
+      const mins = Math.floor((result.duration || 0) / 60);
+      const allSets = exercises.flatMap(ex => ex.loggedSets || []).filter(s => s.rpe);
+      const avgRpe = allSets.length ? (allSets.reduce((s, x) => s + x.rpe, 0) / allSets.length).toFixed(1) : "N/A";
+
+      const res = await fetch("/api/chat", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          model: "claude-sonnet-4-20250514",
+          max_tokens: 320,
+          system: `You are APEX, an elite fitness AI coach. Deliver concise post-session feedback — direct, specific, and motivating. Max 3 short paragraphs. No fluff. Use real training terminology.`,
+          messages: [{
+            role: "user",
+            content: `Athlete: ${user.name}, ${user.level||"intermediate"} level, goal: ${user.goal||"bulk"}.
+
+Session: ${result.dayKey.toUpperCase()} — ${mins} min, avg RPE ${avgRpe}
+${sessionSummary}
+
+14-day muscle volume — groups below MEV:
+${laggingLines.length > 0 ? laggingLines.join("\n") : "  None — volume looks balanced."}
+
+Adaptation signal: ${adaptation.signal} — ${adaptation.note}
+
+Give post-session feedback: what was solid, anything to flag, and one specific focus for the next session.`
+          }],
+        }),
+      });
+      const data = await res.json();
+      const text = data.content?.find(b => b.type === "text")?.text || data.content?.[0]?.text || "Strong session. Check your balance chart and keep the momentum.";
+      const fb = { text, ts: result.ts };
+      setSessionFeedback({ ...fb, loading: false });
+      try { localStorage.setItem(FEEDBACK_KEY, JSON.stringify({ ...fb, read: false })); } catch {}
+    } catch {
+      const fb = { text: "Session logged. Open the Coach tab for your full analysis.", ts: result.ts };
+      setSessionFeedback({ ...fb, loading: false });
+    }
   };
 
   const handleChangeSplit = () => { setSetupMode(true); };
@@ -2371,7 +2933,9 @@ function TrainingScreen({ user }) {
 
         {Object.values(SPLITS).map(sp => (
           <div key={sp.id} onClick={() => setSelectedSplit(sp.id)}
-            style={{ marginBottom: 12, background: selectedSplit === sp.id ? `${C.accent}0D` : C.surface, border: `2px solid ${selectedSplit === sp.id ? C.accent : C.border}`, borderRadius: 14, padding: "16px 18px", cursor: "pointer", transition: "all .2s", position: "relative" }}>
+            style={{ marginBottom: 12, background: selectedSplit === sp.id ? `${C.accent}18` : C.card||C.surface, border: `2px solid ${selectedSplit === sp.id ? C.accent : C.brutal||C.border}`, borderRadius: 10, padding: "16px 18px", cursor: "pointer", transition: "all .15s cubic-bezier(.22,1,.36,1)", position: "relative", boxShadow: selectedSplit === sp.id ? `4px 4px 0 ${C.accent}` : `4px 4px 0 ${C.brutal||C.border}` }}
+            onMouseOver={e=>{e.currentTarget.style.transform="translate(-2px,-2px)";e.currentTarget.style.boxShadow=selectedSplit===sp.id?`6px 6px 0 ${C.accent}`:`6px 6px 0 ${C.brutal||C.border}`;}}
+            onMouseOut={e=>{e.currentTarget.style.transform="";e.currentTarget.style.boxShadow=selectedSplit===sp.id?`4px 4px 0 ${C.accent}`:`4px 4px 0 ${C.brutal||C.border}`;}}>
             {selectedSplit === sp.id && <div style={{ position: "absolute", top: 10, right: 14, width: 18, height: 18, borderRadius: "50%", background: C.accent, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 10, color: "#080A0C", fontWeight: 700 }}>✓</div>}
             <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 8 }}>
               <span style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize: 13, letterSpacing: 1.5, color: selectedSplit===sp.id?C.accent:C.muted, background: C.up, borderRadius: 6, padding:"3px 8px" }}>{sp.abbr}</span>
@@ -2410,14 +2974,13 @@ function TrainingScreen({ user }) {
 
   if (!tState) return null;
 
-  // ── ACTIVE SESSIONS ──
-  if (activeSession?.type === "custom") {
+  // ── ACTIVE SESSIONS — read from global context ──
+  if (session?.type === "custom") {
     const muscleVol = computeMuscleVolume(tState.history || [], 7);
-    return <CustomWorkoutLogger onComplete={handleSessionComplete} onBack={()=>{setActiveSession(null);setShowPath(false);}} muscleVol={muscleVol} level={user.level||"intermediate"}/>;
+    return <CustomWorkoutLogger onComplete={handleSessionComplete} onBack={()=>{endGlobalSession();setShowPath(false);}} muscleVol={muscleVol} level={user.level||"intermediate"}/>;
   }
-  if (activeSession?.type === "generated") {
-    const dayPlan = tState.program[activeSession.dayKey];
-    return <WorkoutSession dayKey={activeSession.dayKey} dayPlan={dayPlan} adaptation={tState.adaptation} onComplete={handleSessionComplete} onBack={()=>{setActiveSession(null);setShowPath(false);}}/>;
+  if (session?.type === "generated" && session.dayKey && tState.program?.[session.dayKey]) {
+    return <WorkoutSession dayKey={session.dayKey} dayPlan={tState.program[session.dayKey]} adaptation={tState.adaptation} onComplete={handleSessionComplete} onBack={()=>{endGlobalSession();setShowPath(false);}}/>;
   }
 
   const splitDef = SPLITS[tState.split];
@@ -2463,9 +3026,49 @@ function TrainingScreen({ user }) {
         </div>
       </div>
 
+      {/* POST-SESSION AI FEEDBACK CARD */}
+      {sessionFeedback && (
+        <div style={{ margin:"0 24px 20px", background:C.card||C.surface, border:`2px solid ${C.brutal||C.accent}`, borderRadius:10, overflow:"hidden", boxShadow:`4px 4px 0 ${C.brutal||C.accent}`, animation:"slideUp .3s ease" }}>
+          <div style={{ padding:"14px 16px 12px", display:"flex", alignItems:"center", justifyContent:"space-between", borderBottom:`1px solid ${C.border}` }}>
+            <div style={{ display:"flex", alignItems:"center", gap:8 }}>
+              <div style={{ width:28, height:28, borderRadius:"50%", background:`${C.accent}18`, border:`1px solid ${C.accent}40`, display:"flex", alignItems:"center", justifyContent:"center" }}>
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{width:13,height:13,color:C.accent}}><path d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+              </div>
+              <div>
+                <div style={{ fontSize:9, letterSpacing:2, textTransform:"uppercase", color:C.accent }}>APEX COACH</div>
+                <div style={{ fontSize:11, fontWeight:600, color:C.text }}>Post-Session Analysis</div>
+              </div>
+            </div>
+            <button onClick={() => setSessionFeedback(null)}
+              style={{ background:"none", border:"none", color:C.muted, cursor:"pointer", fontSize:16, padding:"4px 6px", lineHeight:1 }}>✕</button>
+          </div>
+          <div style={{ padding:"14px 16px" }}>
+            {sessionFeedback.loading ? (
+              <div style={{ display:"flex", gap:5, alignItems:"center", padding:"6px 0" }}>
+                {[0,1,2].map(i => (
+                  <div key={i} style={{ width:7, height:7, borderRadius:"50%", background:C.accent, opacity:.6, animation:`pulse ${0.9+i*0.15}s infinite` }}/>
+                ))}
+                <span style={{ fontSize:12, color:C.muted, marginLeft:6 }}>Analyzing your session...</span>
+              </div>
+            ) : (
+              <>
+                <div style={{ fontSize:13, color:C.faint, lineHeight:1.65, whiteSpace:"pre-wrap" }}>{sessionFeedback.text}</div>
+                {onNavigate && (
+                  <button onClick={() => onNavigate("coach")}
+                    style={{ marginTop:14, display:"flex", alignItems:"center", gap:6, background:`${C.accent}15`, border:`1px solid ${C.accent}40`, borderRadius:8, padding:"8px 14px", color:C.accent, fontSize:12, fontWeight:600, cursor:"pointer", letterSpacing:.5 }}>
+                    Continue in Coach
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{width:12,height:12}}><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+                  </button>
+                )}
+              </>
+            )}
+          </div>
+        </div>
+      )}
+
       {/* HIMBO STAT CHART */}
       {showChart && (
-        <div style={{ margin:"0 24px 20px",background:C.surface,border:`1px solid ${C.purple}30`,borderRadius:16,overflow:"hidden",animation:"slideUp .3s ease" }}>
+        <div style={{ margin:"0 24px 20px",background:C.card||C.surface,border:`2px solid ${C.brutal||C.border}`,borderRadius:10,overflow:"hidden",boxShadow:`4px 4px 0 ${C.brutal||C.border}`,animation:"slideUp .3s ease" }}>
           <div style={{ padding:"16px 18px 10px",display:"flex",alignItems:"center",justifyContent:"space-between" }}>
             <div><div style={{fontSize:10,letterSpacing:2,textTransform:"uppercase",color:C.purple}}>● Physique Balance</div><div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:20,letterSpacing:1}}>MUSCLE BALANCE CHART</div></div>
             <div style={{fontSize:10,color:C.muted,textAlign:"right",lineHeight:1.5}}>Drag to rotate<br/>Tap point to inspect</div>
@@ -2495,7 +3098,7 @@ function TrainingScreen({ user }) {
 
       {/* STATS PANEL */}
       {showStats && (
-        <div style={{ margin: "0 24px 16px", background: C.surface, border: `1px solid ${C.border}`, borderRadius: 14, padding: 18, animation: "slideUp .3s ease" }}>
+        <div style={{ margin: "0 24px 16px", background: C.card||C.surface, border: `2px solid ${C.brutal||C.border}`, borderRadius: 10, padding: 18, boxShadow:`4px 4px 0 ${C.brutal||C.border}`, animation: "slideUp .3s ease" }}>
           <div style={{ fontSize: 10, letterSpacing: 2, textTransform: "uppercase", color: C.accent, marginBottom: 12 }}>● Performance Overview</div>
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 10, marginBottom: 14 }}>
             {[
@@ -2573,7 +3176,7 @@ function TrainingScreen({ user }) {
         })}
         {/* Custom session indicator */}
         {(tState.history||[]).some(h=>h.isCustom)&&(
-          <div className="dchip" onClick={()=>{setShowPath(false);setActiveSession({type:"custom"});}} style={{minWidth:64,background:C.up,borderColor:C.blue}}>
+          <div className="dchip" onClick={()=>{setShowPath(false);startSession("custom",{exercises:[],loggedSets:{}});}} style={{minWidth:64,background:C.up,borderColor:C.blue}}>
             <div style={{fontSize:9,color:C.blue,letterSpacing:1,textAlign:"center",marginBottom:2}}>FREE</div>
             <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:12,letterSpacing:1,color:C.blue,textAlign:"center"}}>LOG</div>
           </div>
@@ -2676,8 +3279,18 @@ function TrainingScreen({ user }) {
             <div style={{padding:"0 24px",animation:"slideUp .25s ease"}}>
               <PathSelector
                 dayTag={currentDay.tag}
-                onSelectGenerated={()=>{setActiveSession({type:"generated",dayKey:currentDay.key});setShowPath(false);}}
-                onSelectCustom={()=>{setActiveSession({type:"custom"});setShowPath(false);}}
+                onSelectGenerated={()=>{
+                  const dp = tState.program[currentDay.key];
+                  const adj = tState.adaptation?.adjustments?.[currentDay.key];
+                  const initSets = {};
+                  dp.exercises.forEach(ex => {
+                    const cnt = adj?.setDelta ? Math.max(1, ex.sets + adj.setDelta) : ex.sets;
+                    initSets[ex.id] = Array.from({length:cnt}, () => ({weight:"",reps:"",rpe:""}));
+                  });
+                  startSession("generated", {dayKey:currentDay.key, dayPlan:dp, adaptation:tState.adaptation, loggedSets:initSets});
+                  setShowPath(false);
+                }}
+                onSelectCustom={()=>{startSession("custom",{exercises:[],loggedSets:{}});setShowPath(false);}}
               />
             </div>
           ) : (
@@ -2685,7 +3298,7 @@ function TrainingScreen({ user }) {
               <button className="btn btn-gold" onClick={()=>setShowPath(true)}>
                 START {currentDay.tag.toUpperCase()} ▶
               </button>
-              <button onClick={()=>setActiveSession({type:"custom"})}
+              <button onClick={()=>startSession("custom",{exercises:[],loggedSets:{}})}
                 style={{padding:"0 16px",background:`${C.blue}15`,border:`1px solid ${C.blue}50`,borderRadius:12,color:C.blue,fontFamily:"'Bebas Neue',sans-serif",fontSize:14,letterSpacing:1,cursor:"pointer",whiteSpace:"nowrap"}}>
                 + CUSTOM
               </button>
@@ -3959,6 +4572,20 @@ function CoachScreen({user}) {
   const msgsRef=useRef(null);
   const fileRef=useRef(null);
 
+  // Inject unread post-session feedback on first open
+  useEffect(()=>{
+    try {
+      const stored=localStorage.getItem(FEEDBACK_KEY);
+      if(!stored) return;
+      const fb=JSON.parse(stored);
+      if(!fb.read&&fb.text){
+        setMessages(prev=>[...prev,{role:"coach",text:`📊 Post-session recap:\n\n${fb.text}`,time:"now"}]);
+        localStorage.setItem(FEEDBACK_KEY,JSON.stringify({...fb,read:true}));
+        setTimeout(()=>{ if(msgsRef.current) msgsRef.current.scrollTop=msgsRef.current.scrollHeight; },120);
+      }
+    } catch {}
+  },[]);
+
   const scrollBottom=()=>setTimeout(()=>{ if(msgsRef.current) msgsRef.current.scrollTop=msgsRef.current.scrollHeight; },60);
 
   const handleFiles=(e)=>{
@@ -4963,9 +5590,10 @@ function NavIcon({ id }) {
   );
 }
 
-export default function App() {
+function AppInner() {
   const [user,setUser]=useState(null);
   const [tab,setTab]=useState("home");
+  const { session, endSession } = useSession();
   const [weightLog, setWeightLog] = useState([]);
   const [wtLoaded, setWtLoaded] = useState(false);
 
@@ -5027,22 +5655,41 @@ export default function App() {
     {id:"coach",label:"Coach"},
   ];
 
+  const [endConfirm, setEndConfirm] = useState(false);
+
+  const handleMiniEnd = () => {
+    if (endConfirm) { endSession(); setEndConfirm(false); }
+    else { setEndConfirm(true); setTimeout(() => setEndConfirm(false), 3000); }
+  };
+
   return (
     <>
       <style>{styles}</style>
       <div className="app">
+        <WaveField fixed opacity={0.22} />
         {!user ? <OnboardScreen onComplete={u=>{ window.storage.set(USER_KEY, JSON.stringify(u)).catch(()=>{}); setUser(u); setTab("home"); }}/> : (
           <>
             {tab==="home"&&<DashboardScreen user={enrichedUser} weightLog={weightLog} onLogWeight={handleLogWeight} onDeleteWeight={handleDeleteWeight} onEditWeight={handleEditWeight} onNavigate={setTab}/>}
-            {tab==="training"&&<TrainingScreen user={enrichedUser}/>}
+            {tab==="training"&&<TrainingScreen user={enrichedUser} onNavigate={setTab}/>}
             {tab==="nutrition"&&<NutritionScreen user={enrichedUser}/>}
             {tab==="postprep"&&user?.goal==="contest"&&<PostPrepScreen user={enrichedUser}/>}
             {tab==="coach"&&<CoachScreen user={enrichedUser}/>}
+            {/* Mini session view — shown on all non-training tabs when a session is active */}
+            {session && tab !== "training" && (
+              <MiniSessionView
+                onExpand={() => setTab("training")}
+                onEnd={handleMiniEnd}
+                endConfirm={endConfirm}
+              />
+            )}
             <nav className="nav">
               {NAV.map(n=>(
                 <button key={n.id} className={`ni ${tab===n.id?"on":""}`} onClick={()=>setTab(n.id)}>
                   <NavIcon id={n.id}/>
-                  <span className="ni-label">{n.label}</span>
+                  {n.id === "training" && session && tab !== "training"
+                    ? <span className="ni-label" style={{color:"var(--accent)"}}>● Active</span>
+                    : <span className="ni-label">{n.label}</span>
+                  }
                 </button>
               ))}
             </nav>
@@ -5050,5 +5697,13 @@ export default function App() {
         )}
       </div>
     </>
+  );
+}
+
+export default function App() {
+  return (
+    <SessionProvider>
+      <AppInner />
+    </SessionProvider>
   );
 }
