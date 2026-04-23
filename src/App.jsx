@@ -311,15 +311,14 @@ body{background:var(--bg);color:var(--text);font-family:'Inter',sans-serif;-webk
 .irow{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
 
 /* NAV */
-.nav{position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:430px;background:var(--surface);border-top:1px solid var(--border);padding:8px 0 20px;display:flex;justify-content:space-around;z-index:100;}
-.ni{display:flex;flex-direction:column;align-items:center;gap:4px;cursor:pointer;padding:4px 12px;border:none;background:transparent;transition:color .2s,transform .12s cubic-bezier(.22,1,.36,1);color:var(--muted);position:relative;}
-.ni::after{content:'';position:absolute;top:0;left:25%;right:25%;height:2px;background:var(--accent);border-radius:0 0 2px 2px;transform:scaleX(0);transition:transform .22s cubic-bezier(.22,1,.36,1);transform-origin:center;}
-.ni.on::after{transform:scaleX(1);}
+.nav{position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:430px;padding:10px 14px 26px;z-index:100;background:transparent;}
+.nav-pill{position:relative;display:flex;background:rgba(18,18,20,0.82);border-radius:16px;backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);box-shadow:inset 1px 1px 4px rgba(255,255,255,0.1),inset -1px -1px 6px rgba(0,0,0,0.4),0 4px 24px rgba(0,0,0,0.45);overflow:hidden;border:1px solid rgba(255,255,255,0.07);}
+.nav-glider{position:absolute;top:0;bottom:0;border-radius:14px;z-index:1;transition:transform .5s cubic-bezier(.37,1.95,.66,.56);background:linear-gradient(135deg,rgba(245,166,35,0.22),rgba(245,166,35,0.48));box-shadow:0 0 18px rgba(245,166,35,0.3),inset 0 0 10px rgba(255,210,100,0.15);}
+.ni{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;cursor:pointer;padding:10px 4px;border:none;background:transparent;color:rgba(255,255,255,0.38);position:relative;z-index:2;transition:color .3s ease;}
 .ni:active{transform:scale(0.9);}
-.ni svg{width:22px;height:22px;transition:color .2s;}
-.ni-label{font-size:10px;color:var(--muted);transition:color .2s;font-weight:500;letter-spacing:.1px;}
-.ni.on{color:var(--accent);}
-.ni.on .ni-label{color:var(--accent);}
+.ni svg{width:20px;height:20px;}
+.ni-label{font-size:9px;font-weight:600;letter-spacing:.3px;color:inherit;transition:color .3s;}
+.ni.on{color:#fff;}
 
 /* SCREENS */
 .screen{padding:0 0 96px;min-height:100vh;animation:screenIn .28s cubic-bezier(.22,1,.36,1);}
@@ -421,6 +420,17 @@ body{background:var(--bg);color:var(--text);font-family:'Inter',sans-serif;-webk
 
 /* NUTRITION */
 .mcard{margin:0 24px 12px;background:var(--card);border:2px solid var(--brutal);border-radius:10px;padding:16px 18px;box-shadow:4px 4px 0 var(--brutal);}
+.nut-card{margin:0 24px 14px;background:var(--card);border:2px solid var(--brutal);border-radius:10px;padding:18px 20px;box-shadow:4px 4px 0 var(--brutal);}
+.nut-mode-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:0 24px 16px;}
+.nut-mode-card{padding:14px 16px;background:var(--card);border:2px solid var(--brutal);border-radius:10px;box-shadow:4px 4px 0 var(--brutal);cursor:pointer;transition:box-shadow .15s,transform .15s;}
+.nut-mode-card.active{border-color:var(--accent);box-shadow:4px 4px 0 var(--accent);}
+.nut-mode-card:hover{transform:translate(-2px,-2px);box-shadow:6px 6px 0 var(--brutal);}
+.nut-mode-card.active:hover{box-shadow:6px 6px 0 var(--accent);}
+.nut-mode-tag{font-size:10px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--muted);margin-bottom:4px;}
+.nut-mode-card.active .nut-mode-tag{color:var(--accent);}
+.nut-mode-label{font-family:'Bebas Neue',sans-serif;font-size:14px;letter-spacing:1px;color:var(--text);}
+.nut-mode-card.active .nut-mode-label{color:var(--accent);}
+.nut-mode-desc{font-size:10px;color:var(--muted);margin-top:2px;}
 .mc-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;}
 .mc-time{font-size:11px;font-weight:600;letter-spacing:.3px;color:var(--accent);}
 .mc-name{font-size:15px;font-weight:600;margin-top:2px;color:var(--text);}
@@ -4017,7 +4027,7 @@ function NutritionScreen({ user }) {
 
       {/* TARGET EDITOR */}
       {showTargetEditor && tempTargets && (
-        <div style={{ margin: "0 24px 16px", background: C.surface, border: `1px solid ${C.accent}30`, borderRadius: 14, padding: 18, animation: "slideUp .3s ease" }}>
+        <div className="nut-card" style={{animation:"slideUp .3s ease"}}>
           <div style={{ fontSize: 10, letterSpacing: 2, textTransform: "uppercase", color: C.accent, marginBottom: 14 }}>
             ● Daily Macro Targets
             {targets.source && <span style={{ color: C.muted, marginLeft: 8 }}>auto-set from {targets.source}</span>}
@@ -4039,30 +4049,26 @@ function NutritionScreen({ user }) {
               </div>
             ))}
           </div>
-          <button onClick={handleSaveTargets}
-            style={{ width: "100%", padding: 12, background: C.accent, color: "#080A0C", border: "none", borderRadius: 10, fontFamily: "'Bebas Neue',sans-serif", fontSize: 16, letterSpacing: 2, cursor: "pointer" }}>
-            SAVE TARGETS
-          </button>
+          <CubeButton onClick={handleSaveTargets} style={{width:"100%"}}>SAVE TARGETS</CubeButton>
         </div>
       )}
 
       {/* MODE TOGGLE */}
-      <div style={{ margin: "0 24px 18px", display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
+      <div className="nut-mode-grid">
         {[
-          { id: "track", icon: "log", label: "Track Mode", desc: "Log your own meals" },
-          { id: "plan", icon: "plan", label: "Meal Plan", desc: "Follow app plan" },
+          { id: "track", tag: "LOG", label: "Track Mode", desc: "Log your own meals" },
+          { id: "plan",  tag: "PLAN", label: "Meal Plan",  desc: "Follow app plan" },
         ].map(m => (
-          <div key={m.id} onClick={() => setMode(m.id)}
-            style={{ padding: "12px 14px", background: mode === m.id ? `${C.green}10` : C.surface, border: `2px solid ${mode === m.id ? C.green : C.border}`, borderRadius: 12, cursor: "pointer", transition: "all .2s" }}>
-            <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: 1, color: mode === m.id ? C.green : C.muted, marginBottom: 4, textTransform: "uppercase" }}>{m.id === "track" ? "LOG" : "PLAN"}</div>
-            <div style={{ fontFamily: "'Bebas Neue',sans-serif", fontSize: 13, letterSpacing: 1, color: mode === m.id ? C.green : C.text }}>{m.label}</div>
-            <div style={{ fontSize: 10, color: C.muted, marginTop: 1 }}>{m.desc}</div>
+          <div key={m.id} onClick={() => setMode(m.id)} className={`nut-mode-card${mode===m.id?" active":""}`}>
+            <div className="nut-mode-tag">{m.tag}</div>
+            <div className="nut-mode-label">{m.label}</div>
+            <div className="nut-mode-desc">{m.desc}</div>
           </div>
         ))}
       </div>
 
       {/* DAILY PROGRESS RING + SUMMARY */}
-      <div style={{ margin: "0 24px 16px", background: C.surface, border: `1px solid ${C.border}`, borderRadius: 16, padding: 20 }}>
+      <div className="nut-card">
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 14 }}>
           <div style={{ fontSize: 10, letterSpacing: 2, textTransform: "uppercase", color: C.muted }}>● Today's Intake vs Target</div>
           {targets.cyclingActive && (
@@ -4125,11 +4131,11 @@ function NutritionScreen({ user }) {
 
       {/* FEEDBACK MESSAGES */}
       {feedback.length > 0 && (
-        <div style={{ margin: "0 24px 16px" }}>
+        <div style={{ margin: "0 24px 14px" }}>
           {feedback.map((fb, i) => (
-            <div key={i} style={{ display: "flex", gap: 10, padding: "10px 14px", background: `${fbColors[fb.type] || C.accent}0E`, border: `1px solid ${fbColors[fb.type] || C.accent}30`, borderRadius: 10, marginBottom: 6, alignItems: "flex-start" }}>
-              <span style={{ fontSize: 13, fontWeight: 700, flexShrink: 0, color: fbColors[fb.type] || C.accent, lineHeight: 1.2 }}>{fbIcons[fb.type] || "·"}</span>
-              <span style={{ fontSize: 12, color: C.faint, lineHeight: 1.5 }}>{fb.text}</span>
+            <div key={i} style={{ display:"flex",gap:10,padding:"12px 16px",background:"var(--card)",border:`2px solid ${fbColors[fb.type]||"var(--brutal)"}`,borderRadius:10,boxShadow:`3px 3px 0 ${fbColors[fb.type]||"var(--brutal)"}`,marginBottom:8,alignItems:"flex-start" }}>
+              <span style={{ fontSize:13,fontWeight:700,flexShrink:0,color:fbColors[fb.type]||C.accent,lineHeight:1.2 }}>{fbIcons[fb.type]||"·"}</span>
+              <span style={{ fontSize:12,color:"var(--muted)",lineHeight:1.5 }}>{fb.text}</span>
             </div>
           ))}
         </div>
@@ -4140,10 +4146,7 @@ function NutritionScreen({ user }) {
         <>
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0 24px", marginBottom: 12 }}>
             <div className="stitle" style={{ padding: 0, margin: 0 }}>TODAY'S MEALS</div>
-            <button onClick={() => { setEditingLog(null); setShowLog(true); }}
-              style={{ padding: "8px 18px", background: C.green, border: "none", borderRadius: 10, color: "#080A0C", fontFamily: "'Bebas Neue',sans-serif", fontSize: 14, letterSpacing: 1.5, cursor: "pointer" }}>
-              + LOG MEAL
-            </button>
+            <CubeButton small onClick={() => { setEditingLog(null); setShowLog(true); }}>+ LOG MEAL</CubeButton>
           </div>
 
           {/* RECENT MEALS QUICK-ADD */}
@@ -4184,14 +4187,11 @@ function NutritionScreen({ user }) {
           })()}
 
           {todayLogs.length === 0 ? (
-            <div style={{ margin: "0 24px", padding: "40px 20px", background: C.surface, border: `1px solid ${C.border}`, borderRadius: 16, textAlign: "center" }}>
-              <div style={{ width:48,height:48,borderRadius:12,background:C.up,display:"flex",alignItems:"center",justifyContent:"center",margin:"0 auto 14px",color:C.muted }}><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" style={{width:24,height:24}}><path d="M3 11l19-9-9 19-2-8-8-2z"/></svg></div>
-              <div style={{ fontFamily: "'Bebas Neue',sans-serif", fontSize: 22, letterSpacing: 2, color: C.muted, marginBottom: 8 }}>NO MEALS LOGGED YET</div>
-              <div style={{ fontSize: 13, color: C.muted, lineHeight: 1.6, marginBottom: 20 }}>Log your first meal and AI will calculate your macros automatically. Be as specific or as general as you want.</div>
-              <button onClick={() => { setEditingLog(null); setShowLog(true); }}
-                style={{ padding: "14px 32px", background: C.green, border: "none", borderRadius: 12, color: "#080A0C", fontFamily: "'Bebas Neue',sans-serif", fontSize: 16, letterSpacing: 2, cursor: "pointer" }}>
-                LOG FIRST MEAL ▶
-              </button>
+            <div className="nut-card" style={{textAlign:"center",padding:"40px 20px"}}>
+              <div style={{ width:48,height:48,borderRadius:8,background:"var(--up)",border:"2px solid var(--brutal)",display:"flex",alignItems:"center",justifyContent:"center",margin:"0 auto 16px",color:"var(--muted)" }}><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" style={{width:24,height:24}}><path d="M3 11l19-9-9 19-2-8-8-2z"/></svg></div>
+              <div style={{ fontFamily:"'Bebas Neue',sans-serif",fontSize:22,letterSpacing:2,color:"var(--text)",marginBottom:8 }}>NO MEALS LOGGED YET</div>
+              <div style={{ fontSize:13,color:"var(--muted)",lineHeight:1.6,marginBottom:20 }}>Log your first meal and AI will calculate your macros automatically. Be as specific or as general as you want.</div>
+              <CubeButton onClick={() => { setEditingLog(null); setShowLog(true); }}>LOG FIRST MEAL ▶</CubeButton>
             </div>
           ) : (
             todayLogs.map((log, i) => (
@@ -4254,7 +4254,7 @@ function NutritionScreen({ user }) {
             const days = [...new Set(last7.map(l => l.date))].length;
             const totW = last7.reduce((a, l) => ({ p: a.p + (l.totals?.protein_g || 0), c: a.c + (l.totals?.carbs_g || 0), f: a.f + (l.totals?.fat_g || 0), cal: a.cal + (l.totals?.calories || 0) }), { p: 0, c: 0, f: 0, cal: 0 });
             return (
-              <div style={{ margin: "16px 24px", background: C.surface, border: `1px solid ${C.border}`, borderRadius: 14, padding: 16 }}>
+              <div className="nut-card" style={{marginTop:4}}>
                 <div style={{ fontSize: 10, letterSpacing: 2, textTransform: "uppercase", color: C.muted, marginBottom: 10 }}>7-Day Averages ({days} days logged)</div>
                 <div style={{ display: "grid", gridTemplateColumns: "repeat(4,1fr)", gap: 8, textAlign: "center" }}>
                   {[
@@ -4280,7 +4280,7 @@ function NutritionScreen({ user }) {
       {mode === "plan" && (
         <>
           <div className="stitle">STRUCTURED MEAL PLAN</div>
-          <div style={{ margin: "0 24px 12px", padding: "10px 14px", background: `${C.blue}0E`, border: `1px solid ${C.blue}30`, borderRadius: 10, fontSize: 12, color: C.faint }}>
+          <div className="nut-card" style={{fontSize:12,color:"var(--muted)"}}>
             This plan is pre-calculated to your macro targets. Switch to Track Mode to log your actual meals.
           </div>
           {PLAN_MEALS.map((meal, i) => (
@@ -5772,15 +5772,21 @@ function AppInner() {
               />
             )}
             <nav className="nav">
-              {NAV.map(n=>(
-                <button key={n.id} className={`ni ${tab===n.id?"on":""}`} onClick={()=>setTab(n.id)}>
-                  <NavIcon id={n.id}/>
-                  {n.id === "training" && session && tab !== "training"
-                    ? <span className="ni-label" style={{color:"var(--accent)"}}>● Active</span>
-                    : <span className="ni-label">{n.label}</span>
-                  }
-                </button>
-              ))}
+              <div className="nav-pill">
+                <div className="nav-glider" style={{
+                  width:`${100/NAV.length}%`,
+                  transform:`translateX(${NAV.findIndex(n=>n.id===tab)*100}%)`,
+                }}/>
+                {NAV.map(n=>(
+                  <button key={n.id} className={`ni ${tab===n.id?"on":""}`} onClick={()=>setTab(n.id)}>
+                    <NavIcon id={n.id}/>
+                    {n.id === "training" && session && tab !== "training"
+                      ? <span className="ni-label" style={{color:"var(--accent)"}}>● Active</span>
+                      : <span className="ni-label">{n.label}</span>
+                    }
+                  </button>
+                ))}
+              </div>
             </nav>
           </>
         )}
