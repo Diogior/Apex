@@ -348,6 +348,12 @@ body{background:var(--bg);color:var(--text);font-family:'Inter',sans-serif;-webk
 .wt-change.pos{background:rgba(26,158,88,.1);color:var(--green);}
 .wt-change.neg{background:rgba(58,106,212,.1);color:var(--blue);}
 .wt-change.flat{background:var(--up);color:var(--muted);}
+.goal-rate{margin-top:12px;padding-top:12px;border-top:1px solid var(--border);}
+.goal-rate-label{font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--muted);margin-bottom:4px;font-weight:600;}
+.goal-rate-row{display:flex;align-items:baseline;gap:10px;}
+.goal-rate-val{font-family:'Bebas Neue',sans-serif;font-size:22px;letter-spacing:.5px;color:var(--text);}
+.goal-rate-status{font-size:10px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;}
+.goal-rate-target{font-size:10px;color:var(--faint);margin-top:3px;}
 .wt-history{display:flex;gap:6px;align-items:flex-end;height:40px;margin-bottom:14px;}
 .wt-bar-wrap{display:flex;flex-direction:column;align-items:center;flex:1;}
 .wt-bar{border-radius:3px 3px 0 0;min-height:4px;transition:height .5s ease;width:100%;max-width:18px;}
@@ -361,6 +367,23 @@ body{background:var(--bg);color:var(--text);font-family:'Inter',sans-serif;-webk
 .wt-log-btn:disabled{opacity:.35;cursor:not-allowed;}
 .wt-log-btn.saved{background:var(--green);}
 .wt-log-btn:not(:disabled):hover{box-shadow:inset 0 0.3rem 0.5rem rgba(255,255,255,0.45),inset 0 -0.1rem 0.3rem rgba(0,0,0,0.5),inset 0 -0.35rem 0.7rem rgba(255,255,255,0.6),0 0.6rem 0.8rem -0.4rem rgba(0,0,0,0.7);}
+/* ── CUBE BUTTON ───────────────────────────────────────────────────────────── */
+.cube-btn{display:inline-block;padding:0.6em 1.4em;background:transparent;border:0;outline:none;color:var(--accent);letter-spacing:0.12em;font-family:'Bebas Neue',monospace;font-size:15px;font-weight:bold;cursor:pointer;position:relative;transition:all .5s;z-index:1;}
+.cube-btn.sm{font-size:11px;padding:0.45em 1em;letter-spacing:0.1em;}
+.cube-btn:disabled{opacity:.38;cursor:not-allowed;pointer-events:none;}
+.cube-top{position:absolute;height:8px;background:var(--accent);bottom:100%;left:5px;right:-5px;transform:skew(-45deg,0);margin:0;transition:all .4s;}
+.cube-right{position:absolute;background:var(--accent);top:-5px;z-index:0;bottom:5px;width:8px;left:100%;transform:skew(0,-45deg);transition:all .4s;}
+.cube-face{position:absolute;left:0;bottom:0;top:0;right:0;background:var(--accent);transition:all .4s;}
+.cube-inner{background:#1A1917;position:absolute;left:2px;right:2px;top:2px;bottom:2px;transition:all .4s;}
+.cube-text{position:relative;transition:all .4s;}
+.cube-btn:not(:disabled):hover .cube-inner{background:var(--accent);}
+.cube-btn:not(:disabled):hover .cube-text{color:#1A1917;}
+.cube-btn:not(:disabled):hover .cube-right,.cube-btn:not(:disabled):hover .cube-face,.cube-btn:not(:disabled):hover .cube-top{background:#1A1917;}
+.cube-btn.saved .cube-inner{background:var(--green);}
+.cube-btn.saved{color:var(--green);}
+.cube-btn.saved .cube-top,.cube-btn.saved .cube-right,.cube-btn.saved .cube-face{background:var(--green);}
+.cube-btn:active:not(:disabled){animation:cubeBounce .1s linear;}
+@keyframes cubeBounce{50%{transform:scale(0.9);}}
 /* Secondary stat strip */
 .stat-strip{display:grid;grid-template-columns:1fr 1fr 1fr;gap:1px;margin:0 24px 20px;background:var(--brutal);border-radius:10px;overflow:hidden;border:2px solid var(--brutal);box-shadow:4px 4px 0 var(--brutal);}
 .stat-cell{background:var(--card);padding:14px 14px 12px;}
@@ -1116,6 +1139,32 @@ function analyzeWeightTrend(weightLog) {
   };
 }
 
+function getGoalRateInfo(goal) {
+  const map = {
+    cut:         { label:"RATE OF LOSS", min:-1.0,  max:-0.5,  dir:-1 },
+    bulk:        { label:"RATE OF GAIN", min: 0.25, max: 0.75, dir: 1 },
+    recomp:      { label:"RECOMP RATE",  min:-0.25, max: 0.25, dir: 0 },
+    maintenance: { label:"WEIGHT RATE",  min:-0.25, max: 0.25, dir: 0 },
+    contest:     { label:"RATE OF LOSS", min:-1.5,  max:-0.75, dir:-1 },
+  };
+  return map[goal] || null;
+}
+
+function classifyRate(rate, info) {
+  if (info.dir === -1) {
+    if (rate >= info.max) return { label:"Too slow", key:"red" };
+    if (rate <= info.min) return { label:"Too fast", key:"accent" };
+    return { label:"On track", key:"green" };
+  }
+  if (info.dir === 1) {
+    if (rate <= info.min) return { label:"Too slow", key:"muted" };
+    if (rate >= info.max) return { label:"Too fast", key:"red" };
+    return { label:"On track", key:"green" };
+  }
+  if (Math.abs(rate) <= 0.25) return { label:"Stable", key:"green" };
+  return rate > 0 ? { label:"Gaining", key:"accent" } : { label:"Losing", key:"muted" };
+}
+
 // ── SECTION 5: E1RM & STRENGTH TREND ─────────────────────────────────────────
 
 function computeE1RM(weight, reps) {
@@ -1334,6 +1383,25 @@ function MacroRing({protein,carbs,fat,calories}) {
         ))}
       </div>
     </div>
+  );
+}
+
+// ─── CUBE BUTTON ──────────────────────────────────────────────────────────────
+
+function CubeButton({ onClick, disabled, children, small, saved, style, className = "" }) {
+  return (
+    <button
+      type="button"
+      className={`cube-btn${small ? " sm" : ""}${saved ? " saved" : ""} ${className}`}
+      onClick={onClick}
+      disabled={disabled}
+      style={style}
+    >
+      <div className="cube-top"><div className="cube-inner" /></div>
+      <div className="cube-right"><div className="cube-inner" /></div>
+      <div className="cube-face"><div className="cube-inner" /></div>
+      <div className="cube-text">{children}</div>
+    </button>
   );
 }
 
@@ -2885,7 +2953,7 @@ function TrainingScreen({ user, onNavigate }) {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          model: "claude-sonnet-4-20250514",
+          model: "claude-haiku-4-5-20251001",
           max_tokens: 320,
           system: `You are APEX, an elite fitness AI coach. Deliver concise post-session feedback — direct, specific, and motivating. Max 3 short paragraphs. No fluff. Use real training terminology.`,
           messages: [{
@@ -3503,7 +3571,7 @@ async function parseMacrosWithAI(rawInput, mealName) {
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: "claude-sonnet-4-20250514",
+        model: "claude-haiku-4-5-20251001",
         max_tokens: 1000,
         messages: [{ role: "user", content: AI_PROMPT(rawInput, mealName) }],
       }),
@@ -4638,7 +4706,7 @@ function CoachScreen({user}) {
         method:"POST",
         headers:{"Content-Type":"application/json"},
         body:JSON.stringify({
-          model:"claude-sonnet-4-20250514",
+          model:"claude-haiku-4-5-20251001",
           max_tokens:1200,
           system:`You are APEX, an elite AI fitness and bodybuilding coach with deep expertise in visual physique assessment. Direct, knowledgeable, motivating — like a seasoned coach who's guided athletes from beginner to contest stage.
 
@@ -5207,6 +5275,26 @@ function DashboardScreen({ user, weightLog, onLogWeight, onDeleteWeight, onEditW
                 {changeVal > 0 ? "↑" : changeVal < 0 ? "↓" : "→"} {changeLabel}
               </div>
             )}
+            {weightTrend.dataPoints >= 3 && user.goal && (() => {
+              const info = getGoalRateInfo(user.goal);
+              if (!info) return null;
+              const rate = weightTrend.rate;
+              const status = classifyRate(rate, info);
+              const rateStr = rate > 0 ? `+${Math.abs(rate).toFixed(1)}` : `-${Math.abs(rate).toFixed(1)}`;
+              const targetStr = info.dir === 0
+                ? "±0.25 lbs / wk"
+                : `${info.min} to ${info.max > 0 ? "+" : ""}${info.max} lbs / wk`;
+              return (
+                <div className="goal-rate">
+                  <div className="goal-rate-label">{info.label}</div>
+                  <div className="goal-rate-row">
+                    <span className="goal-rate-val">{rateStr} lbs/wk</span>
+                    <span className="goal-rate-status" style={{color:`var(--${status.key})`}}>● {status.label}</span>
+                  </div>
+                  <div className="goal-rate-target">Target {targetStr}</div>
+                </div>
+              );
+            })()}
           </div>
           {/* Sparkline bars */}
           {recentWeights.length >= 2 && (
@@ -5239,10 +5327,13 @@ function DashboardScreen({ user, weightLog, onLogWeight, onDeleteWeight, onEditW
             />
             <span className="wt-input-unit">lbs</span>
           </div>
-          <button onClick={handleLog} disabled={!inputVal || parseFloat(inputVal) < 50}
-            className={`wt-log-btn${justLogged?" saved":""}`}>
+          <CubeButton
+            onClick={handleLog}
+            disabled={!inputVal || parseFloat(inputVal) < 50}
+            saved={justLogged}
+          >
             {justLogged ? "SAVED" : "LOG"}
-          </button>
+          </CubeButton>
         </div>
         {inputVal && parseFloat(inputVal) < 50 && (
           <div style={{fontSize:11,color:"var(--red)",marginTop:6,paddingLeft:2}}>Enter a valid weight (50 – 500 lbs)</div>
@@ -5431,11 +5522,9 @@ function DashboardScreen({ user, weightLog, onLogWeight, onDeleteWeight, onEditW
       {/* ── PROTOCOL INTELLIGENCE ───────────────────────────────────────────── */}
       <div style={{margin:"0 24px 8px",display:"flex",alignItems:"center",justifyContent:"space-between"}}>
         <div style={{fontSize:10,fontWeight:600,letterSpacing:2,textTransform:"uppercase",color:C.muted}}>Protocol Intelligence</div>
-        <button onClick={()=>setShowCheckIn(true)} style={{background:"none",border:`1px solid ${C.border}`,borderRadius:6,fontSize:10,color:C.muted,padding:"3px 10px",cursor:"pointer",transition:"all .15s",fontFamily:"'Inter',sans-serif"}}
-          onMouseOver={e=>e.currentTarget.style.borderColor=C.accent}
-          onMouseOut={e=>e.currentTarget.style.borderColor=C.border}>
+        <CubeButton small onClick={()=>setShowCheckIn(true)}>
           {checkIn ? "Update Check-in" : "Weekly Check-in"}
-        </button>
+        </CubeButton>
       </div>
 
       {/* Body Comp + TDEE row */}
@@ -5562,7 +5651,7 @@ function DashboardScreen({ user, weightLog, onLogWeight, onDeleteWeight, onEditW
                 </div>
               </div>
             ))}
-            <button className="btn btn-gold" onClick={saveCheckIn} style={{marginTop:4}}>SAVE CHECK-IN</button>
+            <CubeButton onClick={saveCheckIn} style={{marginTop:4,width:"100%"}}>SAVE CHECK-IN</CubeButton>
             {checkIn && <button onClick={()=>setShowCheckIn(false)} style={{width:"100%",marginTop:10,background:"none",border:"none",color:C.muted,fontSize:13,cursor:"pointer",padding:6,fontFamily:"'Inter',sans-serif"}}>Dismiss</button>}
           </div>
         </div>
