@@ -1561,7 +1561,7 @@ function OnboardScreen({onComplete}) {
                 </div>
               ))}
             </div>
-            <button className="ob2-cta" onClick={() => setStep(1)}>BEGIN ASSESSMENT ▶</button>
+            <CubeButton onClick={() => setStep(1)} style={{width:"100%"}}>BEGIN ASSESSMENT ▶</CubeButton>
           </div>
         </div>
       )}
@@ -1592,7 +1592,7 @@ function OnboardScreen({onComplete}) {
               </button>
             ))}
           </div>
-          <button className="ob2-cta" disabled={!canProceed()} onClick={() => setStep(2)}>CONTINUE</button>
+          <CubeButton disabled={!canProceed()} onClick={() => setStep(2)} style={{width:"100%"}}>CONTINUE</CubeButton>
         </div>
       )}
 
@@ -1612,7 +1612,7 @@ function OnboardScreen({onComplete}) {
               </div>
             ))}
           </div>
-          <button className="ob2-cta" disabled={!canProceed()} onClick={() => setStep(3)}>CONTINUE</button>
+          <CubeButton disabled={!canProceed()} onClick={() => setStep(3)} style={{width:"100%"}}>CONTINUE</CubeButton>
         </div>
       )}
 
@@ -1663,9 +1663,7 @@ function OnboardScreen({onComplete}) {
               </select>
             </div>
           </div>
-          <button className="ob2-cta" disabled={!canProceed()} onClick={() => onComplete({name,weight,height,age,sex,goal,level,activity})}>
-            BUILD MY PROGRAM ▶
-          </button>
+          <CubeButton disabled={!canProceed()} onClick={() => onComplete({name,weight,height,age,sex,goal,level,activity})} style={{width:"100%"}}>BUILD MY PROGRAM ▶</CubeButton>
         </div>
       )}
 
@@ -3045,7 +3043,7 @@ Give post-session feedback: what was solid, anything to flag, and one specific f
           ))}
         </div>
 
-        <button className="btn btn-gold" onClick={handleSplitSetup}>GENERATE MY PROGRAM ▶</button>
+        <CubeButton onClick={handleSplitSetup} style={{width:"100%",textAlign:"center"}}>GENERATE MY PROGRAM ▶</CubeButton>
       </div>
     </div>
   );
@@ -3373,9 +3371,7 @@ Give post-session feedback: what was solid, anything to flag, and one specific f
             </div>
           ) : (
             <div style={{margin:"8px 24px 0",display:"grid",gridTemplateColumns:"1fr auto",gap:10}}>
-              <button className="btn btn-gold" onClick={()=>setShowPath(true)}>
-                START {currentDay.tag.toUpperCase()} ▶
-              </button>
+              <CubeButton onClick={()=>setShowPath(true)}>START {currentDay.tag.toUpperCase()} ▶</CubeButton>
               <button onClick={()=>startSession("custom",{exercises:[],loggedSets:{}})}
                 style={{padding:"0 16px",background:`${C.blue}15`,border:`1px solid ${C.blue}50`,borderRadius:12,color:C.blue,fontFamily:"'Bebas Neue',sans-serif",fontSize:14,letterSpacing:1,cursor:"pointer",whiteSpace:"nowrap"}}>
                 + CUSTOM
