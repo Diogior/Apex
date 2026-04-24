@@ -1504,12 +1504,15 @@ function AuthScreen() {
   const [loading, setLoading] = useState(false);
 
   const ERR = {
-    "auth/email-already-in-use": "An account with this email already exists.",
-    "auth/user-not-found":       "No account found with this email.",
-    "auth/wrong-password":       "Incorrect password.",
-    "auth/invalid-email":        "Invalid email address.",
-    "auth/invalid-credential":   "Incorrect email or password.",
-    "auth/weak-password":        "Password must be at least 6 characters.",
+    "auth/email-already-in-use":  "An account with this email already exists.",
+    "auth/user-not-found":        "No account found with this email.",
+    "auth/wrong-password":        "Incorrect password.",
+    "auth/invalid-email":         "Invalid email address.",
+    "auth/invalid-credential":    "Incorrect email or password.",
+    "auth/weak-password":         "Password must be at least 6 characters.",
+    "auth/unauthorized-domain":   "This domain isn't authorized in Firebase. Add it under Authentication → Settings → Authorized Domains.",
+    "auth/network-request-failed":"Network error — check your connection and try again.",
+    "auth/too-many-requests":     "Too many attempts. Wait a minute and try again.",
   };
 
   const submit = async () => {
@@ -1521,7 +1524,7 @@ function AuthScreen() {
       if (mode === "signup") await createUserWithEmailAndPassword(auth, email, password);
       else                   await signInWithEmailAndPassword(auth, email, password);
     } catch (e) {
-      setError(ERR[e.code] || "Something went wrong. Try again.");
+      setError(ERR[e.code] || `Error: ${e.code || e.message}`);
     } finally {
       setLoading(false);
     }
