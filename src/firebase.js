@@ -1,4 +1,4 @@
-import { initializeApp } from "firebase/app";
+import { initializeApp, getApps } from "firebase/app";
 import { getAuth } from "firebase/auth";
 import { getFirestore } from "firebase/firestore";
 
@@ -11,6 +11,11 @@ const firebaseConfig = {
   appId:             import.meta.env.VITE_FB_APP_ID,
 };
 
-const app = initializeApp(firebaseConfig);
+// Prevent crash if env vars are missing (e.g. Vercel deployment without vars set)
+if (!firebaseConfig.apiKey) {
+  console.error("Firebase env vars missing. Add VITE_FB_* to your environment.");
+}
+
+const app = getApps().length ? getApps()[0] : initializeApp(firebaseConfig);
 export const auth = getAuth(app);
 export const db   = getFirestore(app);
