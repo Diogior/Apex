@@ -1,4 +1,11 @@
 import { useState, useRef, useEffect, useCallback, createContext, useContext } from "react";
+import { auth } from "./firebase.js";
+import {
+  onAuthStateChanged,
+  signOut as fbSignOut,
+  createUserWithEmailAndPassword,
+  signInWithEmailAndPassword,
+} from "firebase/auth";
 
 // Canvas-only color tokens — CSS vars can't be read by the Canvas 2D API.
 // Call getCanvasC() inside useEffect (after mount) to read the live system theme.
@@ -57,6 +64,30 @@ const styles = `
 *{box-sizing:border-box;margin:0;padding:0;}
 body{background:var(--bg);color:var(--text);font-family:'Inter',sans-serif;-webkit-font-smoothing:antialiased;overflow-x:hidden;}
 .app{max-width:430px;min-height:100vh;margin:0 auto;background:var(--bg);position:relative;}
+
+/* ─── AUTH ──────────────────────────────────────────────────────────────────── */
+.auth-screen{min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;background:var(--bg);padding:24px;overflow:hidden;}
+.auth-wordmark{font-family:'Bebas Neue',sans-serif;font-size:52px;letter-spacing:2px;color:var(--text);line-height:1;margin-bottom:8px;position:relative;z-index:1;}
+.auth-eyebrow{font-size:10px;letter-spacing:3px;text-transform:uppercase;color:var(--accent);font-weight:600;margin-bottom:28px;position:relative;z-index:1;}
+.auth-card{width:100%;max-width:360px;background:var(--card);border:2px solid var(--brutal);border-radius:6px;box-shadow:6px 6px 0 var(--brutal);padding:28px 24px 24px;display:flex;flex-direction:column;gap:18px;}
+.auth-card-title{font-weight:900;font-size:18px;color:var(--text);line-height:1.2;}
+.auth-card-title span{display:block;font-weight:500;font-size:14px;color:var(--muted);margin-top:3px;}
+.auth-toggle{display:grid;grid-template-columns:1fr 1fr;border:2px solid var(--brutal);border-radius:4px;overflow:hidden;box-shadow:3px 3px 0 var(--brutal);}
+.auth-tab{padding:10px;background:var(--bg);border:none;cursor:pointer;font-family:'Bebas Neue',sans-serif;font-size:13px;letter-spacing:1.5px;color:var(--muted);transition:all .15s;}
+.auth-tab:first-child{border-right:2px solid var(--brutal);}
+.auth-tab.active{background:var(--brutal);color:var(--card);}
+.auth-input{width:100%;height:46px;border-radius:4px;border:2px solid var(--brutal);background:var(--bg);box-shadow:3px 3px 0 var(--brutal);font-size:14px;font-weight:600;color:var(--text);padding:0 14px;outline:none;font-family:'Inter',sans-serif;transition:border-color .15s,box-shadow .15s;}
+.auth-input::placeholder{color:var(--muted);font-weight:400;}
+.auth-input:focus{border-color:var(--accent);box-shadow:3px 3px 0 var(--accent);}
+.auth-field{display:flex;flex-direction:column;gap:6px;}
+.auth-label{font-size:11px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--brutal);}
+.auth-submit{width:100%;height:46px;border-radius:4px;border:2px solid var(--brutal);background:var(--bg);box-shadow:4px 4px 0 var(--brutal);font-size:15px;font-weight:700;color:var(--text);cursor:pointer;font-family:'Bebas Neue',sans-serif;letter-spacing:2px;transition:transform .1s,box-shadow .1s;margin-top:8px;}
+.auth-submit:hover{transform:translate(-2px,-2px);box-shadow:6px 6px 0 var(--brutal);}
+.auth-submit:active{transform:translate(3px,3px);box-shadow:0 0 0 var(--brutal);}
+.auth-submit:disabled{opacity:.4;cursor:not-allowed;transform:none;}
+.auth-error{padding:10px 14px;background:var(--bg);border:2px solid #e53e3e;border-radius:4px;box-shadow:3px 3px 0 #e53e3e;font-size:12px;font-weight:600;color:#e53e3e;line-height:1.5;}
+.auth-loading{min-height:100vh;display:flex;align-items:center;justify-content:center;background:var(--bg);}
+.auth-loading-text{font-family:'Bebas Neue',sans-serif;font-size:18px;letter-spacing:3px;color:var(--muted);animation:pulse 2s infinite;}
 
 /* ─── ONBOARD v2 — EDITORIAL REDESIGN ─────────────────────────────────────── */
 .ob2{min-height:100vh;display:flex;flex-direction:column;background:var(--bg);overflow:hidden;}
@@ -145,18 +176,28 @@ body{background:var(--bg);color:var(--text);font-family:'Inter',sans-serif;-webk
   padding:20px 0 28px;
 }
 .ob2-step-counter{
-  font-size:10px;letter-spacing:2px;
-  text-transform:uppercase;
-  color:var(--muted);font-weight:600;
+  font-family:'Bebas Neue',sans-serif;
+  font-size:14px;letter-spacing:2px;
+  color:var(--accent);
+  border:2px solid var(--brutal);
+  border-radius:4px;
+  padding:3px 10px;
+  box-shadow:2px 2px 0 var(--brutal);
 }
 .ob2-back-btn{
-  background:none;border:none;
-  font-size:12px;color:var(--muted);
-  cursor:pointer;padding:4px 0;
-  font-family:'Inter',sans-serif;
-  transition:color .15s;
+  background:var(--card);
+  border:2px solid var(--brutal);
+  border-radius:4px;
+  box-shadow:2px 2px 0 var(--brutal);
+  font-size:11px;font-weight:700;letter-spacing:1px;
+  text-transform:uppercase;
+  color:var(--text);
+  cursor:pointer;padding:5px 12px;
+  font-family:'Bebas Neue',sans-serif;
+  transition:transform .1s,box-shadow .1s;
 }
-.ob2-back-btn:hover{color:var(--text);}
+.ob2-back-btn:hover{transform:translate(-1px,-1px);box-shadow:3px 3px 0 var(--brutal);}
+.ob2-back-btn:active{transform:translate(1px,1px);box-shadow:1px 1px 0 var(--brutal);}
 .ob2-step-h{
   font-family:'Bebas Neue',sans-serif;
   font-size:clamp(38px,11vw,52px);
@@ -168,22 +209,21 @@ body{background:var(--bg);color:var(--text);font-family:'Inter',sans-serif;-webk
 .ob2-step-h em{font-style:normal;color:var(--accent);}
 
 /* Shared: selection list */
-.ob2-list{flex:1;display:flex;flex-direction:column;gap:2px;margin-bottom:28px;overflow-y:auto;}
+.ob2-list{flex:1;display:flex;flex-direction:column;gap:10px;margin-bottom:28px;overflow-y:auto;}
 .ob2-row{
   display:flex;align-items:center;gap:14px;
   padding:14px 16px;
-  border-radius:10px;
+  border-radius:6px;
   cursor:pointer;
-  transition:background .12s, color .12s;
-  background:transparent;
-  border:none;
+  background:var(--card);
+  border:2px solid var(--brutal);
+  box-shadow:4px 4px 0 var(--brutal);
   text-align:left;width:100%;
+  transition:transform .12s,box-shadow .12s,border-color .12s;
 }
-.ob2-row:hover{background:var(--up);}
-.ob2-row.sel{background:var(--text);}
-@media(prefers-color-scheme:dark){
-  .ob2-row.sel{background:var(--up);outline:1.5px solid var(--accent);}
-}
+.ob2-row:hover{transform:translate(-2px,-2px);box-shadow:6px 6px 0 var(--brutal);}
+.ob2-row.sel{border-color:var(--accent);box-shadow:4px 4px 0 var(--accent);}
+.ob2-row.sel:hover{box-shadow:6px 6px 0 var(--accent);}
 .ob2-row-num{
   font-family:'Bebas Neue',sans-serif;
   font-size:18px;
@@ -192,36 +232,30 @@ body{background:var(--bg);color:var(--text);font-family:'Inter',sans-serif;-webk
 }
 .ob2-row-info{flex:1;}
 .ob2-row-name{font-size:14px;font-weight:600;color:var(--text);line-height:1.2;}
-.ob2-row.sel .ob2-row-name{color:#F0EDE8;}
-@media(prefers-color-scheme:dark){
-  .ob2-row.sel .ob2-row-name{color:var(--text);}
-}
 .ob2-row-desc{font-size:11px;color:var(--muted);margin-top:2px;}
-.ob2-row.sel .ob2-row-desc{color:#F0EDE8;opacity:.55;}
-@media(prefers-color-scheme:dark){
-  .ob2-row.sel .ob2-row-desc{color:var(--muted);opacity:1;}
-}
 .ob2-row-check{
-  width:18px;height:18px;border-radius:50%;
-  border:1.5px solid var(--border);
+  width:18px;height:18px;border-radius:3px;
+  border:2px solid var(--brutal);
   flex-shrink:0;display:flex;
   align-items:center;justify-content:center;
   color:var(--accent);
   transition:all .15s;
 }
-.ob2-row.sel .ob2-row-check{background:var(--accent);border-color:var(--accent);color:#fff;}
+.ob2-row.sel .ob2-row-check{background:var(--accent);border-color:var(--accent);color:#1A1917;}
 
-/* Level rows — taller, left bar accent */
+/* Level rows — brutalist card */
 .ob2-level-row{
-  padding:18px 16px 18px 20px;
-  border-radius:10px;
+  padding:18px 20px;
+  border-radius:6px;
   cursor:pointer;
-  border-left:3px solid transparent;
-  transition:all .15s;
-  background:transparent;
+  border:2px solid var(--brutal);
+  box-shadow:4px 4px 0 var(--brutal);
+  background:var(--card);
+  transition:transform .12s,box-shadow .12s,border-color .12s;
 }
-.ob2-level-row:hover{background:var(--up);}
-.ob2-level-row.sel{border-left-color:var(--accent);background:var(--surface);}
+.ob2-level-row:hover{transform:translate(-2px,-2px);box-shadow:6px 6px 0 var(--brutal);}
+.ob2-level-row.sel{border-color:var(--accent);box-shadow:4px 4px 0 var(--accent);}
+.ob2-level-row.sel:hover{box-shadow:6px 6px 0 var(--accent);}
 .ob2-level-name{
   font-family:'Bebas Neue',sans-serif;
   font-size:22px;letter-spacing:.5px;
@@ -232,23 +266,24 @@ body{background:var(--bg);color:var(--text);font-family:'Inter',sans-serif;-webk
 
 /* Profile form */
 .ob2-form{flex:1;display:flex;flex-direction:column;gap:16px;margin-bottom:24px;}
-.ob2-field{display:flex;flex-direction:column;gap:5px;}
+.ob2-field{display:flex;flex-direction:column;gap:6px;}
 .ob2-field-row{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
 .ob2-label{
-  font-size:10px;font-weight:600;
-  letter-spacing:.5px;text-transform:uppercase;
-  color:var(--muted);
+  font-size:11px;font-weight:700;
+  letter-spacing:1.5px;text-transform:uppercase;
+  color:var(--brutal);
 }
 .ob2-input{
-  background:var(--up);
+  background:var(--card);
   border:2px solid var(--brutal);
-  border-radius:10px;
+  border-radius:4px;
+  box-shadow:3px 3px 0 var(--brutal);
   padding:13px 16px;
   color:var(--text);
   font-size:16px;
   font-family:'Inter',sans-serif;
   outline:none;
-  transition:border-color .2s,box-shadow .2s;
+  transition:border-color .15s,box-shadow .15s;
   width:100%;
 }
 .ob2-input:focus{border-color:var(--accent);box-shadow:3px 3px 0 var(--accent);}
@@ -605,7 +640,8 @@ body{background:var(--bg);color:var(--text);font-family:'Inter',sans-serif;-webk
 .btn:not(:disabled):active{transform:translateY(4px);box-shadow:inset 0 0.3rem 0.5rem rgba(255,255,255,0.5),inset 0 -0.1rem 0.3rem rgba(0,0,0,0.8),inset 0 -0.4rem 0.9rem rgba(255,255,255,0.4),0 0.5rem 0.5rem -0.4rem rgba(0,0,0,0.8);}
 .ob2-cta:not(:disabled):active{transform:translateY(4px);box-shadow:inset 0 0.3rem 0.5rem rgba(255,255,255,0.5),inset 0 -0.1rem 0.3rem rgba(0,0,0,0.8),inset 0 -0.4rem 0.9rem rgba(255,255,255,0.4),0 0.5rem 0.5rem -0.4rem rgba(0,0,0,0.8);}
 .wt-log-btn:not(:disabled):active{transform:translateY(3px);box-shadow:inset 0 0.3rem 0.5rem rgba(255,255,255,0.5),inset 0 -0.1rem 0.3rem rgba(0,0,0,0.8),inset 0 -0.35rem 0.7rem rgba(255,255,255,0.3);}
-.ob2-row:active{transform:translate(2px,2px);}
+.ob2-row:active{transform:translate(2px,2px);box-shadow:2px 2px 0 var(--brutal);}
+.ob2-level-row:active{transform:translate(2px,2px);box-shadow:2px 2px 0 var(--brutal);}
 .ecard:active{transform:translate(4px,4px);box-shadow:0 0 0 var(--brutal);}
 
 /* MINI SESSION VIEW */
@@ -1391,6 +1427,112 @@ function MacroRing({protein,carbs,fat,calories}) {
             <span style={{fontFamily:"'JetBrains Mono',monospace",fontSize:13,color:C.text}}>{m.v}</span>
           </div>
         ))}
+      </div>
+    </div>
+  );
+}
+
+// ─── AUTH ─────────────────────────────────────────────────────────────────────
+
+const AuthContext = createContext(null);
+
+function AuthProvider({ children }) {
+  const [authUser, setAuthUser] = useState(undefined); // undefined = loading
+
+  useEffect(() => {
+    return onAuthStateChanged(auth, async (user) => {
+      if (user) {
+        await window.storage.init(user.uid);
+      } else {
+        window.storage.clearUser();
+      }
+      setAuthUser(user ?? null);
+    });
+  }, []);
+
+  const signOut = () => fbSignOut(auth);
+
+  return (
+    <AuthContext.Provider value={{ authUser, signOut }}>
+      {children}
+    </AuthContext.Provider>
+  );
+}
+
+function useAuth() { return useContext(AuthContext); }
+
+function AuthScreen() {
+  const [mode, setMode]       = useState("signin");
+  const [email, setEmail]     = useState("");
+  const [password, setPassword] = useState("");
+  const [confirm, setConfirm] = useState("");
+  const [error, setError]     = useState("");
+  const [loading, setLoading] = useState(false);
+
+  const ERR = {
+    "auth/email-already-in-use": "An account with this email already exists.",
+    "auth/user-not-found":       "No account found with this email.",
+    "auth/wrong-password":       "Incorrect password.",
+    "auth/invalid-email":        "Invalid email address.",
+    "auth/invalid-credential":   "Incorrect email or password.",
+    "auth/weak-password":        "Password must be at least 6 characters.",
+  };
+
+  const submit = async () => {
+    setError("");
+    if (!email || !password) { setError("Email and password are required."); return; }
+    if (mode === "signup" && password !== confirm) { setError("Passwords don't match."); return; }
+    setLoading(true);
+    try {
+      if (mode === "signup") await createUserWithEmailAndPassword(auth, email, password);
+      else                   await signInWithEmailAndPassword(auth, email, password);
+    } catch (e) {
+      setError(ERR[e.code] || "Something went wrong. Try again.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const switchMode = (m) => { setMode(m); setError(""); setConfirm(""); };
+
+  return (
+    <div className="auth-screen">
+      <WaveField fixed opacity={0.18} />
+      <div className="auth-eyebrow">Performance Coaching System</div>
+      <div className="auth-wordmark">APEX</div>
+      <div className="auth-card">
+        <div className="auth-card-title">
+          {mode === "signin" ? "Welcome back," : "Create your account,"}
+          <span>{mode === "signin" ? "sign in to continue" : "start your program today"}</span>
+        </div>
+        <div className="auth-toggle">
+          <button className={`auth-tab${mode==="signin"?" active":""}`} onClick={()=>switchMode("signin")}>SIGN IN</button>
+          <button className={`auth-tab${mode==="signup"?" active":""}`} onClick={()=>switchMode("signup")}>CREATE ACCOUNT</button>
+        </div>
+        <div className="auth-field">
+          <label className="auth-label">Email</label>
+          <input className="auth-input" type="email" placeholder="you@example.com"
+            value={email} onChange={e=>setEmail(e.target.value)}
+            onKeyDown={e=>e.key==="Enter"&&submit()} autoComplete="email" />
+        </div>
+        <div className="auth-field">
+          <label className="auth-label">Password</label>
+          <input className="auth-input" type="password" placeholder="••••••••"
+            value={password} onChange={e=>setPassword(e.target.value)}
+            onKeyDown={e=>e.key==="Enter"&&submit()} autoComplete={mode==="signup"?"new-password":"current-password"} />
+        </div>
+        {mode === "signup" && (
+          <div className="auth-field">
+            <label className="auth-label">Confirm Password</label>
+            <input className="auth-input" type="password" placeholder="••••••••"
+              value={confirm} onChange={e=>setConfirm(e.target.value)}
+              onKeyDown={e=>e.key==="Enter"&&submit()} autoComplete="new-password" />
+          </div>
+        )}
+        {error && <div className="auth-error">{error}</div>}
+        <button className="auth-submit" onClick={submit} disabled={loading}>
+          {loading ? "LOADING..." : mode==="signin" ? "SIGN IN →" : "LET'S GO →"}
+        </button>
       </div>
     </div>
   );
@@ -5078,6 +5220,34 @@ function WeightGraph3D({ logs, ceilingWeight, stageWeight }) {
 
 // ─── DASHBOARD ────────────────────────────────────────────────────────────────
 
+function AvatarMenu({ initial }) {
+  const { signOut } = useAuth();
+  const [open, setOpen] = useState(false);
+  useEffect(() => {
+    if (!open) return;
+    const close = () => setOpen(false);
+    setTimeout(() => window.addEventListener("click", close), 0);
+    return () => window.removeEventListener("click", close);
+  }, [open]);
+  return (
+    <div style={{position:"relative"}}>
+      <div className="sh-avatar" style={{cursor:"pointer"}} onClick={e=>{e.stopPropagation();setOpen(o=>!o);}}>
+        {initial}
+      </div>
+      {open && (
+        <div style={{position:"absolute",top:"calc(100% + 8px)",right:0,background:"var(--card)",border:"2px solid var(--brutal)",borderRadius:6,boxShadow:"4px 4px 0 var(--brutal)",overflow:"hidden",zIndex:200,minWidth:140}}>
+          <button onClick={signOut}
+            style={{width:"100%",padding:"12px 16px",background:"none",border:"none",cursor:"pointer",fontFamily:"'Bebas Neue',sans-serif",fontSize:14,letterSpacing:1.5,color:"var(--text)",textAlign:"left",transition:"background .15s"}}
+            onMouseOver={e=>e.currentTarget.style.background="var(--up)"}
+            onMouseOut={e=>e.currentTarget.style.background="none"}>
+            SIGN OUT
+          </button>
+        </div>
+      )}
+    </div>
+  );
+}
+
 function DashboardScreen({ user, weightLog, onLogWeight, onDeleteWeight, onEditWeight, onNavigate }) {
   const C = useThemeColors();
   const [inputVal, setInputVal] = useState("");
@@ -5254,7 +5424,7 @@ function DashboardScreen({ user, weightLog, onLogWeight, onDeleteWeight, onEditW
           <div className="sh-label">{(()=>{const h=new Date().getHours();return h<11?"Good morning,":h<17?"Good afternoon,":h<21?"Good evening,":"Hey,"})()}</div>
           <div className="sh-title">{user.name.toUpperCase()}</div>
         </div>
-        <div className="sh-avatar">{user.name[0].toUpperCase()}</div>
+        <AvatarMenu initial={user.name[0].toUpperCase()} />
       </div>
 
       {/* BODY WEIGHT — DOMINANT HERO BLOCK */}
@@ -5677,18 +5847,20 @@ function NavIcon({ id }) {
 
 function AppInner() {
   const [user,setUser]=useState(null);
+  const [userLoaded, setUserLoaded]=useState(false);
   const [tab,setTab]=useState("home");
   const { session, endSession } = useSession();
   const [weightLog, setWeightLog] = useState([]);
   const [wtLoaded, setWtLoaded] = useState(false);
 
-  // Load user profile on startup — prevents re-onboarding on every page reload
+  // Load user profile — gate render until resolved so returning users never flash onboarding
   useEffect(() => {
     window.storage.get(USER_KEY).then(r => {
       if (r?.value) {
         try { setUser(JSON.parse(r.value)); } catch {}
       }
-    }).catch(() => {});
+      setUserLoaded(true);
+    }).catch(() => setUserLoaded(true));
   }, []);
 
   useEffect(() => {
@@ -5747,12 +5919,16 @@ function AppInner() {
     else { setEndConfirm(true); setTimeout(() => setEndConfirm(false), 3000); }
   };
 
+  if (!userLoaded) return (
+    <div className="auth-loading">
+      <div className="auth-loading-text">APEX</div>
+    </div>
+  );
+
   return (
-    <>
-      <style>{styles}</style>
-      <div className="app">
-        <WaveField fixed opacity={0.22} />
-        {!user ? <OnboardScreen onComplete={u=>{ window.storage.set(USER_KEY, JSON.stringify(u)).catch(()=>{}); setUser(u); setTab("home"); }}/> : (
+    <div className="app">
+      <WaveField fixed opacity={0.22} />
+      {!user ? <OnboardScreen onComplete={u=>{ window.storage.set(USER_KEY, JSON.stringify(u)).catch(()=>{}); setUser(u); setTab("home"); }}/> : (
           <>
             {tab==="home"&&<DashboardScreen user={enrichedUser} weightLog={weightLog} onLogWeight={handleLogWeight} onDeleteWeight={handleDeleteWeight} onEditWeight={handleEditWeight} onNavigate={setTab}/>}
             {tab==="training"&&<TrainingScreen user={enrichedUser} onNavigate={setTab}/>}
@@ -5786,15 +5962,37 @@ function AppInner() {
             </nav>
           </>
         )}
+    </div>
+  );
+}
+
+function AppWithAuth() {
+  const { authUser } = useAuth();
+
+  if (authUser === undefined) {
+    return (
+      <div className="auth-loading">
+        <div className="auth-loading-text">APEX</div>
       </div>
-    </>
+    );
+  }
+
+  if (!authUser) return <AuthScreen />;
+
+  return (
+    <SessionProvider>
+      <AppInner />
+    </SessionProvider>
   );
 }
 
 export default function App() {
   return (
-    <SessionProvider>
-      <AppInner />
-    </SessionProvider>
+    <>
+      <style>{styles}</style>
+      <AuthProvider>
+        <AppWithAuth />
+      </AuthProvider>
+    </>
   );
 }
