@@ -565,6 +565,39 @@ body{background:var(--bg);color:var(--text);font-family:'Inter',sans-serif;-webk
 .knum-pair{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:0 24px 14px;}
 .knum-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin:0 24px 14px;}
 .knum-mini{background:var(--card);border-radius:8px;padding:12px 10px;text-align:center;border:2px solid;box-shadow:3px 3px 0 var(--brutal);}
+/* ── PROTOCOL INTELLIGENCE REDESIGN ─────────────────────────────────────────── */
+.pi-wrap{margin:0 24px 20px;display:flex;flex-direction:column;gap:10px;}
+.pi-card{background:var(--card);border:2px solid var(--brutal);border-radius:10px;padding:16px 18px;box-shadow:4px 4px 0 var(--brutal);}
+.pi-group{font-size:9px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--muted);margin-bottom:12px;}
+.pi-body-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:0;text-align:center;}
+.pi-body-divider{width:1px;background:var(--border);}
+.pi-body-cell{padding:4px 8px;}
+.pi-body-val{font-family:'Bebas Neue',sans-serif;font-size:26px;letter-spacing:1px;color:var(--text);line-height:1;}
+.pi-body-label{font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-top:3px;}
+.pi-divider{height:1px;background:var(--border);margin:14px 0;}
+.pi-trend-row{display:grid;grid-template-columns:1fr 1fr;gap:16px;align-items:start;}
+.pi-trend-val{font-family:'Bebas Neue',sans-serif;font-size:36px;letter-spacing:1px;line-height:1;margin-bottom:2px;}
+.pi-trend-desc{font-size:10px;color:var(--muted);line-height:1.4;}
+.pi-bar-wrap{margin-top:6px;}
+.pi-bar-label{display:flex;justify-content:space-between;font-size:9px;color:var(--muted);margin-bottom:4px;}
+.pi-bar{height:5px;background:var(--up);border-radius:3px;overflow:hidden;border:1px solid var(--border);}
+.pi-bar-fill{height:100%;border-radius:3px;transition:width .8s cubic-bezier(.22,1,.36,1);}
+.pi-ready-row{display:flex;align-items:center;gap:10px;padding:6px 0;}
+.pi-ready-row+.pi-ready-row{border-top:1px solid var(--border);}
+.pi-ready-name{font-size:11px;font-weight:600;color:var(--muted);width:96px;flex-shrink:0;text-transform:uppercase;letter-spacing:.5px;}
+.pi-ready-bar{flex:1;height:5px;background:var(--up);border-radius:3px;overflow:hidden;border:1px solid var(--border);}
+.pi-ready-fill{height:100%;border-radius:3px;transition:width .8s cubic-bezier(.22,1,.36,1);}
+.pi-ready-val{font-family:'Bebas Neue',sans-serif;font-size:16px;width:40px;text-align:right;flex-shrink:0;line-height:1;}
+.pi-ready-sub{font-size:9px;color:var(--muted);width:44px;flex-shrink:0;text-align:right;}
+.pi-alert-card{background:var(--card);border:2px solid var(--brutal);border-radius:10px;padding:14px 16px;box-shadow:4px 4px 0 var(--brutal);display:flex;gap:12px;align-items:flex-start;}
+.pi-alert-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;margin-top:3px;}
+.pi-alert-priority{font-size:9px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;margin-bottom:4px;}
+.pi-alert-msg{font-size:12px;color:var(--text);line-height:1.55;}
+.pi-strength-row{display:flex;align-items:center;justify-content:space-between;padding:7px 0;}
+.pi-strength-row+.pi-strength-row{border-top:1px solid var(--border);}
+.pi-strength-name{font-size:12px;font-weight:600;color:var(--text);}
+.pi-strength-meta{font-size:10px;color:var(--muted);margin-top:1px;}
+.pi-strength-trend{font-size:12px;font-weight:700;margin-left:12px;flex-shrink:0;}
 
 /* VITALS */
 .vgrid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:0 24px 20px;}
@@ -781,6 +814,7 @@ const USER_KEY      = "apex_user_v1";
 const NUTRITION_KEY = "apex_nutrition_v1";
 const CHECKIN_KEY   = "apex_checkins_v1";
 const PROTOCOL_KEY  = "apex_protocol_v1";
+const BF_KEY        = "apex_bf_override_v1";
 
 const FALLBACK = [
   "Solid question. Based on your current phase, your priority should be progressive overload on your compounds. Are you tracking your lifts week to week?",
@@ -2045,18 +2079,68 @@ function generateMuscleAlerts(muscleVol, level, C) {
   return alerts.sort((a,b)=>a.severity==="critical"?-1:b.severity==="critical"?1:0);
 }
 // ── SPLIT DEFINITIONS ─────────────────────────────────────────────────────────
+const CBUM_PPL = {
+  push1: [
+    { id:"p1_1", name:"Barbell Press (Incline or Flat)", muscle:"chest",   category:"compound",  sets:4, repRange:"6–10",    rpe:8, targetSets:4, notes:"Heavy working sets — lead with chest, control descent" },
+    { id:"p1_2", name:"Alternated Dumbbell Shoulder Press", muscle:"delts", category:"compound", sets:4, repRange:"8–12",    rpe:8, targetSets:4, notes:"One arm at a time — full ROM and core stability" },
+    { id:"p1_3", name:"Chest Flies",       muscle:"chest",   category:"isolation", sets:3, repRange:"10–15",   rpe:7, targetSets:3, notes:"Superset with Tricep Extensions — deep stretch at bottom" },
+    { id:"p1_4", name:"Tricep Extensions", muscle:"triceps", category:"isolation", sets:4, repRange:"10–15",   rpe:7, targetSets:4, notes:"Superset with Chest Flies — full lockout at top" },
+    { id:"p1_5", name:"Lateral Raises",    muscle:"delts",   category:"isolation", sets:4, repRange:"12–15",   rpe:7, targetSets:4, notes:"Lead with elbow, slight bend — standard working sets" },
+    { id:"p1_6", name:"Dips",              muscle:"triceps", category:"compound",  sets:3, repRange:"To Failure", rpe:9, targetSets:3, notes:"To failure — control descent, full lockout at top" },
+  ],
+  pull1: [
+    { id:"pu1_1", name:"Lat Pull Downs",               muscle:"back",    category:"compound",  sets:4, repRange:"10–15",   rpe:7, targetSets:4, notes:"Start light — focus on contraction, feel the lat stretch" },
+    { id:"pu1_2", name:"Bent Over Rows",                muscle:"back",    category:"compound",  sets:4, repRange:"6–10",    rpe:8, targetSets:4, notes:"Heavy working sets — brace core, drive elbows back" },
+    { id:"pu1_3", name:"Incline Seated Dumbbell Curls", muscle:"biceps",  category:"isolation", sets:4, repRange:"10–15",   rpe:7, targetSets:4, notes:"Light weight, constant tension — full stretch at bottom" },
+    { id:"pu1_4", name:"Pull-ups",                      muscle:"back",    category:"compound",  sets:3, repRange:"To Failure", rpe:9, targetSets:3, notes:"To failure — full hang at bottom, chin over bar" },
+    { id:"pu1_5", name:"EZ Bar Curls",                  muscle:"biceps",  category:"isolation", sets:2, repRange:"40 sec", rpe:8, targetSets:2, notes:"2 sets of 40 seconds constant tension — no rest at top or bottom" },
+  ],
+  legs1: [
+    { id:"l1_1", name:"Lunges",                muscle:"quads",  category:"compound",  sets:4, repRange:"15/leg",  rpe:7, targetSets:4, notes:"Bodyweight warm-up then heavy — 15 steps per leg, upright torso" },
+    { id:"l1_2", name:"Romanian Deadlift",     muscle:"hams",   category:"compound",  sets:4, repRange:"8–12",    rpe:8, targetSets:4, notes:"Focus on movement — hip hinge, feel the hamstring stretch" },
+    { id:"l1_3", name:"Hip Thrusts",           muscle:"hams",   category:"isolation", sets:3, repRange:"12–15",   rpe:7, targetSets:3, notes:"Or kickbacks — squeeze glutes hard at top" },
+    { id:"l1_4", name:"Seated Calf Raises",    muscle:"calves", category:"isolation", sets:6, repRange:"10–12",   rpe:7, targetSets:6, notes:"6 sets total — last 4 supersetted with Lying Hamstring Curls" },
+    { id:"l1_5", name:"Lying Hamstring Curls", muscle:"hams",   category:"isolation", sets:4, repRange:"8–10 / 40s", rpe:7, targetSets:4, notes:"2 sets 8–10 reps + 2 sets 40 seconds — superset with calf raises" },
+  ],
+  push2: [
+    { id:"p2_1", name:"Close Grip Bench Press",      muscle:"triceps", category:"compound",  sets:3, repRange:"8–12",    rpe:8, targetSets:3, notes:"3 working sets — elbows close, full lockout" },
+    { id:"p2_2", name:"Standing Barbell Press",      muscle:"delts",   category:"compound",  sets:4, repRange:"6–10",    rpe:8, targetSets:4, notes:"Heavy working sets — brace core, no lower back lean" },
+    { id:"p2_3", name:"Pec Deck Flies",              muscle:"chest",   category:"isolation", sets:2, repRange:"40 sec",  rpe:7, targetSets:2, notes:"2 sets of 40 seconds constant tension — squeeze at peak contraction" },
+    { id:"p2_4", name:"Overhead Tricep Extension",   muscle:"triceps", category:"isolation", sets:3, repRange:"10–15",   rpe:7, targetSets:3, notes:"Deep stretch focus — full range, feel the long head load" },
+    { id:"p2_5", name:"Lateral Raises",              muscle:"delts",   category:"isolation", sets:4, repRange:"10–12",   rpe:7, targetSets:4, notes:"Superset with Push-ups — lead with elbow" },
+    { id:"p2_6", name:"Push-ups",                    muscle:"chest",   category:"compound",  sets:4, repRange:"To Failure", rpe:8, targetSets:4, notes:"Superset with Lateral Raises — to failure each set" },
+  ],
+  pull2: [
+    { id:"pu2_1", name:"Pull-ups",               muscle:"back",   category:"compound",  sets:3, repRange:"8–12",     rpe:8, targetSets:3, notes:"3 sets — full hang at bottom, chest to bar" },
+    { id:"pu2_2", name:"Rack Pulls",             muscle:"back",   category:"compound",  sets:2, repRange:"8–10",     rpe:8, targetSets:2, notes:"2 working sets — upper back and trap engagement" },
+    { id:"pu2_3", name:"Hammer Curls",           muscle:"biceps", category:"isolation", sets:3, repRange:"10–12",    rpe:7, targetSets:3, notes:"Brachialis emphasis — control the descent" },
+    { id:"pu2_4", name:"Reverse Grip Row",       muscle:"back",   category:"compound",  sets:3, repRange:"10–12",    rpe:7, targetSets:3, notes:"Or pull down — focus on elbow positioning, pull to waist" },
+    { id:"pu2_5", name:"Cable Curls",            muscle:"biceps", category:"isolation", sets:3, repRange:"10–15",    rpe:7, targetSets:3, notes:"Constant tension — squeeze at top, slow negative" },
+    { id:"pu2_6", name:"Dumbbell Curls Drop Set",muscle:"biceps", category:"isolation", sets:1, repRange:"~4 drops", rpe:9, targetSets:1, notes:"1 big drop set ~4 drops — take to failure each drop" },
+  ],
+  legs2: [
+    { id:"l2_1", name:"Squats",               muscle:"quads",  category:"compound",  sets:7, repRange:"8–10",     rpe:8, targetSets:7, notes:"3 warm-up + 3 working sets + 1 final heavy — depth below parallel" },
+    { id:"l2_2", name:"Leg Press",            muscle:"quads",  category:"compound",  sets:2, repRange:"40 sec",   rpe:8, targetSets:2, notes:"Superset with Calf Raises — 2 sets 40 seconds constant tension" },
+    { id:"l2_3", name:"Calf Raises",          muscle:"calves", category:"isolation", sets:2, repRange:"To Failure",rpe:8, targetSets:2, notes:"Superset with Leg Press — to failure" },
+    { id:"l2_4", name:"Hip Adductors",        muscle:"hams",   category:"isolation", sets:1, repRange:"12–15",    rpe:7, targetSets:1, notes:"1 set — inner thigh squeeze, controlled movement" },
+    { id:"l2_5", name:"Standing Calf Raises", muscle:"calves", category:"isolation", sets:4, repRange:"10–12",    rpe:7, targetSets:4, notes:"4 sets + bounce reps to failure on last set" },
+    { id:"l2_6", name:"Quad Extensions",      muscle:"quads",  category:"isolation", sets:4, repRange:"10–12",    rpe:7, targetSets:4, notes:"2 sets 10–12 reps + 2 triple drop sets — peak contraction focus" },
+  ],
+};
+
 const SPLITS = {
   ppl: {
-    id:"ppl", label:"Push / Pull / Legs", abbr:"PPL",
-    desc:"Classic 6-day split. Max frequency per muscle group. Ideal for intermediate–advanced.",
+    id:"ppl", label:"Mr. Olympia's PPL Split", abbr:"PPL",
+    desc:"Chris Bumstead's 6-day Push / Pull / Legs program. Built for mass and symmetry — the program that built a 5x Mr. Olympia physique.",
     frequency:6,
+    preset: CBUM_PPL,
     schedule: [
-      { key:"push1",  tag:"Push A",  muscles:["chest","delts","triceps"] },
-      { key:"pull1",  tag:"Pull A",  muscles:["back","biceps"] },
-      { key:"legs1",  tag:"Legs A",  muscles:["quads","hams","calves"] },
-      { key:"push2",  tag:"Push B",  muscles:["chest","delts","triceps"] },
-      { key:"pull2",  tag:"Pull B",  muscles:["back","biceps"] },
-      { key:"legs2",  tag:"Legs B",  muscles:["quads","hams","calves"] },
+      { key:"push1", tag:"Push 1", muscles:["chest","delts","triceps"] },
+      { key:"pull1", tag:"Pull 1", muscles:["back","biceps"] },
+      { key:"legs1", tag:"Legs 1", muscles:["quads","hams","calves"] },
+      { key:"push2", tag:"Push 2", muscles:["chest","delts","triceps"] },
+      { key:"pull2", tag:"Pull 2", muscles:["back","biceps"] },
+      { key:"legs2", tag:"Legs 2", muscles:["quads","hams","calves"] },
     ],
   },
   ul: {
@@ -2151,7 +2235,8 @@ function generateProgram({ split, level, goal, neglectedMuscles=[] }) {
   const program = {};
   splitDef.schedule.forEach(day => {
     const isB = day.key.endsWith("2") || day.tag.includes("B");
-    program[day.key] = { tag: day.tag, muscles: day.muscles, exercises: pickExercises(day.muscles, isB) };
+    const exercises = splitDef.preset?.[day.key] ?? pickExercises(day.muscles, isB);
+    program[day.key] = { tag: day.tag, muscles: day.muscles, exercises };
   });
   return program;
 }
@@ -2667,10 +2752,25 @@ function MuscleDiagram({ name }) {
 }
 
 // ── WORKOUT SESSION VIEW ──────────────────────────────────────────────────────
-function WorkoutSession({ dayKey, dayPlan, adaptation, onComplete, onBack }) {
+function WorkoutSession({ dayKey, dayPlan, adaptation, history = [], onComplete, onBack }) {
   const C = useThemeColors();
   const { session, updateSession } = useSession();
   const adj = adaptation?.adjustments?.[dayKey];
+
+  // Build prev-session lookup: ex.id or ex.name → array of logged sets
+  const { prevMap, prevDate } = (() => {
+    const prev = [...history].reverse().find(h => h.dayKey === dayKey && h.completedExercises?.length);
+    if (!prev) return { prevMap: {}, prevDate: null };
+    const map = {};
+    prev.completedExercises.forEach(ex => {
+      const sets = ex.loggedSets || [];
+      if (ex.id)   map[ex.id]   = sets;
+      if (ex.name) map[ex.name] = sets;
+    });
+    const d = new Date(prev.ts);
+    const label = d.toLocaleDateString("en-US", { month: "short", day: "numeric" });
+    return { prevMap: map, prevDate: label };
+  })();
 
   // All persistent state lives in context — local state only for UI
   const loggedSets = session?.loggedSets || {};
@@ -2810,7 +2910,14 @@ function WorkoutSession({ dayKey, dayPlan, adaptation, onComplete, onBack }) {
           const isOpen = activeEx === ex.id;
           const sets = loggedSets[ex.id] || [];
           const completedSetsCount = sets.filter(s => s.reps && s.weight).length;
-          const prevBest = null; // Would pull from history in full implementation
+          const prevSets = prevMap[ex.id] || prevMap[ex.name] || [];
+          const prevSummary = prevSets.length
+            ? prevSets.map(s => s.weight && s.reps ? `${s.weight}×${s.reps}` : null).filter(Boolean).join(" · ")
+            : null;
+          const sessionPR = sets.some((s, i) => {
+            const p = prevSets[i];
+            return s.weight && p?.weight && parseFloat(s.weight) > parseFloat(p.weight);
+          });
 
           return (
             <div key={ex.id} style={{ margin: "0 24px 14px" }}>
@@ -2827,15 +2934,23 @@ function WorkoutSession({ dayKey, dayPlan, adaptation, onComplete, onBack }) {
                       {completedSetsCount > 0 && (
                         <span style={{ fontSize: 9, background: `${C.green}20`, color: C.green, padding: "1px 7px", borderRadius: 10, letterSpacing: 1 }}>{completedSetsCount}/{sets.length} sets</span>
                       )}
+                      {sessionPR && (
+                        <span style={{ fontSize: 9, background: `${C.accent}25`, color: C.accent, padding: "1px 7px", borderRadius: 10, letterSpacing: 1, fontWeight: 700 }}>▲ PR</span>
+                      )}
                     </div>
                     <div style={{ fontFamily: "'Inter',sans-serif", fontSize: 15, fontWeight: 600, color: C.text }}>{ex.name}</div>
-                    <div style={{ display: "flex", gap: 8, marginTop: 5 }}>
+                    <div style={{ display: "flex", gap: 8, marginTop: 5, flexWrap: "wrap" }}>
                       <span style={{ fontSize: 11, color: C.faint }}>{sets.length} sets</span>
                       <span style={{ fontSize: 11, color: C.muted }}>·</span>
                       <span style={{ fontSize: 11, color: C.faint }}>{ex.repRange} reps</span>
                       <span style={{ fontSize: 11, color: C.muted }}>·</span>
                       <span style={{ fontSize: 11, color: C.faint }}>RPE {ex.rpe}</span>
                     </div>
+                    {prevSummary && !isOpen && (
+                      <div style={{ marginTop: 6, fontSize: 10, color: C.muted, fontFamily: "'JetBrains Mono',monospace" }}>
+                        <span style={{ color: C.faint, marginRight: 4 }}>{prevDate}:</span>{prevSummary}
+                      </div>
+                    )}
                   </div>
                   <div style={{ fontSize: 18, color: isOpen ? C.accent : C.muted, transition: "transform .2s", transform: isOpen ? "rotate(180deg)" : "none" }}>⌄</div>
                 </div>
@@ -2852,8 +2967,19 @@ function WorkoutSession({ dayKey, dayPlan, adaptation, onComplete, onBack }) {
                   {/* Muscle anatomy diagram */}
                   <MuscleDiagram name={ex.name} />
 
+                  {/* Previous session reference bar */}
+                  {prevSummary && (
+                    <div style={{ background: `${C.accent}0D`, border: `1px solid ${C.accent}25`, borderRadius: 8, padding: "8px 12px", marginBottom: 12, display: "flex", alignItems: "center", gap: 8 }}>
+                      <span style={{ fontSize: 9, fontWeight: 700, letterSpacing: 1.5, textTransform: "uppercase", color: C.accent, flexShrink: 0 }}>Last {prevDate}</span>
+                      <span style={{ fontSize: 11, fontFamily: "'JetBrains Mono',monospace", color: C.muted, lineHeight: 1.5 }}>{prevSummary}</span>
+                    </div>
+                  )}
+                  {!prevSummary && prevDate === null && (
+                    <div style={{ fontSize: 10, color: C.faint, fontStyle: "italic", marginBottom: 10 }}>First time logging this exercise — set your baseline.</div>
+                  )}
+
                   {/* Column headers */}
-                  <div style={{ display: "grid", gridTemplateColumns: "28px 1fr 1fr 1fr 28px", gap: 6, padding: "10px 0 6px", borderBottom: `1px solid ${C.border}`, marginBottom: 8 }}>
+                  <div style={{ display: "grid", gridTemplateColumns: "28px 1fr 1fr 1fr 28px", gap: 6, padding: "4px 0 6px", borderBottom: `1px solid ${C.border}`, marginBottom: 8 }}>
                     {["#","WEIGHT","REPS","RPE",""].map(h => (
                       <div key={h} style={{ fontSize: 9, letterSpacing: 1, textTransform: "uppercase", color: C.muted, textAlign: "center" }}>{h}</div>
                     ))}
@@ -2862,21 +2988,38 @@ function WorkoutSession({ dayKey, dayPlan, adaptation, onComplete, onBack }) {
 
                   {sets.map((set, si) => {
                     const done = set.reps && set.weight;
+                    const prev = prevSets[si];
+                    const isPR = done && prev?.weight && parseFloat(set.weight) > parseFloat(prev.weight);
+                    const weightPlaceholder = prev?.weight ? `${prev.weight}` : "lbs";
+                    const repsPlaceholder   = prev?.reps   ? `${prev.reps}`   : "reps";
                     return (
-                      <div key={si} style={{ display: "grid", gridTemplateColumns: "28px 1fr 1fr 1fr 28px", gap: 6, marginBottom: 6, alignItems: "center" }}>
-                        <div style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: 12, color: done ? C.accent : C.muted, textAlign: "center" }}>{si + 1}</div>
-                        <input type="number" placeholder="lbs" value={set.weight}
-                          onChange={e => updateSet(ex.id, si, "weight", e.target.value)}
-                          style={{ background: C.surface, border: `1px solid ${done ? C.accent + "40" : C.border}`, borderRadius: 8, padding: "9px 8px", color: C.text, fontSize: 13, fontFamily: "'JetBrains Mono',monospace", textAlign: "center", outline: "none", width: "100%", transition: "border-color .2s" }} />
-                        <input type="number" placeholder="reps" value={set.reps}
-                          onChange={e => updateSet(ex.id, si, "reps", e.target.value)}
-                          style={{ background: C.surface, border: `1px solid ${done ? C.accent + "40" : C.border}`, borderRadius: 8, padding: "9px 8px", color: C.text, fontSize: 13, fontFamily: "'JetBrains Mono',monospace", textAlign: "center", outline: "none", width: "100%", transition: "border-color .2s" }} />
-                        <input type="number" min="6" max="10" step="0.5" placeholder="RPE"
-                          value={set.rpe}
-                          onChange={e => updateSet(ex.id, si, "rpe", e.target.value)}
-                          style={{ background: C.surface, border: `1px solid ${set.rpe ? rpeColor(set.rpe) + "50" : C.border}`, borderRadius: 8, padding: "9px 8px", color: set.rpe ? rpeColor(set.rpe) : C.muted, fontSize: 13, fontFamily: "'JetBrains Mono',monospace", textAlign: "center", outline: "none", width: "100%" }} />
-                        <div style={{ display: "flex", alignItems: "center", justifyContent: "center" }}>
-                          {done && <div style={{ width: 16, height: 16, borderRadius: "50%", background: C.green, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 9 }}>✓</div>}
+                      <div key={si} style={{ marginBottom: 8 }}>
+                        {prev && (
+                          <div style={{ display: "grid", gridTemplateColumns: "28px 1fr 1fr 1fr 28px", gap: 6, marginBottom: 2 }}>
+                            <div/>
+                            <div style={{ fontSize: 9, color: C.faint, fontFamily: "'JetBrains Mono',monospace", textAlign: "center", letterSpacing: .5 }}>{prev.weight || "—"}</div>
+                            <div style={{ fontSize: 9, color: C.faint, fontFamily: "'JetBrains Mono',monospace", textAlign: "center", letterSpacing: .5 }}>{prev.reps || "—"}</div>
+                            <div style={{ fontSize: 9, color: C.faint, fontFamily: "'JetBrains Mono',monospace", textAlign: "center", letterSpacing: .5 }}>{prev.rpe || "—"}</div>
+                            <div/>
+                          </div>
+                        )}
+                        <div style={{ display: "grid", gridTemplateColumns: "28px 1fr 1fr 1fr 28px", gap: 6, alignItems: "center" }}>
+                          <div style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: 12, color: done ? C.accent : C.muted, textAlign: "center" }}>{si + 1}</div>
+                          <input type="number" placeholder={weightPlaceholder} value={set.weight}
+                            onChange={e => updateSet(ex.id, si, "weight", e.target.value)}
+                            style={{ background: C.surface, border: `2px solid ${isPR ? C.accent : done ? C.accent + "40" : C.border}`, borderRadius: 8, padding: "9px 8px", color: isPR ? C.accent : C.text, fontSize: 13, fontFamily: "'JetBrains Mono',monospace", textAlign: "center", outline: "none", width: "100%", transition: "all .2s", fontWeight: isPR ? 700 : 400 }} />
+                          <input type="number" placeholder={repsPlaceholder} value={set.reps}
+                            onChange={e => updateSet(ex.id, si, "reps", e.target.value)}
+                            style={{ background: C.surface, border: `2px solid ${done ? C.accent + "40" : C.border}`, borderRadius: 8, padding: "9px 8px", color: C.text, fontSize: 13, fontFamily: "'JetBrains Mono',monospace", textAlign: "center", outline: "none", width: "100%", transition: "border-color .2s" }} />
+                          <input type="number" min="6" max="10" step="0.5" placeholder="RPE"
+                            value={set.rpe}
+                            onChange={e => updateSet(ex.id, si, "rpe", e.target.value)}
+                            style={{ background: C.surface, border: `1px solid ${set.rpe ? rpeColor(set.rpe) + "50" : C.border}`, borderRadius: 8, padding: "9px 8px", color: set.rpe ? rpeColor(set.rpe) : C.muted, fontSize: 13, fontFamily: "'JetBrains Mono',monospace", textAlign: "center", outline: "none", width: "100%" }} />
+                          <div style={{ display: "flex", alignItems: "center", justifyContent: "center" }}>
+                            {isPR ? <div style={{ fontSize: 10, color: C.accent, fontWeight: 700 }}>▲</div>
+                              : done ? <div style={{ width: 16, height: 16, borderRadius: "50%", background: C.green, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 9 }}>✓</div>
+                              : null}
+                          </div>
                         </div>
                       </div>
                     );
@@ -3198,7 +3341,7 @@ Give post-session feedback: what was solid, anything to flag, and one specific f
     return <CustomWorkoutLogger onComplete={handleSessionComplete} onBack={()=>{endGlobalSession();setShowPath(false);}} muscleVol={muscleVol} level={user.level||"intermediate"}/>;
   }
   if (session?.type === "generated" && session.dayKey && tState.program?.[session.dayKey]) {
-    return <WorkoutSession dayKey={session.dayKey} dayPlan={tState.program[session.dayKey]} adaptation={tState.adaptation} onComplete={handleSessionComplete} onBack={()=>{endGlobalSession();setShowPath(false);}}/>;
+    return <WorkoutSession dayKey={session.dayKey} dayPlan={tState.program[session.dayKey]} adaptation={tState.adaptation} history={tState.history||[]} onComplete={handleSessionComplete} onBack={()=>{endGlobalSession();setShowPath(false);}}/>;
   }
 
   const splitDef = SPLITS[tState.split];
@@ -5268,8 +5411,17 @@ function DashboardScreen({ user, weightLog, onLogWeight, onDeleteWeight, onEditW
   const [ciStress, setCiStress] = useState("5");
   const [ciEnergy, setCiEnergy] = useState("7");
   const [protocolData, setProtocolData] = useState(null);
+  const [bfOverride, setBfOverride] = useState(null);
+  const [showBfEditor, setShowBfEditor] = useState(false);
+  const [bfTab, setBfTab] = useState("manual");
+  const [bfInput, setBfInput] = useState("");
+  const [bfPhotoStatus, setBfPhotoStatus] = useState("idle"); // idle | loading | done | error
+  const fileInputRef = useRef(null);
 
   useEffect(() => {
+    window.storage.get(BF_KEY).then(r => {
+      if (r?.value) try { setBfOverride(parseFloat(r.value)); } catch {}
+    }).catch(() => {});
     window.storage.get(TRAINING_KEY).then(r => {
       if (r?.value) try { setTState(JSON.parse(r.value)); } catch {}
     }).catch(() => {});
@@ -5380,6 +5532,12 @@ function DashboardScreen({ user, weightLog, onLogWeight, onDeleteWeight, onEditW
   const userState       = computeUserState(user, sortedLog, checkIn);
   const weightTrend     = analyzeWeightTrend(sortedLog);
   const confidenceScore = computeConfidenceScore(sortedLog, history, nutLogs);
+
+  // Override body comp display if user has set a manual BF%
+  const displayComp = bfOverride != null ? (() => {
+    const lbmLbs = Math.round(currentWeight * (1 - bfOverride / 100) * 10) / 10;
+    return { ...userState.bodyComp, bfPct: bfOverride, lbmLbs };
+  })() : userState.bodyComp;
   const fatigueDebt     = computeFatigueDebt(history);
   const adaptationSig   = tState?.adaptation?.signal || "neutral";
   const protocolDecision = runProtocolDecision({
@@ -5411,6 +5569,62 @@ function DashboardScreen({ user, weightLog, onLogWeight, onDeleteWeight, onEditW
     }).catch(() => {});
     setCheckIn(ci);
     setShowCheckIn(false);
+  };
+
+  const saveBfManual = () => {
+    const val = parseFloat(bfInput);
+    if (!val || val < 4 || val > 45) return;
+    setBfOverride(val);
+    window.storage.set(BF_KEY, String(val)).catch(() => {});
+    setShowBfEditor(false);
+    setBfInput("");
+  };
+
+  const analyzeBfPhoto = async (file) => {
+    if (!file) return;
+    setBfPhotoStatus("loading");
+    try {
+      const toBase64 = f => new Promise((res, rej) => {
+        const r = new FileReader();
+        r.onload = () => res(r.result.split(",")[1]);
+        r.onerror = rej;
+        r.readAsDataURL(f);
+      });
+      const b64 = await toBase64(file);
+      const mime = file.type || "image/jpeg";
+      const res = await fetch("/api/chat", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          model: "claude-haiku-4-5-20251001",
+          max_tokens: 64,
+          system: "You are a body composition analyst. Given a physique photo, estimate body fat percentage. Reply with ONLY a single integer (e.g. 15). No text, no symbols, just the number.",
+          messages: [{ role: "user", content: [
+            { type: "image", source: { type: "base64", media_type: mime, data: b64 } },
+            { type: "text", text: `Estimate body fat % for this person. Their stats: ${user.sex || "male"}, ${user.age || "?"} years old, ${currentWeight} lbs, ${user.height || "?"} inches. Reply with ONE number only.` },
+          ]}],
+        }),
+      });
+      const data = await res.json();
+      const raw = data?.content?.[0]?.text?.trim() || "";
+      const num = parseFloat(raw.replace(/[^0-9.]/g, ""));
+      if (num >= 4 && num <= 45) {
+        setBfOverride(num);
+        window.storage.set(BF_KEY, String(num)).catch(() => {});
+        setBfPhotoStatus("done");
+        setTimeout(() => { setShowBfEditor(false); setBfPhotoStatus("idle"); }, 1200);
+      } else {
+        setBfPhotoStatus("error");
+      }
+    } catch {
+      setBfPhotoStatus("error");
+    }
+  };
+
+  const clearBfOverride = () => {
+    setBfOverride(null);
+    window.storage.set(BF_KEY, "").catch(() => {});
+    setShowBfEditor(false);
   };
 
   const DECISION_COLOR = { red: C.red, green: C.green, accent: C.accent, muted: C.muted };
@@ -5686,109 +5900,215 @@ function DashboardScreen({ user, weightLog, onLogWeight, onDeleteWeight, onEditW
       </div>
 
       {/* ── PROTOCOL INTELLIGENCE ───────────────────────────────────────────── */}
-      <div style={{margin:"0 24px 8px",display:"flex",alignItems:"center",justifyContent:"space-between"}}>
-        <div style={{fontSize:10,fontWeight:600,letterSpacing:2,textTransform:"uppercase",color:C.muted}}>Protocol Intelligence</div>
+      <div style={{margin:"0 24px 10px",display:"flex",alignItems:"center",justifyContent:"space-between"}}>
+        <div>
+          <div style={{fontSize:11,fontWeight:700,letterSpacing:2,textTransform:"uppercase",color:C.text}}>Protocol Intelligence</div>
+          <div style={{fontSize:10,color:C.muted,marginTop:1}}>Your body, decoded</div>
+        </div>
         <CubeButton small onClick={()=>setShowCheckIn(true)}>
-          {checkIn ? "Update Check-in" : "Weekly Check-in"}
+          {checkIn ? "Update Check-in" : "Check-in"}
         </CubeButton>
       </div>
 
-      {/* Body Comp + TDEE row */}
-      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:1,margin:"0 24px 12px",background:C.border,borderRadius:14,overflow:"hidden"}}>
-        {[
-          {label:"Est. Body Fat",  val:`${userState.bodyComp.bfPct}%`,  sub:"Deurenberg est."},
-          {label:"Lean Mass",      val:`${userState.bodyComp.lbmLbs}`,   sub:"lbs LBM"},
-          {label:"TDEE Estimate",  val:userState.tdee.toLocaleString(),  sub:"kcal / day"},
-        ].map(cell => (
-          <div key={cell.label} style={{background:C.surface,padding:"12px 10px"}}>
-            <div style={{fontSize:9,fontWeight:600,letterSpacing:.5,textTransform:"uppercase",color:C.muted,marginBottom:4}}>{cell.label}</div>
-            <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:22,letterSpacing:1,color:C.text,lineHeight:1}}>{cell.val}</div>
-            <div style={{fontSize:9,color:C.faint,marginTop:2}}>{cell.sub}</div>
-          </div>
-        ))}
-      </div>
+      <div className="pi-wrap">
 
-      {/* Weight trend + confidence row */}
-      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10,margin:"0 24px 12px"}}>
-        <div style={{background:C.surface,border:`1px solid ${C.border}`,borderRadius:12,padding:"12px 14px"}}>
-          <div style={{fontSize:9,fontWeight:600,letterSpacing:.5,textTransform:"uppercase",color:C.muted,marginBottom:5}}>Weekly Rate</div>
-          <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:26,letterSpacing:1,color:weightTrend.rate>0?C.green:weightTrend.rate<0?C.blue:C.text,lineHeight:1}}>
-            {weightTrend.rate===0?"—":`${weightTrend.rate>0?"+":""}${weightTrend.rate} lbs`}
-          </div>
-          <div style={{fontSize:10,color:C.muted,marginTop:3,lineHeight:1.4}}>
-            {weightTrend.classification==="insufficient_data"?"Need 3+ weigh-ins":
-             weightTrend.classification.replace(/_/g," ")}
+        {/* ── CARD 1: BODY COMPOSITION ── */}
+        <div className="pi-card">
+          <div className="pi-group">Body Composition</div>
+          <div className="pi-body-grid">
+            <div className="pi-body-cell" onClick={()=>{setBfInput(String(displayComp.bfPct));setBfTab("manual");setShowBfEditor(true);}}
+              style={{cursor:"pointer",borderRadius:6,transition:"background .15s"}}
+              onMouseOver={e=>e.currentTarget.style.background="var(--up)"}
+              onMouseOut={e=>e.currentTarget.style.background=""}>
+              <div className="pi-body-val" style={{color:bfOverride!=null?C.accent:"var(--text)"}}>{displayComp.bfPct}%</div>
+              <div className="pi-body-label">Body Fat {bfOverride!=null?"· edited":"· tap to set"}</div>
+            </div>
+            <div style={{width:1,background:"var(--border)",margin:"4px 0"}}/>
+            <div className="pi-body-cell">
+              <div className="pi-body-val">{displayComp.lbmLbs}</div>
+              <div className="pi-body-label">Lean Mass (lbs)</div>
+            </div>
+            <div style={{width:1,background:"var(--border)",margin:"4px 0"}}/>
+            <div className="pi-body-cell">
+              <div className="pi-body-val">{userState.tdee.toLocaleString()}</div>
+              <div className="pi-body-label">Daily Burn (kcal)</div>
+            </div>
           </div>
         </div>
-        <div style={{background:C.surface,border:`1px solid ${C.border}`,borderRadius:12,padding:"12px 14px"}}>
-          <div style={{fontSize:9,fontWeight:600,letterSpacing:.5,textTransform:"uppercase",color:C.muted,marginBottom:5}}>Data Confidence</div>
-          <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:26,letterSpacing:1,color:confidenceScore>=0.75?C.green:confidenceScore>=0.5?C.accent:C.red,lineHeight:1}}>
-            {Math.round(confidenceScore*100)}%
-          </div>
-          <div style={{height:3,background:C.up,borderRadius:2,marginTop:7,overflow:"hidden"}}>
-            <div className="pfill" style={{width:`${Math.round(confidenceScore*100)}%`,background:confidenceScore>=0.75?C.green:confidenceScore>=0.5?C.accent:C.red}}/>
+
+        {/* ── CARD 2: WEIGHT TREND ── */}
+        <div className="pi-card">
+          <div className="pi-group">Weight Trend · Last 14 Days</div>
+          <div className="pi-trend-row">
+            <div>
+              <div className="pi-trend-val" style={{color:weightTrend.rate>0?C.green:weightTrend.rate<0?C.blue:C.muted}}>
+                {weightTrend.dataPoints<3 ? "—" : `${weightTrend.rate>0?"+":""}${weightTrend.rate}`}
+              </div>
+              <div className="pi-trend-desc">
+                {weightTrend.dataPoints<3
+                  ? "Log 3+ weights to see your trend"
+                  : `lbs / week · ${weightTrend.classification.replace(/_/g," ")}`}
+              </div>
+            </div>
+            <div>
+              <div style={{fontSize:10,fontWeight:600,letterSpacing:1,textTransform:"uppercase",color:C.muted,marginBottom:6}}>Tracking Quality</div>
+              <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:22,color:confidenceScore>=0.75?C.green:confidenceScore>=0.5?C.accent:C.red,lineHeight:1,marginBottom:6}}>
+                {Math.round(confidenceScore*100)}%
+              </div>
+              <div className="pi-bar">
+                <div className="pi-bar-fill" style={{width:`${Math.round(confidenceScore*100)}%`,background:confidenceScore>=0.75?C.green:confidenceScore>=0.5?C.accent:C.red}}/>
+              </div>
+              <div style={{fontSize:9,color:C.faint,marginTop:4}}>
+                {confidenceScore>=0.75?"Reliable data":"Log more to improve accuracy"}
+              </div>
+            </div>
           </div>
         </div>
-      </div>
 
-      {/* Recovery + Adherence + Fatigue row */}
-      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:1,margin:"0 24px 12px",background:C.border,borderRadius:14,overflow:"hidden"}}>
-        {[
-          {label:"Recovery",  val:`${userState.rcs}`,   color:userState.rcs>=75?C.green:userState.rcs>=55?C.accent:C.red, sub:"/100"},
-          {label:"Adherence", val:`${protocolDecision.adherence}%`, color:protocolDecision.adherence>=85?C.green:protocolDecision.adherence>=70?C.accent:C.red, sub:"7-day"},
-          {label:"Fatigue Debt",val:`${protocolDecision.fatigueDebt}`, color:protocolDecision.fatigueDebt>60?C.red:protocolDecision.fatigueDebt>30?C.accent:C.green, sub:"load score"},
-        ].map(cell => (
-          <div key={cell.label} style={{background:C.surface,padding:"12px 10px"}}>
-            <div style={{fontSize:9,fontWeight:600,letterSpacing:.5,textTransform:"uppercase",color:C.muted,marginBottom:4}}>{cell.label}</div>
-            <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:22,letterSpacing:1,color:cell.color,lineHeight:1}}>{cell.val}<span style={{fontSize:12,color:C.muted}}>{cell.sub}</span></div>
-          </div>
-        ))}
-      </div>
-
-      {/* Protocol Decisions */}
-      {protocolDecision.decisions.length > 0 && (
-        <div style={{margin:"0 24px 12px",display:"flex",flexDirection:"column",gap:6}}>
-          {protocolDecision.decisions.map((d, i) => (
-            <div key={i} style={{background:C.surface,border:`1px solid ${(DECISION_COLOR[d.color]||C.border)}30`,borderLeft:`3px solid ${DECISION_COLOR[d.color]||C.border}`,borderRadius:"0 10px 10px 0",padding:"10px 14px",animation:`slideUp .25s cubic-bezier(.22,1,.36,1) ${i*60}ms both`}}>
-              <div style={{fontSize:9,fontWeight:700,letterSpacing:1.5,textTransform:"uppercase",color:DECISION_COLOR[d.color]||C.muted,marginBottom:3}}>{PRIORITY_LABEL[d.priority]||d.priority} · {d.type.toUpperCase()}</div>
-              <div style={{fontSize:12,color:C.text,lineHeight:1.55}}>{d.msg}</div>
-              {d.type==="calories" && protocolDecision.calAdjustment!==0 && (
-                <div style={{fontSize:10,color:C.muted,marginTop:4}}>
-                  New target: <span style={{fontFamily:"'JetBrains Mono',monospace",color:C.accent}}>{calTarget ? (calTarget.cal + protocolDecision.calAdjustment).toLocaleString() : "—"} kcal</span>
-                </div>
-              )}
+        {/* ── CARD 3: READINESS ── */}
+        <div className="pi-card">
+          <div className="pi-group">Today's Readiness</div>
+          {[
+            { name:"Recovery",     val:userState.rcs,               max:100, unit:"/100", color:userState.rcs>=75?C.green:userState.rcs>=55?C.accent:C.red,
+              sub:userState.rcs>=75?"Good":"Low — rest or deload" },
+            { name:"Logging",      val:protocolDecision.adherence,  max:100, unit:"%",   color:protocolDecision.adherence>=85?C.green:protocolDecision.adherence>=70?C.accent:C.red,
+              sub:protocolDecision.adherence>=85?"Consistent":"Log daily to unlock AI" },
+            { name:"Training Load",val:Math.min(protocolDecision.fatigueDebt,100), max:100, unit:"", color:protocolDecision.fatigueDebt>60?C.red:protocolDecision.fatigueDebt>30?C.accent:C.green,
+              sub:protocolDecision.fatigueDebt>60?"High — reduce volume":protocolDecision.fatigueDebt>30?"Moderate":"Fresh" },
+          ].map(r => (
+            <div key={r.name} className="pi-ready-row">
+              <div className="pi-ready-name">{r.name}</div>
+              <div className="pi-ready-bar">
+                <div className="pi-ready-fill" style={{width:`${r.val}%`,background:r.color}}/>
+              </div>
+              <div className="pi-ready-val" style={{color:r.color}}>{r.val}{r.unit}</div>
+              <div className="pi-ready-sub">{r.sub}</div>
             </div>
           ))}
         </div>
-      )}
 
-      {/* Volume signal badge */}
-      {protocolDecision.volumeSignal !== "maintain" && (
-        <div style={{margin:"0 24px 12px",background:C.surface,border:`1px solid ${C.border}`,borderRadius:10,padding:"9px 14px",display:"flex",alignItems:"center",gap:10}}>
-          <div style={{width:6,height:6,borderRadius:"50%",background:protocolDecision.volumeSignal==="increase"?C.green:C.red,flexShrink:0}}/>
-          <div style={{fontSize:12,color:C.text}}>
-            <span style={{fontWeight:600}}>{protocolDecision.volumeSignal==="increase"?"Volume up":"Volume down"}:</span>
-            {" "}{protocolDecision.volumeSignal==="increase"?"Performance strong — add 2 sets to priority compounds next session.":"Recovery stressed — remove 2 sets from isolations this week."}
-          </div>
-        </div>
-      )}
-
-      {/* Strength trend — top movers */}
-      {topLifts.length > 0 && (
-        <div style={{margin:"0 24px 20px",background:C.surface,border:`1px solid ${C.border}`,borderRadius:14,padding:"14px 16px"}}>
-          <div style={{fontSize:10,fontWeight:600,letterSpacing:1.5,textTransform:"uppercase",color:C.muted,marginBottom:10}}>Strength Trends</div>
-          <div style={{display:"flex",flexDirection:"column",gap:8}}>
-            {topLifts.map(([name, t]) => (
-              <div key={name} style={{display:"flex",alignItems:"center",justifyContent:"space-between"}}>
-                <div style={{flex:1,minWidth:0}}>
-                  <div style={{fontSize:12,fontWeight:600,color:C.text,whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>{name}</div>
-                  <div style={{fontSize:10,color:C.muted}}>{t.sessions} sessions tracked · e1RM {t.latest} lbs</div>
+        {/* ── RECOMMENDATIONS ── */}
+        {protocolDecision.decisions.length > 0 && protocolDecision.decisions.map((d, i) => (
+          <div key={i} className="pi-alert-card" style={{borderColor:DECISION_COLOR[d.color]||"var(--brutal)",boxShadow:`4px 4px 0 ${DECISION_COLOR[d.color]||"var(--brutal)"}`}}>
+            <div className="pi-alert-dot" style={{background:DECISION_COLOR[d.color]||C.muted}}/>
+            <div style={{flex:1}}>
+              <div className="pi-alert-priority" style={{color:DECISION_COLOR[d.color]||C.muted}}>
+                {PRIORITY_LABEL[d.priority]||d.priority} · {d.type.toUpperCase()}
+              </div>
+              <div className="pi-alert-msg">{d.msg}</div>
+              {d.type==="calories" && protocolDecision.calAdjustment!==0 && (
+                <div style={{fontSize:10,color:C.muted,marginTop:6}}>
+                  Suggested target: <span style={{fontFamily:"'JetBrains Mono',monospace",color:C.accent,fontWeight:700}}>{calTarget?(calTarget.cal+protocolDecision.calAdjustment).toLocaleString():"—"} kcal</span>
                 </div>
-                <div style={{fontSize:12,fontWeight:700,color:t.trend==="improving"?C.green:t.trend==="declining"?C.red:C.muted,marginLeft:12,flexShrink:0}}>
-                  {t.trend==="improving"?"↑":t.trend==="declining"?"↓":"→"} {t.trend}
+              )}
+            </div>
+          </div>
+        ))}
+
+        {/* ── VOLUME SIGNAL ── */}
+        {protocolDecision.volumeSignal !== "maintain" && (
+          <div className="pi-alert-card" style={{borderColor:protocolDecision.volumeSignal==="increase"?C.green:C.red,boxShadow:`4px 4px 0 ${protocolDecision.volumeSignal==="increase"?C.green:C.red}`}}>
+            <div className="pi-alert-dot" style={{background:protocolDecision.volumeSignal==="increase"?C.green:C.red}}/>
+            <div style={{flex:1}}>
+              <div className="pi-alert-priority" style={{color:protocolDecision.volumeSignal==="increase"?C.green:C.red}}>
+                VOLUME · {protocolDecision.volumeSignal.toUpperCase()}
+              </div>
+              <div className="pi-alert-msg">
+                {protocolDecision.volumeSignal==="increase"
+                  ?"Performance is strong — add 2 sets to priority compounds next session."
+                  :"Recovery is stressed — drop 2 sets from isolations this week."}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* ── STRENGTH TRENDS ── */}
+        {topLifts.length > 0 && (
+          <div className="pi-card">
+            <div className="pi-group">Strength Trends</div>
+            {topLifts.map(([name, t]) => (
+              <div key={name} className="pi-strength-row">
+                <div style={{flex:1,minWidth:0}}>
+                  <div className="pi-strength-name" style={{whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>{name}</div>
+                  <div className="pi-strength-meta">{t.sessions} sessions · e1RM {t.latest} lbs</div>
+                </div>
+                <div className="pi-strength-trend" style={{color:t.trend==="improving"?C.green:t.trend==="declining"?C.red:C.muted}}>
+                  {t.trend==="improving"?"↑ Improving":t.trend==="declining"?"↓ Declining":"→ Stable"}
                 </div>
               </div>
             ))}
+          </div>
+        )}
+
+      </div>
+
+      {/* ── BF% EDITOR ──────────────────────────────────────────────────────────── */}
+      {showBfEditor && (
+        <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,.6)",zIndex:300,display:"flex",alignItems:"flex-end",justifyContent:"center"}}
+          onClick={e=>{if(e.target===e.currentTarget)setShowBfEditor(false);}}>
+          <div style={{width:"100%",maxWidth:430,background:C.surface,borderRadius:"20px 20px 0 0",padding:"24px 24px 40px",animation:"slideUp .3s cubic-bezier(.22,1,.36,1)"}}>
+            <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:24,letterSpacing:1.5,color:C.text,marginBottom:4}}>SET BODY FAT %</div>
+            <div style={{fontSize:12,color:C.muted,marginBottom:20,lineHeight:1.5}}>The formula estimated <strong style={{color:C.text}}>{userState.bodyComp.bfPct}%</strong>. Override it with your own estimate or upload a photo for AI analysis.</div>
+
+            {/* Tab toggle */}
+            <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",border:`2px solid ${C.brutal}`,borderRadius:6,boxShadow:`3px 3px 0 ${C.brutal}`,overflow:"hidden",marginBottom:20}}>
+              {[{id:"manual",label:"I'll Estimate"},{id:"photo",label:"Analyze Photo"}].map(t=>(
+                <button key={t.id} onClick={()=>setBfTab(t.id)}
+                  style={{padding:"10px",background:bfTab===t.id?C.brutal:"var(--card)",border:"none",cursor:"pointer",fontFamily:"'Bebas Neue',sans-serif",fontSize:13,letterSpacing:1.5,color:bfTab===t.id?C.card:C.muted,borderRight:t.id==="manual"?`2px solid ${C.brutal}`:"none",transition:"all .15s"}}>
+                  {t.label}
+                </button>
+              ))}
+            </div>
+
+            {bfTab === "manual" && (
+              <div>
+                <div style={{fontSize:11,fontWeight:700,letterSpacing:1.5,textTransform:"uppercase",color:C.brutal,marginBottom:8}}>Your Estimate (%)</div>
+                <div style={{display:"flex",gap:10,alignItems:"center",marginBottom:16}}>
+                  <button onClick={()=>setBfInput(v=>String(Math.max(4,parseFloat(v||0)-0.5)))}
+                    style={{width:40,height:46,background:"var(--card)",border:`2px solid ${C.brutal}`,borderRadius:4,boxShadow:`3px 3px 0 ${C.brutal}`,fontSize:20,cursor:"pointer",color:C.text,fontWeight:700}}>−</button>
+                  <input type="number" min="4" max="45" step="0.5"
+                    value={bfInput} onChange={e=>setBfInput(e.target.value)}
+                    style={{flex:1,height:46,background:"var(--card)",border:`2px solid ${C.brutal}`,borderRadius:4,boxShadow:`3px 3px 0 ${C.brutal}`,fontSize:22,fontFamily:"'Bebas Neue',sans-serif",letterSpacing:1,color:C.text,padding:"0 14px",outline:"none",textAlign:"center"}}/>
+                  <button onClick={()=>setBfInput(v=>String(Math.min(45,parseFloat(v||0)+0.5)))}
+                    style={{width:40,height:46,background:"var(--card)",border:`2px solid ${C.brutal}`,borderRadius:4,boxShadow:`3px 3px 0 ${C.brutal}`,fontSize:20,cursor:"pointer",color:C.text,fontWeight:700}}>+</button>
+                </div>
+                <div style={{fontSize:11,color:C.muted,marginBottom:16,lineHeight:1.5}}>
+                  Roughly: 6–9% contest lean · 10–12% visible abs · 13–17% athletic · 18–24% average · 25%+ higher body fat
+                </div>
+                <CubeButton onClick={saveBfManual} disabled={!bfInput||parseFloat(bfInput)<4||parseFloat(bfInput)>45} style={{width:"100%"}}>SAVE ESTIMATE</CubeButton>
+              </div>
+            )}
+
+            {bfTab === "photo" && (
+              <div>
+                <input ref={fileInputRef} type="file" accept="image/*" style={{display:"none"}}
+                  onChange={e=>e.target.files?.[0]&&analyzeBfPhoto(e.target.files[0])}/>
+                <div onClick={()=>bfPhotoStatus==="idle"&&fileInputRef.current?.click()}
+                  style={{border:`2px dashed ${C.brutal}`,borderRadius:6,padding:"32px 20px",textAlign:"center",cursor:bfPhotoStatus==="idle"?"pointer":"default",marginBottom:16,background:"var(--card)",transition:"background .15s"}}
+                  onMouseOver={e=>{if(bfPhotoStatus==="idle")e.currentTarget.style.background="var(--up)"}}
+                  onMouseOut={e=>e.currentTarget.style.background="var(--card)"}>
+                  {bfPhotoStatus==="idle" && <>
+                    <div style={{fontSize:32,marginBottom:8}}>📸</div>
+                    <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:18,letterSpacing:1,color:C.text}}>TAP TO UPLOAD PHOTO</div>
+                    <div style={{fontSize:11,color:C.muted,marginTop:4}}>Front or side physique photo works best</div>
+                  </>}
+                  {bfPhotoStatus==="loading" && <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:18,letterSpacing:1,color:C.accent,animation:"pulse 1.5s infinite"}}>ANALYZING...</div>}
+                  {bfPhotoStatus==="done" && <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:18,letterSpacing:1,color:C.green}}>✓ ESTIMATED: {bfOverride}%</div>}
+                  {bfPhotoStatus==="error" && <>
+                    <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:16,color:C.red}}>COULDN'T ANALYZE</div>
+                    <div style={{fontSize:11,color:C.muted,marginTop:4}}>Try a clearer photo or use manual estimate</div>
+                  </>}
+                </div>
+                <div style={{fontSize:11,color:C.muted,lineHeight:1.6,marginBottom:16}}>Photo is sent to Claude AI for analysis and not stored. Results are an estimate — use manual entry if you know your BF%.</div>
+              </div>
+            )}
+
+            {bfOverride != null && (
+              <button onClick={clearBfOverride}
+                style={{width:"100%",marginTop:12,background:"none",border:"none",color:C.muted,fontSize:12,cursor:"pointer",padding:8,fontFamily:"'Inter',sans-serif"}}>
+                Remove override — revert to formula estimate
+              </button>
+            )}
           </div>
         </div>
       )}
