@@ -14,22 +14,33 @@ const APEX_KEYS = [
 const UID_KEY = "apex_session_uid";
 let _uid = null;
 
+// Push all local data up to Firestore (ensures cloud is in sync with local)
+async function pushLocalToFirestore(uid) {
+  const writes = APEX_KEYS
+    .map(key => ({ key, value: localStorage.getItem(key) }))
+    .filter(({ value }) => value != null);
+  await Promise.all(
+    writes.map(({ key, value }) =>
+      setDoc(doc(db, "users", uid, "storage", key), { value }).catch(() => {})
+    )
+  );
+}
+
 window.storage = {
   async init(uid) {
     const prevUid = localStorage.getItem(UID_KEY);
+    _uid = uid;
 
     if (prevUid === uid) {
-      // Same user returning — localStorage already has their data, skip Firestore sync
-      _uid = uid;
+      // Same device, same user — push any local data up to Firestore to keep cloud in sync
+      pushLocalToFirestore(uid);
       return;
     }
 
-    // Different user or first sign-in on this device — clear stale data, sync from Firestore
+    // Different user or new device — clear old data, pull from Firestore first
     if (prevUid) {
       APEX_KEYS.forEach(k => localStorage.removeItem(k));
     }
-
-    _uid = uid;
     localStorage.setItem(UID_KEY, uid);
 
     try {
@@ -39,8 +50,8 @@ window.storage = {
   },
 
   clearUser() {
-    // Don't wipe localStorage — same user may sign back in immediately.
-    // Data is cleared by init() if a different user signs in next.
+    // Don't wipe localStorage — same user may sign back in.
+    // Different user signing in will clear via init().
     _uid = null;
   },
 
