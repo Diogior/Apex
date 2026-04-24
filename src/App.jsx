@@ -6288,6 +6288,7 @@ function AppInner() {
   const { session, endSession } = useSession();
   const [weightLog, setWeightLog] = useState([]);
   const [wtLoaded, setWtLoaded] = useState(false);
+  const { authUser, signOut } = useAuth();
 
   // Load user profile — gate render until resolved so returning users never flash onboarding
   useEffect(() => {
@@ -6358,6 +6359,41 @@ function AppInner() {
   if (!userLoaded) return (
     <div className="auth-loading">
       <div className="auth-loading-text">APEX</div>
+    </div>
+  );
+
+  // Returning user (account older than 2 min) but no local profile — Firestore sync failed
+  const isReturningUser = authUser && (() => {
+    const created = new Date(authUser.metadata.creationTime).getTime();
+    return Date.now() - created > 2 * 60 * 1000;
+  })();
+
+  if (!user && isReturningUser) return (
+    <div className="auth-screen">
+      <WaveField fixed opacity={0.18} />
+      <div className="auth-eyebrow">Data Sync</div>
+      <div className="auth-wordmark">APEX</div>
+      <div className="auth-card">
+        <div className="auth-card-title">
+          Couldn't load your profile
+          <span>Your account exists but your data isn't on this device yet.</span>
+        </div>
+        <div style={{fontSize:13,color:"var(--muted)",lineHeight:1.7,borderLeft:"3px solid var(--accent)",paddingLeft:12}}>
+          <strong style={{color:"var(--text)"}}>To restore your data:</strong><br/>
+          1. Open the app on your original device<br/>
+          2. Sign in there — this pushes your data to the cloud<br/>
+          3. Come back here and sign in again
+        </div>
+        <div style={{fontSize:11,color:"var(--muted)",padding:"10px 12px",background:"var(--up)",borderRadius:4,border:"1px solid var(--border)"}}>
+          Also check: Firebase Console → Firestore → Rules must allow authenticated reads/writes.
+        </div>
+        <button className="auth-submit" onClick={()=>setUser(null)||setUserLoaded(true)}>
+          START FRESH ON THIS DEVICE →
+        </button>
+        <button onClick={signOut} style={{width:"100%",marginTop:8,background:"none",border:"none",color:"var(--muted)",fontSize:12,cursor:"pointer",padding:8,fontFamily:"'Inter',sans-serif"}}>
+          Sign out and try a different account
+        </button>
+      </div>
     </div>
   );
 
