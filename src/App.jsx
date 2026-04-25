@@ -4034,7 +4034,12 @@ function MealLogModal({ onSave, onClose, existingLog }) {
   const [mealName, setMealName] = useState(existingLog?.mealName || "");
   const [rawInput, setRawInput] = useState(existingLog?.rawInput || "");
   const [parsing, setParsing] = useState(false);
-  const [parsed, setParsed] = useState(existingLog?.parsed || null);
+  const [parsed, setParsed] = useState(existingLog ? {
+    items:      existingLog.items      || [],
+    totals:     existingLog.totals     || { protein_g: 0, carbs_g: 0, fat_g: 0, calories: 0 },
+    confidence: existingLog.confidence || "medium",
+    notes:      existingLog.notes      || "",
+  } : null);
   const [error, setError] = useState("");
   const [step, setStep] = useState(existingLog ? "review" : "input"); // input | parsing | review
   const [inputMode, setInputMode] = useState("free"); // free | quick
