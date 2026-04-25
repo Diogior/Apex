@@ -6295,6 +6295,8 @@ function AppInner() {
   const [weightLog, setWeightLog] = useState([]);
   const [wtLoaded, setWtLoaded] = useState(false);
   const { authUser, signOut } = useAuth();
+  const [retrying, setRetrying] = useState(false);
+  const [retryFailed, setRetryFailed] = useState(false);
 
   // Load user profile — gate render until resolved so returning users never flash onboarding
   useEffect(() => {
@@ -6373,9 +6375,6 @@ function AppInner() {
     const created = new Date(authUser.metadata.creationTime).getTime();
     return Date.now() - created > 2 * 60 * 1000;
   })();
-
-  const [retrying, setRetrying] = useState(false);
-  const [retryFailed, setRetryFailed] = useState(false);
 
   const handleRetrySync = async () => {
     setRetrying(true);
