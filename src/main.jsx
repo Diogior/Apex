@@ -78,21 +78,6 @@ window.storage = {
   },
 };
 
-// Debug helper — callable from browser console
-window._testRead = async () => {
-  const { auth, db } = await import("./firebase.js");
-  const { collection, getDocs } = await import("firebase/firestore");
-  const uid = auth.currentUser?.uid;
-  console.log("UID:", uid);
-  console.log("Project:", import.meta.env.VITE_FB_PROJECT_ID);
-  try {
-    const snap = await getDocs(collection(db, "users", uid, "storage"));
-    console.log("Docs found:", snap.size);
-    snap.forEach(d => console.log(" →", d.id, d.data()));
-  } catch(e) {
-    console.error("Read error:", e.code, e.message);
-  }
-};
 
 createRoot(document.getElementById("root")).render(
   <StrictMode>
