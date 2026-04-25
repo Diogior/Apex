@@ -3402,7 +3402,20 @@ Give post-session feedback: what was solid, anything to flag, and one specific f
   // ── SETUP SCREEN ──
   if (setupMode) return (
     <div className="screen">
-      <div className="sh"><div><div className="sh-label">Training Setup</div><div className="sh-title">CHOOSE YOUR SPLIT</div></div></div>
+      <div className="sh">
+        <div>
+          <div className="sh-label">Training Setup</div>
+          <div className="sh-title">CHOOSE YOUR SPLIT</div>
+        </div>
+        {tState && (
+          <button onClick={() => setSetupMode(false)}
+            style={{ background:"var(--card)", border:"2px solid var(--brutal)", borderRadius:6, boxShadow:"2px 2px 0 var(--brutal)", padding:"6px 14px", cursor:"pointer", fontFamily:"'Bebas Neue',sans-serif", fontSize:13, letterSpacing:1.5, color:"var(--text)", transition:"all .1s" }}
+            onMouseOver={e=>{e.currentTarget.style.transform="translate(-1px,-1px)";e.currentTarget.style.boxShadow="3px 3px 0 var(--brutal)"}}
+            onMouseOut={e=>{e.currentTarget.style.transform="";e.currentTarget.style.boxShadow="2px 2px 0 var(--brutal)"}}>
+            ← BACK
+          </button>
+        )}
+      </div>
 
       <div style={{ padding: "0 24px 20px" }}>
         <p style={{ fontSize: 14, color: C.faint, lineHeight: 1.6, marginBottom: 20 }}>
