@@ -18,20 +18,18 @@ async function pushLocalToFirestore(uid) {
   const writes = APEX_KEYS
     .map(key => ({ key, value: localStorage.getItem(key) }))
     .filter(({ value }) => value != null);
-
-  const results = await Promise.allSettled(
+  if (!writes.length) return;
+  await Promise.allSettled(
     writes.map(({ key, value }) =>
       setDoc(doc(db, "users", uid, "storage", key), { value })
     )
   );
+}
 
-  results.forEach((r, i) => {
-    if (r.status === "rejected") {
-      console.error("Firestore write failed for", writes[i].key, "→", r.reason?.code, r.reason?.message);
-    } else {
-      console.log("Firestore write OK:", writes[i].key);
-    }
-  });
+async function pullFirestoreToLocal(uid) {
+  const snap = await getDocs(collection(db, "users", uid, "storage"));
+  snap.forEach(d => localStorage.setItem(d.id, d.data().value));
+  return snap.size;
 }
 
 window.storage = {
@@ -40,26 +38,30 @@ window.storage = {
     _uid = uid;
 
     if (prevUid === uid) {
+      // Same device — push any local data to keep cloud in sync
       pushLocalToFirestore(uid);
       return;
     }
 
-    if (prevUid) {
-      APEX_KEYS.forEach(k => localStorage.removeItem(k));
-    }
+    // New device — clear stale data, pull from Firestore
+    if (prevUid) APEX_KEYS.forEach(k => localStorage.removeItem(k));
     localStorage.setItem(UID_KEY, uid);
 
     try {
-      console.log("Firestore: pulling data for uid", uid);
-      const snap = await getDocs(collection(db, "users", uid, "storage"));
-      console.log("Firestore: got", snap.size, "documents");
-      snap.forEach(d => {
-        console.log("  →", d.id);
-        localStorage.setItem(d.id, d.data().value);
-      });
+      await pullFirestoreToLocal(uid);
     } catch (e) {
-      console.error("Firestore read failed →", e.code, e.message);
-      window._firestoreError = `${e.code}: ${e.message}`;
+      console.error("Firestore pull failed:", e.code, e.message);
+    }
+  },
+
+  // Callable from the recovery screen to retry syncing
+  async retrySync() {
+    if (!_uid) return false;
+    try {
+      const count = await pullFirestoreToLocal(_uid);
+      return count > 0;
+    } catch {
+      return false;
     }
   },
 
@@ -72,12 +74,13 @@ window.storage = {
   async set(key, value) {
     localStorage.setItem(key, value);
     if (_uid) {
-      setDoc(doc(db, "users", _uid, "storage", key), { value })
-        .catch(e => console.error("Firestore set failed:", key, e.code));
+      // Retry once on failure
+      setDoc(doc(db, "users", _uid, "storage", key), { value }).catch(() =>
+        setDoc(doc(db, "users", _uid, "storage", key), { value }).catch(() => {})
+      );
     }
   },
 };
-
 
 createRoot(document.getElementById("root")).render(
   <StrictMode>

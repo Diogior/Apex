@@ -6374,6 +6374,24 @@ function AppInner() {
     return Date.now() - created > 2 * 60 * 1000;
   })();
 
+  const [retrying, setRetrying] = useState(false);
+  const [retryFailed, setRetryFailed] = useState(false);
+
+  const handleRetrySync = async () => {
+    setRetrying(true);
+    setRetryFailed(false);
+    const found = await window.storage.retrySync();
+    if (found) {
+      // Re-read user from localStorage now that sync succeeded
+      const r = await window.storage.get(USER_KEY);
+      if (r?.value) {
+        try { setUser(JSON.parse(r.value)); return; } catch {}
+      }
+    }
+    setRetrying(false);
+    setRetryFailed(true);
+  };
+
   if (!user && isReturningUser) return (
     <div className="auth-screen">
       <WaveField fixed opacity={0.18} />
@@ -6384,20 +6402,22 @@ function AppInner() {
           Couldn't load your profile
           <span>Your account exists but your data isn't on this device yet.</span>
         </div>
-        <div style={{fontSize:13,color:"var(--muted)",lineHeight:1.7,borderLeft:"3px solid var(--accent)",paddingLeft:12}}>
-          <strong style={{color:"var(--text)"}}>To restore your data:</strong><br/>
-          1. Open the app on your original device<br/>
-          2. Sign in there — this pushes your data to the cloud<br/>
-          3. Come back here and sign in again
+        <button className="auth-submit" onClick={handleRetrySync} disabled={retrying}>
+          {retrying ? "SYNCING..." : "RETRY SYNC →"}
+        </button>
+        {retryFailed && (
+          <div style={{fontSize:12,color:"var(--red,#e53e3e)",textAlign:"center",marginTop:4}}>
+            No data found in cloud. Sign in on your original device first to upload your data.
+          </div>
+        )}
+        <div style={{fontSize:12,color:"var(--muted)",lineHeight:1.7,borderLeft:"3px solid var(--border)",paddingLeft:12,marginTop:4}}>
+          If retry fails: open the app on your original device, sign in there, then come back and tap Retry Sync.
         </div>
-        <div style={{fontSize:11,color:"var(--muted)",padding:"10px 12px",background:"var(--up)",borderRadius:4,border:"1px solid var(--border)"}}>
-          Also check: Firebase Console → Firestore → Rules must allow authenticated reads/writes.
-        </div>
-        <button className="auth-submit" onClick={()=>setUser(null)||setUserLoaded(true)}>
+        <button className="auth-submit" style={{marginTop:8,background:"none",border:"2px solid var(--brutal)",color:"var(--text)",boxShadow:"3px 3px 0 var(--brutal)"}} onClick={()=>setUser(null)||setUserLoaded(true)}>
           START FRESH ON THIS DEVICE →
         </button>
         <button onClick={signOut} style={{width:"100%",marginTop:8,background:"none",border:"none",color:"var(--muted)",fontSize:12,cursor:"pointer",padding:8,fontFamily:"'Inter',sans-serif"}}>
-          Sign out and try a different account
+          Sign out
         </button>
       </div>
     </div>
