@@ -5551,7 +5551,11 @@ function DashboardScreen({ user, weightLog, onLogWeight, onDeleteWeight, onEditW
       if (r?.value) try { setReboundData(JSON.parse(r.value)?.protocol || null); } catch {}
     }).catch(() => {});
     window.storage.get(NUTRITION_KEY).then(r => {
-      if (r?.value) try { setNutLogs(JSON.parse(r.value) || []); } catch {}
+      if (r?.value) try {
+        const parsed = JSON.parse(r.value);
+        // Nutrition state is stored as { logs: [...], mode: "..." } — extract just the logs array
+        setNutLogs(Array.isArray(parsed) ? parsed : (parsed?.logs || []));
+      } catch {}
     }).catch(() => {});
     // Load latest check-in
     window.storage.get(CHECKIN_KEY).then(r => {
