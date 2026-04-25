@@ -3991,7 +3991,13 @@ async function parseMacrosWithAI(rawInput, mealName) {
     const clean = text.replace(/```json|```/g, "").trim();
     // Extract JSON object if model wraps it in prose
     const jsonStr = clean.match(/\{[\s\S]*\}/)?.[0] || clean;
-    return JSON.parse(jsonStr);
+    const result = JSON.parse(jsonStr);
+    // Sanitize — guard against AI returning null/object for items or totals
+    if (!Array.isArray(result.items)) result.items = [];
+    if (!result.totals || typeof result.totals !== "object") {
+      result.totals = { protein_g: 0, carbs_g: 0, fat_g: 0, calories: 0 };
+    }
+    return result;
   } catch {
     return parseLocalFallback(rawInput); // network error or parse failure → local
   }
@@ -4610,7 +4616,7 @@ function NutritionScreen({ user }) {
                 </div>
                 {/* Item summary */}
                 <div style={{ fontSize: 12, color: C.faint, lineHeight: 1.5, marginBottom: 8 }}>
-                  {log.items?.map(item => item.food).join(" · ") || log.rawInput}
+                  {log.items?.map(item => item.food)?.join(" · ") || log.rawInput}
                 </div>
                 <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginBottom: 6 }}>
                   {[
