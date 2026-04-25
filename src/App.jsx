@@ -3298,6 +3298,7 @@ function TrainingScreen({ user, onNavigate }) {
   const [showPath, setShowPath] = useState(false);
   const [showStats, setShowStats] = useState(false);
   const [showChart, setShowChart] = useState(false);
+  const [expandedSession, setExpandedSession] = useState(null);
   const [sessionFeedback, setSessionFeedback] = useState(null); // {text, ts, loading}
 
   useEffect(() => {
@@ -3595,24 +3596,65 @@ Give post-session feedback: what was solid, anything to flag, and one specific f
               <span style={{ color: C.accent }}>Engine: </span>{adaptation.note}
             </div>
           )}
-          {/* Per-day history */}
-          {recentSessions.length > 0 && (
-            <div style={{ marginTop: 12 }}>
-              <div style={{ fontSize: 10, letterSpacing: 1, textTransform: "uppercase", color: C.muted, marginBottom: 8 }}>Recent Sessions</div>
-              {recentSessions.slice().reverse().slice(0, 4).map((sess, i) => {
-                const setsLogged = (sess.completedExercises || []).reduce((s, ex) => s + (ex.loggedSets?.length || 0), 0);
-                const volLoad = (sess.completedExercises || []).reduce((s, ex) => s + (ex.loggedSets || []).reduce((s2, set) => s2 + (set.reps || 0) * (set.weight || 0), 0), 0);
-                const mins = Math.floor((sess.duration || 0) / 60);
+          {/* Full session history */}
+          {(tState.history || []).length > 0 && (
+            <div style={{ marginTop: 14 }}>
+              <div style={{ fontSize: 10, letterSpacing: 2, textTransform: "uppercase", color: C.muted, marginBottom: 10 }}>Workout History</div>
+              {[...(tState.history || [])].reverse().map((sess, i) => {
+                const setsLogged = (sess.completedExercises || []).reduce((s, ex) => s + (ex.loggedSets?.filter(x => x.reps && x.weight)?.length || 0), 0);
+                const volLoad    = (sess.completedExercises || []).reduce((s, ex) => s + (ex.loggedSets || []).reduce((s2, set) => s2 + (set.reps||0)*(set.weight||0), 0), 0);
+                const mins       = Math.floor((sess.duration || 0) / 60);
+                const isOpen     = expandedSession === i;
+                const dayLabel   = sess.isCustom ? "Custom" : (sess.dayKey || "Session").replace(/_/g," ").toUpperCase();
                 return (
-                  <div key={sess.ts} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "7px 0", borderBottom: i < 3 ? `1px solid ${C.border}` : "none" }}>
-                    <div>
-                      <div style={{ fontSize: 12, fontWeight: 600, color: C.text }}>{sess.dayKey.toUpperCase()}</div>
-                      <div style={{ fontSize: 10, color: C.muted }}>{new Date(sess.ts).toLocaleDateString("en-US", { month: "short", day: "numeric" })}</div>
+                  <div key={sess.ts} style={{ marginBottom: 8 }}>
+                    {/* Session row — tap to expand */}
+                    <div onClick={() => setExpandedSession(isOpen ? null : i)}
+                      style={{ display:"flex", alignItems:"center", justifyContent:"space-between", padding:"12px 14px", background: isOpen ? `${C.accent}12` : C.up, border:`2px solid ${isOpen ? C.accent : C.brutal||C.border}`, borderRadius: isOpen ? "8px 8px 0 0" : 8, cursor:"pointer", boxShadow: isOpen ? `3px 3px 0 ${C.accent}` : `3px 3px 0 ${C.brutal||C.border}`, transition:"all .15s" }}>
+                      <div>
+                        <div style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:16, letterSpacing:1, color: isOpen ? C.accent : C.text }}>{dayLabel}</div>
+                        <div style={{ fontSize:10, color:C.muted, marginTop:1 }}>
+                          {new Date(sess.ts).toLocaleDateString("en-US",{weekday:"short",month:"short",day:"numeric"})}
+                          {mins > 0 && ` · ${mins} min`}
+                        </div>
+                      </div>
+                      <div style={{ display:"flex", alignItems:"center", gap:12 }}>
+                        <div style={{ textAlign:"right" }}>
+                          <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:12, color:C.accent }}>{volLoad > 0 ? `${(volLoad/1000).toFixed(1)}k lbs` : `${setsLogged} sets`}</div>
+                          <div style={{ fontSize:9, color:C.muted }}>{setsLogged} sets logged</div>
+                        </div>
+                        <div style={{ fontSize:14, color: isOpen ? C.accent : C.muted, transition:"transform .2s", transform: isOpen ? "rotate(180deg)" : "none" }}>⌄</div>
+                      </div>
                     </div>
-                    <div style={{ textAlign: "right" }}>
-                      <div style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: 12, color: C.faint }}>{volLoad > 0 ? `${(volLoad/1000).toFixed(1)}k lbs` : `${setsLogged} sets`}</div>
-                      <div style={{ fontSize: 10, color: C.muted }}>{mins > 0 ? `${mins} min` : "—"}</div>
-                    </div>
+                    {/* Expanded exercise + set detail */}
+                    {isOpen && (
+                      <div style={{ background:C.surface, border:`2px solid ${C.accent}`, borderTop:"none", borderRadius:"0 0 8px 8px", padding:"12px 14px", animation:"slideUp .2s ease" }}>
+                        {(sess.completedExercises || []).filter(ex => (ex.loggedSets||[]).some(s=>s.reps&&s.weight)).map((ex, ei) => {
+                          const workSets = (ex.loggedSets||[]).filter(s=>s.reps&&s.weight);
+                          const topSet   = workSets.reduce((best, s) => parseFloat(s.weight)>parseFloat(best.weight||0)?s:best, {});
+                          return (
+                            <div key={ei} style={{ marginBottom: ei < sess.completedExercises.length-1 ? 14 : 0 }}>
+                              <div style={{ display:"flex", alignItems:"baseline", justifyContent:"space-between", marginBottom:6 }}>
+                                <div style={{ fontSize:12, fontWeight:600, color:C.text }}>{ex.name}</div>
+                                <div style={{ fontSize:10, color:C.accent, fontFamily:"'JetBrains Mono',monospace" }}>
+                                  {topSet.weight && `Top: ${topSet.weight} × ${topSet.reps}`}
+                                </div>
+                              </div>
+                              <div style={{ display:"flex", flexWrap:"wrap", gap:4 }}>
+                                {workSets.map((set, si) => (
+                                  <div key={si} style={{ fontSize:10, fontFamily:"'JetBrains Mono',monospace", background:`${C.accent}12`, border:`1px solid ${C.accent}30`, borderRadius:4, padding:"3px 8px", color:C.faint }}>
+                                    {set.weight}×{set.reps}{set.rpe ? ` @${set.rpe}` : ""}
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          );
+                        })}
+                        {(sess.completedExercises||[]).every(ex=>(ex.loggedSets||[]).every(s=>!s.reps||!s.weight)) && (
+                          <div style={{ fontSize:12, color:C.muted, fontStyle:"italic" }}>No sets were logged with weight and reps.</div>
+                        )}
+                      </div>
+                    )}
                   </div>
                 );
               })}
