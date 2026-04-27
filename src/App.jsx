@@ -2146,6 +2146,49 @@ const CBUM_PPL = {
   ],
 };
 
+const DRSWOLE_PPLUL = {
+  upper: [
+    { id:"u1", name:"Bench Press",            muscle:"chest",   category:"compound",  sets:3, repRange:"1×2–5, 2×3–8",   rpe:3, targetSets:3, notes:"First set heavier — work up to a top set, then back off 10–15% for the remaining two" },
+    { id:"u2", name:"Weighted Chin-ups",       muscle:"back",    category:"compound",  sets:3, repRange:"1×5–8, 2×6–10",  rpe:3, targetSets:3, notes:"Add weight via belt — full hang at bottom, chin clears bar at top" },
+    { id:"u3", name:"Incline Dumbbell Fly",    muscle:"chest",   category:"isolation", sets:3, repRange:"10–15",            rpe:4, targetSets:3, notes:"Deep stretch at bottom, squeeze at peak — keep elbows slightly soft" },
+    { id:"u4", name:"Chest-Supported Row",     muscle:"back",    category:"compound",  sets:4, repRange:"8–12",             rpe:4, targetSets:4, notes:"Chest on pad removes lower back from the equation — focus entirely on elbow drive" },
+    { id:"u5", name:"Rope Pressdown",          muscle:"triceps", category:"isolation", sets:3, repRange:"12–20",            rpe:5, targetSets:3, notes:"Spread the rope at the bottom — feel the long head stretch at top" },
+    { id:"u6", name:"Dumbbell Lateral Raise",  muscle:"delts",   category:"isolation", sets:3, repRange:"8–12",             rpe:5, targetSets:3, notes:"Lead with elbow, not wrist — slight forward lean amplifies medial delt" },
+  ],
+  lower1: [
+    { id:"l1_1", name:"Squat",                 muscle:"quads",  category:"compound",  sets:3, repRange:"1×2–4, 2×3–6",   rpe:3, targetSets:3, notes:"Top set then back-off — brace hard, depth below parallel, knees track over toes" },
+    { id:"l1_2", name:"Romanian Deadlift",     muscle:"hams",   category:"compound",  sets:3, repRange:"6–10",             rpe:3, targetSets:3, notes:"Hip hinge — maintain tension in hamstrings throughout, no lower back rounding" },
+    { id:"l1_3", name:"Barbell Back Extension",muscle:"hams",   category:"isolation", sets:3, repRange:"8–12",             rpe:4, targetSets:3, notes:"Hold at top — glute and hamstring initiation, not lower back" },
+    { id:"l1_4", name:"Leg Extension",         muscle:"quads",  category:"isolation", sets:3, repRange:"10–15",            rpe:5, targetSets:3, notes:"Peak contraction at top — slow the negative, 2–3 second eccentric" },
+    { id:"l1_5", name:"Lying Bicep Curl",      muscle:"biceps", category:"isolation", sets:4, repRange:"6–10",             rpe:4, targetSets:4, notes:"Lie on incline bench — full stretch at bottom provides constant tension" },
+    { id:"l1_6", name:"Machine Calf Raise",    muscle:"calves", category:"isolation", sets:4, repRange:"10–15 / 3–5",     rpe:4, targetSets:4, notes:"1 higher-rep set then heavier sets — full range, pause at stretch and peak" },
+  ],
+  pull: [
+    { id:"pu1", name:"Meadows Row",                    muscle:"back",   category:"compound",  sets:3, repRange:"6–10",   rpe:3, targetSets:3, notes:"T-bar style landmine row — elbow flares slightly, drive through the hip" },
+    { id:"pu2", name:"Cable Row",                      muscle:"back",   category:"compound",  sets:3, repRange:"8–12",   rpe:4, targetSets:3, notes:"Sit tall — retract scapula at peak contraction, controlled return" },
+    { id:"pu3", name:"Reverse Grip Lat Pulldown",      muscle:"back",   category:"compound",  sets:3, repRange:"10–15",  rpe:4, targetSets:3, notes:"Supinated grip engages biceps and lower lats — pull to upper chest" },
+    { id:"pu4", name:"Dumbbell Lateral Raise",         muscle:"delts",  category:"isolation", sets:4, repRange:"12–20",  rpe:5, targetSets:4, notes:"Higher reps here — chase the burn, control the eccentric" },
+    { id:"pu5", name:"Face Pull",                      muscle:"delts",  category:"isolation", sets:3, repRange:"12–20",  rpe:5, targetSets:3, notes:"Pull to face level, external rotation at peak — shoulder health essential" },
+    { id:"pu6", name:"Barbell Shrug",                  muscle:"back",   category:"isolation", sets:3, repRange:"8–12",   rpe:4, targetSets:3, notes:"Straight up — no rolling, hold 1 second at top, full depression at bottom" },
+  ],
+  push: [
+    { id:"ph1", name:"Weighted Dips",           muscle:"chest",   category:"compound",  sets:3, repRange:"5–8",    rpe:3, targetSets:3, notes:"Lean forward for chest emphasis — full lockout at top, deep stretch at bottom" },
+    { id:"ph2", name:"Close-Grip Bench Press",  muscle:"triceps", category:"compound",  sets:3, repRange:"6–10",   rpe:3, targetSets:3, notes:"Elbows close to torso — tricep dominant, feel the long head load at bottom" },
+    { id:"ph3", name:"Seated Dumbbell Curl",    muscle:"biceps",  category:"isolation", sets:3, repRange:"8–12",   rpe:4, targetSets:3, notes:"Seated removes cheating — supinate at top, slow negative" },
+    { id:"ph4", name:"Machine Overhead Press",  muscle:"delts",   category:"compound",  sets:3, repRange:"8–12",   rpe:4, targetSets:3, notes:"Seated machine stabilizes — full lockout overhead, controlled descent" },
+    { id:"ph5", name:"EZ Bar Skull Crusher",    muscle:"triceps", category:"isolation", sets:3, repRange:"6–10",   rpe:4, targetSets:3, notes:"Lower to forehead — long head stretch, explode on the concentric" },
+    { id:"ph6", name:"Cable Hammer Curl",       muscle:"biceps",  category:"isolation", sets:3, repRange:"10–15",  rpe:5, targetSets:3, notes:"Neutral grip targets brachialis — constant cable tension throughout" },
+  ],
+  legs: [
+    { id:"lg1", name:"Deadlift",                      muscle:"hams",   category:"compound",  sets:2, repRange:"3–5",        rpe:2, targetSets:2, notes:"2 heavy working sets — brace, drive floor away, lock hips and knees together at top" },
+    { id:"lg2", name:"Paused Squat",                  muscle:"quads",  category:"compound",  sets:5, repRange:"3–5",        rpe:3, targetSets:5, notes:"2-second pause at the bottom — eliminates stretch reflex, builds raw strength" },
+    { id:"lg3", name:"Smith Machine Split Squat",     muscle:"quads",  category:"compound",  sets:3, repRange:"8–12",       rpe:4, targetSets:3, notes:"Front foot elevated — deep range of motion, keep front knee tracking over toe" },
+    { id:"lg4", name:"Leg Curl",                      muscle:"hams",   category:"isolation", sets:2, repRange:"10–15",      rpe:4, targetSets:2, notes:"Curl to full contraction — plantar flex foot at peak for extra hamstring peak" },
+    { id:"lg5", name:"Leaning Cable Lateral Raise",   muscle:"delts",  category:"isolation", sets:3, repRange:"10–15",      rpe:5, targetSets:3, notes:"Hold cable stack, lean away — stretches medial delt at bottom of each rep" },
+    { id:"lg6", name:"Leg Press Calf Raise",          muscle:"calves", category:"isolation", sets:4, repRange:"1×8–12, 3–5", rpe:4, targetSets:4, notes:"Full range — toes on edge of platform, pause at stretch and peak contraction" },
+  ],
+};
+
 const SPLITS = {
   ppl: {
     id:"ppl", label:"Mr. Olympia's PPL Split", abbr:"PPL",
@@ -2173,15 +2216,16 @@ const SPLITS = {
     ],
   },
   pplup: {
-    id:"pplup", label:"PPL + Upper", abbr:"PPL+U",
-    desc:"5-day hybrid. Adds a dedicated upper-body day for enhanced arm/shoulder development.",
+    id:"pplup", label:"Dr. Swole's PPL Upper Lower", abbr:"PPLUL",
+    desc:"Dr. Swole's 5-day Push Pull Legs Upper Lower — Moderate Volume v2. 19–20 sets per session across all major muscle groups. Balanced frequency with strategic overlap.",
     frequency:5,
+    preset: DRSWOLE_PPLUL,
     schedule: [
-      { key:"push",   tag:"Push",   muscles:["chest","delts","triceps"] },
-      { key:"pull",   tag:"Pull",   muscles:["back","biceps"] },
-      { key:"legs",   tag:"Legs",   muscles:["quads","hams","calves"] },
-      { key:"upper",  tag:"Upper",  muscles:["chest","back","delts","biceps","triceps"] },
-      { key:"arms",   tag:"Arms",   muscles:["biceps","triceps","abs"] },
+      { key:"upper",  tag:"Upper",   muscles:["chest","back","delts","biceps","triceps"] },
+      { key:"lower1", tag:"Lower 1", muscles:["quads","hams","calves","biceps"] },
+      { key:"pull",   tag:"Pull",    muscles:["back","delts","biceps","traps"] },
+      { key:"push",   tag:"Push",    muscles:["chest","delts","triceps","biceps"] },
+      { key:"legs",   tag:"Legs",    muscles:["quads","hams","calves","delts"] },
     ],
   },
 };
