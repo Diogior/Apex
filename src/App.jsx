@@ -1320,10 +1320,11 @@ function computeFatigueDebt(trainingHistory, baselineSessions = 4) {
     debt += Math.max(0, sessions.length - baselineSessions) * 3;
     sessions.forEach(sess => {
       const sets  = (sess.completedExercises || []).flatMap(ex => ex.loggedSets || []);
-      const rpeSets = sets.filter(s => s.rpe);
-      const avgRpe  = rpeSets.length ? rpeSets.reduce((s, x) => s + parseFloat(x.rpe), 0) / rpeSets.length : 7;
-      if (avgRpe > 9.0) debt += 7;
-      else if (avgRpe > 8.5) debt += 4;
+      const sfrSets = sets.filter(s => s.rpe);
+      const avgSfr  = sfrSets.length ? sfrSets.reduce((s, x) => s + parseFloat(x.rpe), 0) / sfrSets.length : 3;
+      // Low SFR = high fatigue cost; invert for debt calculation
+      if (avgSfr <= 2) debt += 7;
+      else if (avgSfr <= 3) debt += 4;
     });
   }
   return Math.round(Math.max(0, debt - 15));
@@ -2871,12 +2872,12 @@ function WorkoutSession({ dayKey, dayPlan, adaptation, history = [], onComplete,
     setToastCountdown(4);
   };
 
-  const rpeColor = (r) => {
+  const sfrColor = (r) => {
     const n = parseFloat(r);
     if (!n) return C.muted;
-    if (n >= 9) return C.red;
-    if (n >= 8) return C.accent;
-    return C.green;
+    if (n >= 4) return C.green;   // high stimulus, low fatigue — ideal
+    if (n >= 3) return C.accent;  // moderate trade-off
+    return C.red;                  // high fatigue, low stimulus — reconsider
   };
 
   return (
@@ -2961,7 +2962,7 @@ function WorkoutSession({ dayKey, dayPlan, adaptation, history = [], onComplete,
                       <span style={{ fontSize: 11, color: C.muted }}>·</span>
                       <span style={{ fontSize: 11, color: C.faint }}>{ex.repRange} reps</span>
                       <span style={{ fontSize: 11, color: C.muted }}>·</span>
-                      <span style={{ fontSize: 11, color: C.faint }}>RPE {ex.rpe}</span>
+                      <span style={{ fontSize: 11, color: C.faint }}>Target SFR {ex.rpe >= 8 ? "3" : ex.rpe >= 7 ? "4" : "5"}</span>
                     </div>
                     {prevSummary && !isOpen && (
                       <div style={{ marginTop: 6, fontSize: 10, color: C.muted, fontFamily: "'JetBrains Mono',monospace" }}>
@@ -2997,11 +2998,11 @@ function WorkoutSession({ dayKey, dayPlan, adaptation, history = [], onComplete,
 
                   {/* Column headers */}
                   <div style={{ display: "grid", gridTemplateColumns: "28px 1fr 1fr 1fr 28px", gap: 6, padding: "4px 0 6px", borderBottom: `1px solid ${C.border}`, marginBottom: 8 }}>
-                    {["#","WEIGHT","REPS","RPE",""].map(h => (
+                    {["#","WEIGHT","REPS","SFR",""].map(h => (
                       <div key={h} style={{ fontSize: 9, letterSpacing: 1, textTransform: "uppercase", color: C.muted, textAlign: "center" }}>{h}</div>
                     ))}
                   </div>
-                  {exIdx === 0 && <div style={{ fontSize: 10, color: C.muted, marginBottom: 8, lineHeight: 1.5 }}>RPE = Rate of Perceived Exertion (6–10). 10 = absolute failure, 8 = 2 reps left in tank.</div>}
+                  {exIdx === 0 && <div style={{ fontSize: 10, color: C.muted, marginBottom: 8, lineHeight: 1.5 }}>SFR = Stimulus to Fatigue Ratio (1–5). 5 = max stimulus, minimal fatigue. 1 = high fatigue, little growth stimulus.</div>}
 
                   {sets.map((set, si) => {
                     const done = set.reps && set.weight;
@@ -3017,6 +3018,7 @@ function WorkoutSession({ dayKey, dayPlan, adaptation, history = [], onComplete,
                             <div style={{ fontSize: 9, color: C.faint, fontFamily: "'JetBrains Mono',monospace", textAlign: "center", letterSpacing: .5 }}>{prev.weight || "—"}</div>
                             <div style={{ fontSize: 9, color: C.faint, fontFamily: "'JetBrains Mono',monospace", textAlign: "center", letterSpacing: .5 }}>{prev.reps || "—"}</div>
                             <div style={{ fontSize: 9, color: C.faint, fontFamily: "'JetBrains Mono',monospace", textAlign: "center", letterSpacing: .5 }}>{prev.rpe || "—"}</div>
+                            {/* rpe field preserved in data as-is for backwards compat */}
                             <div/>
                           </div>
                         )}
@@ -3028,10 +3030,10 @@ function WorkoutSession({ dayKey, dayPlan, adaptation, history = [], onComplete,
                           <input type="number" placeholder={repsPlaceholder} value={set.reps}
                             onChange={e => updateSet(ex.id, si, "reps", e.target.value)}
                             style={{ background: C.surface, border: `2px solid ${done ? C.accent + "40" : C.border}`, borderRadius: 8, padding: "9px 8px", color: C.text, fontSize: 13, fontFamily: "'JetBrains Mono',monospace", textAlign: "center", outline: "none", width: "100%", transition: "border-color .2s" }} />
-                          <input type="number" min="6" max="10" step="0.5" placeholder="RPE"
+                          <input type="number" min="1" max="5" step="1" placeholder="SFR"
                             value={set.rpe}
                             onChange={e => updateSet(ex.id, si, "rpe", e.target.value)}
-                            style={{ background: C.surface, border: `1px solid ${set.rpe ? rpeColor(set.rpe) + "50" : C.border}`, borderRadius: 8, padding: "9px 8px", color: set.rpe ? rpeColor(set.rpe) : C.muted, fontSize: 13, fontFamily: "'JetBrains Mono',monospace", textAlign: "center", outline: "none", width: "100%" }} />
+                            style={{ background: C.surface, border: `1px solid ${set.rpe ? sfrColor(set.rpe) + "50" : C.border}`, borderRadius: 8, padding: "9px 8px", color: set.rpe ? sfrColor(set.rpe) : C.muted, fontSize: 13, fontFamily: "'JetBrains Mono',monospace", textAlign: "center", outline: "none", width: "100%" }} />
                           <div style={{ display: "flex", alignItems: "center", justifyContent: "center" }}>
                             {isPR ? <div style={{ fontSize: 10, color: C.accent, fontWeight: 700 }}>▲</div>
                               : done ? <div style={{ width: 16, height: 16, borderRadius: "50%", background: C.green, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 9 }}>✓</div>
@@ -3258,7 +3260,7 @@ function TrainingScreen({ user, onNavigate }) {
 
       const mins = Math.floor((result.duration || 0) / 60);
       const allSets = exercises.flatMap(ex => ex.loggedSets || []).filter(s => s.rpe);
-      const avgRpe = allSets.length ? (allSets.reduce((s, x) => s + x.rpe, 0) / allSets.length).toFixed(1) : "N/A";
+      const avgRpe = allSets.length ? (allSets.reduce((s, x) => s + parseFloat(x.rpe||3), 0) / allSets.length).toFixed(1) : "N/A";
 
       const res = await fetch("/api/chat", {
         method: "POST",
@@ -3271,7 +3273,7 @@ function TrainingScreen({ user, onNavigate }) {
             role: "user",
             content: `Athlete: ${user.name}, ${user.level||"intermediate"} level, goal: ${user.goal||"bulk"}.
 
-Session: ${result.dayKey.toUpperCase()} — ${mins} min, avg RPE ${avgRpe}
+Session: ${result.dayKey.toUpperCase()} — ${mins} min, avg SFR ${avgRpe} (Stimulus to Fatigue Ratio, 1–5 scale)
 ${sessionSummary}
 
 14-day muscle volume — groups below MEV:
