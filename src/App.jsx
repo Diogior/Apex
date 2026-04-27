@@ -4018,7 +4018,7 @@ function MealLogModal({ onSave, onClose, existingLog }) {
 
   const handleParse = async () => {
     if (!rawInput.trim()) return setError("Enter what you ate first.");
-    if (!mealName.trim()) setMealName("Meal " + new Date().toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" }));
+    if (!mealName.trim()) setMealName("Meal");
     setError("");
     setStep("parsing");
     setParsing(true);
@@ -4082,9 +4082,15 @@ function MealLogModal({ onSave, onClose, existingLog }) {
 
             {/* Meal name */}
             <div style={{ marginBottom: 14 }}>
-              <div style={{ fontSize: 11, letterSpacing: 1, textTransform: "uppercase", color: C.muted, marginBottom: 6 }}>Meal Name (optional)</div>
-              <input value={mealName} onChange={e => setMealName(e.target.value)} placeholder="e.g. Breakfast, Post-Workout, Dinner"
-                style={{ width: "100%", background: C.up, border: `1px solid ${C.border}`, borderRadius: 10, padding: "12px 14px", color: C.text, fontSize: 14, fontFamily: "'Inter',sans-serif", outline: "none" }} />
+              <div style={{ fontSize: 11, letterSpacing: 1, textTransform: "uppercase", color: C.muted, marginBottom: 8 }}>Meal Type</div>
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
+                {["Breakfast", "Lunch", "Dinner", "Snack"].map(opt => (
+                  <button key={opt} onClick={() => setMealName(mealName === opt ? "" : opt)}
+                    style={{ padding: "12px 8px", background: mealName === opt ? "var(--brutal)" : "var(--card)", border: `2px solid var(--brutal)`, borderRadius: 6, boxShadow: mealName === opt ? "none" : `3px 3px 0 var(--brutal)`, cursor: "pointer", fontFamily: "'Bebas Neue',sans-serif", fontSize: 14, letterSpacing: 1.5, color: mealName === opt ? "var(--card)" : "var(--brutal)", transition: "all .12s", transform: mealName === opt ? "translate(2px,2px)" : "" }}>
+                    {opt}
+                  </button>
+                ))}
+              </div>
             </div>
 
             {/* Quick refs */}
