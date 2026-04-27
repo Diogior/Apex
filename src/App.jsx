@@ -90,68 +90,14 @@ body{background:var(--bg);color:var(--text);font-family:'Inter',sans-serif;-webk
 .auth-loading-text{font-family:'Bebas Neue',sans-serif;font-size:18px;letter-spacing:3px;color:var(--muted);animation:pulse 2s infinite;}
 
 /* ── SSJ LOADING ─────────────────────────────────────────────────────────── */
-@keyframes ssj-shake{0%,100%{transform:translateX(0)}20%{transform:translateX(-4px)}40%{transform:translateX(4px)}60%{transform:translateX(-2px)}80%{transform:translateX(2px)}}
-@keyframes ssj-aura{0%,100%{transform:scale(1) translateY(0);opacity:.7}50%{transform:scale(1.18) translateY(-6px);opacity:1}}
-@keyframes ssj-aura2{0%,100%{transform:scale(1.05) translateY(2px);opacity:.5}50%{transform:scale(1.22) translateY(-4px);opacity:.85}}
-@keyframes ssj-flash{0%,72%,78%,100%{opacity:0}74%,76%{opacity:1}}
-@keyframes ssj-lightning{0%,79%,83%,88%,93%,100%{opacity:0}80%,84%,90%{opacity:1}}
-@keyframes ssj-hair{0%,30%{background:#1a1a1a;box-shadow:none}70%{background:#1a1a1a}80%{background:#ffe600;box-shadow:0 0 12px #ffe600,0 0 28px #ffaa00}100%{background:#FFD700;box-shadow:0 0 20px #FFD700,0 0 50px #FF8C00}}
-@keyframes ssj-spike-rise{0%,30%{transform:scaleY(1) translateY(0)}70%{transform:scaleY(1) translateY(0)}80%{transform:scaleY(1.5) translateY(-12px)}100%{transform:scaleY(1.9) translateY(-22px)}}
-@keyframes ssj-eyes{0%,79%{background:#2a1a0a}80%{background:#aaffcc;box-shadow:0 0 6px #00ff88}100%{background:#66ffaa;box-shadow:0 0 10px #00ff66}}
-@keyframes ssj-power{0%{opacity:0;letter-spacing:3px;color:#666}30%{opacity:1;color:#999}79%{color:#999;letter-spacing:3px}80%{color:#FFD700;letter-spacing:6px;text-shadow:0 0 12px #FFD700}100%{color:#FFD700;letter-spacing:8px;text-shadow:0 0 20px #FFD700,0 0 40px #FF8C00}}
+@keyframes apexLoad{0%{transform:translateX(-100%)}100%{transform:translateX(260%)}}
 @keyframes ssj-overlay-in{from{opacity:0}to{opacity:1}}
 
-.ssj-overlay{position:fixed;inset:0;background:#000;z-index:500;display:flex;flex-direction:column;align-items:center;justify-content:center;animation:ssj-overlay-in .25s ease;}
-.ssj-flash{position:absolute;inset:0;background:#fff;animation:ssj-flash 3s ease-in-out infinite;pointer-events:none;}
-.ssj-aura{position:absolute;width:180px;height:240px;border-radius:50%;background:radial-gradient(ellipse,rgba(255,220,0,.45) 0%,rgba(255,160,0,.25) 40%,transparent 70%);filter:blur(8px);animation:ssj-aura 1.2s ease-in-out infinite;}
-.ssj-aura2{position:absolute;width:260px;height:320px;border-radius:50%;background:radial-gradient(ellipse,rgba(255,200,0,.25) 0%,rgba(255,120,0,.1) 50%,transparent 70%);filter:blur(16px);animation:ssj-aura2 1.2s ease-in-out infinite;}
-
-.ssj-char{position:relative;animation:ssj-shake 3s ease-in-out infinite;}
-/* Hair spikes */
-.ssj-hair{position:absolute;top:-72px;left:50%;transform:translateX(-50%);width:60px;height:70px;}
-.ssj-spike{position:absolute;animation:ssj-hair 3s ease-in-out infinite,ssj-spike-rise 3s ease-in-out infinite;transform-origin:bottom center;}
-.ssj-sp1{width:18px;height:52px;left:21px;top:0;background:#1a1a1a;clip-path:polygon(30% 0%,70% 0%,100% 100%,0% 100%);border-radius:4px 4px 0 0;}
-.ssj-sp2{width:14px;height:40px;left:4px;top:12px;background:#1a1a1a;clip-path:polygon(20% 0%,100% 20%,100% 100%,0% 100%);transform-origin:bottom right;}
-.ssj-sp3{width:14px;height:44px;left:42px;top:8px;background:#1a1a1a;clip-path:polygon(0% 10%,80% 0%,100% 100%,0% 100%);transform-origin:bottom left;}
-.ssj-sp4{width:12px;height:34px;left:0;top:24px;background:#1a1a1a;clip-path:polygon(10% 0%,100% 30%,90% 100%,0% 100%);transform-origin:bottom right;}
-.ssj-sp5{width:12px;height:36px;left:48px;top:22px;background:#1a1a1a;clip-path:polygon(0% 30%,90% 0%,100% 100%,0% 100%);transform-origin:bottom left;}
-.ssj-sp6{width:16px;height:28px;left:14px;top:30px;background:#1a1a1a;clip-path:polygon(50% 0%,100% 100%,0% 100%);transform-origin:bottom center;}
-.ssj-sp7{width:10px;height:22px;left:36px;top:36px;background:#1a1a1a;clip-path:polygon(50% 0%,100% 100%,0% 100%);}
-.ssj-hair-base{position:absolute;bottom:0;left:4px;width:52px;height:30px;background:#1a1a1a;border-radius:14px 14px 0 0;animation:ssj-hair 3s ease-in-out infinite;}
-/* Face */
-.ssj-head{width:56px;height:54px;background:#F2A05E;border-radius:50%;position:relative;}
-.ssj-eye-l,.ssj-eye-r{position:absolute;width:9px;height:7px;background:#2a1a0a;border-radius:3px 3px 0 0;top:22px;animation:ssj-eyes 3s ease-in-out infinite;}
-.ssj-eye-l{left:10px;}.ssj-eye-r{right:10px;}
-.ssj-brow-l,.ssj-brow-r{position:absolute;width:12px;height:3px;background:#3a1a00;border-radius:2px;top:16px;}
-.ssj-brow-l{left:8px;transform:rotate(-8deg);}.ssj-brow-r{right:8px;transform:rotate(8deg);}
-.ssj-nose{position:absolute;width:5px;height:4px;background:#d4854a;border-radius:0 0 3px 3px;top:30px;left:calc(50% - 2.5px);}
-/* Neck */
-.ssj-neck{width:18px;height:10px;background:#F2A05E;margin:0 auto;}
-/* Body — orange gi */
-.ssj-body{width:72px;height:76px;background:#E07820;border-radius:8px 8px 4px 4px;position:relative;margin:0 auto;}
-.ssj-gi-v{position:absolute;top:0;left:50%;transform:translateX(-50%);width:14px;height:76px;background:#1a5ca8;border-radius:0 0 4px 4px;}
-.ssj-shoulder-l,.ssj-shoulder-r{position:absolute;top:0;width:22px;height:18px;background:#1a5ca8;}
-.ssj-shoulder-l{left:0;border-radius:8px 0 0 0;}.ssj-shoulder-r{right:0;border-radius:0 8px 0 0;}
-.ssj-belt{position:absolute;bottom:0;left:0;right:0;height:14px;background:#1a5ca8;border-radius:0 0 4px 4px;}
-/* Arms */
-.ssj-arm-l,.ssj-arm-r{position:absolute;width:18px;height:58px;background:#E07820;border-radius:6px;top:0;}
-.ssj-arm-l{left:-20px;}.ssj-arm-r{right:-20px;}
-.ssj-glove-l,.ssj-glove-r{position:absolute;bottom:0;width:18px;height:16px;background:#fff;border-radius:0 0 5px 5px;}
-/* Legs */
-.ssj-legs{display:flex;gap:6px;margin:0 auto;width:72px;}
-.ssj-leg-l,.ssj-leg-r{width:30px;height:56px;background:#1a5ca8;border-radius:4px;}
-.ssj-boot-l,.ssj-boot-r{width:30px;height:20px;background:#8B2500;border-radius:2px 2px 4px 4px;}
-
-/* Lightning bolts */
-.ssj-lightning-wrap{position:absolute;inset:0;pointer-events:none;}
-.ssj-bolt{position:absolute;width:3px;background:linear-gradient(to bottom,#fff,#ffe600,transparent);border-radius:2px;animation:ssj-lightning 3s ease-in-out infinite;transform-origin:top center;}
-.ssj-b1{height:80px;top:10%;left:20%;transform:rotate(15deg);animation-delay:0s;}
-.ssj-b2{height:60px;top:15%;right:22%;transform:rotate(-12deg);animation-delay:.08s;}
-.ssj-b3{height:100px;top:5%;left:35%;transform:rotate(6deg);animation-delay:.04s;}
-.ssj-b4{height:70px;top:8%;right:38%;transform:rotate(-8deg);animation-delay:.12s;}
-.ssj-b5{height:50px;top:20%;left:12%;transform:rotate(20deg);animation-delay:.06s;}
-
-.ssj-power-text{font-family:'Bebas Neue',sans-serif;font-size:16px;letter-spacing:3px;margin-top:32px;animation:ssj-power 3s ease-in-out infinite;}
+.ssj-overlay{position:fixed;inset:0;background:var(--bg);z-index:500;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:28px;animation:ssj-overlay-in .2s ease;}
+.apex-loader-word{font-family:'Bebas Neue',sans-serif;font-size:clamp(48px,12vw,72px);letter-spacing:8px;color:var(--text);line-height:1;}
+.apex-loader-bar{width:160px;height:2px;background:var(--border);border-radius:1px;overflow:hidden;position:relative;}
+.apex-loader-fill{position:absolute;top:0;left:0;width:50%;height:100%;background:var(--brutal);border-radius:1px;animation:apexLoad 1.4s cubic-bezier(.4,0,.2,1) infinite;}
+.apex-loader-label{font-size:10px;letter-spacing:3px;text-transform:uppercase;color:var(--muted);font-weight:600;}
 
 /* ─── ONBOARD v2 — EDITORIAL REDESIGN ─────────────────────────────────────── */
 .ob2{min-height:100vh;display:flex;flex-direction:column;background:var(--bg);overflow:hidden;}
@@ -411,13 +357,13 @@ body{background:var(--bg);color:var(--text);font-family:'Inter',sans-serif;-webk
 
 /* NAV */
 .nav{position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:430px;padding:10px 14px 26px;z-index:100;background:transparent;}
-.nav-pill{position:relative;display:flex;background:rgba(18,18,20,0.82);border-radius:16px;backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);box-shadow:inset 1px 1px 4px rgba(255,255,255,0.1),inset -1px -1px 6px rgba(0,0,0,0.4),0 4px 24px rgba(0,0,0,0.45);overflow:hidden;border:1px solid rgba(255,255,255,0.07);}
-.nav-glider{position:absolute;top:0;bottom:0;border-radius:14px;z-index:1;transition:transform .5s cubic-bezier(.37,1.95,.66,.56);background:linear-gradient(135deg,rgba(245,166,35,0.22),rgba(245,166,35,0.48));box-shadow:0 0 18px rgba(245,166,35,0.3),inset 0 0 10px rgba(255,210,100,0.15);}
-.ni{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;cursor:pointer;padding:10px 4px;border:none;background:transparent;color:rgba(255,255,255,0.38);position:relative;z-index:2;transition:color .3s ease;}
-.ni:active{transform:scale(0.9);}
+.nav-pill{position:relative;display:flex;background:var(--card);border-radius:8px;border:2px solid var(--brutal);box-shadow:4px 4px 0 var(--brutal);overflow:hidden;}
+.nav-glider{position:absolute;top:0;bottom:0;border-radius:6px;z-index:1;transition:transform .4s cubic-bezier(.22,1,.36,1);background:var(--brutal);}
+.ni{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;cursor:pointer;padding:10px 4px;border:none;background:transparent;color:var(--muted);position:relative;z-index:2;transition:color .2s ease;}
+.ni:active{transform:scale(0.92);}
 .ni svg{width:20px;height:20px;}
-.ni-label{font-size:9px;font-weight:600;letter-spacing:.3px;color:inherit;transition:color .3s;}
-.ni.on{color:#fff;}
+.ni-label{font-size:9px;font-weight:600;letter-spacing:.3px;color:inherit;transition:color .2s;}
+.ni.on{color:var(--card);}
 
 /* SCREENS */
 .screen{padding:0 0 96px;min-height:100vh;animation:screenIn .28s cubic-bezier(.22,1,.36,1);}
@@ -466,22 +412,14 @@ body{background:var(--bg);color:var(--text);font-family:'Inter',sans-serif;-webk
 .wt-log-btn.saved{background:var(--green);}
 .wt-log-btn:not(:disabled):hover{box-shadow:inset 0 0.3rem 0.5rem rgba(255,255,255,0.45),inset 0 -0.1rem 0.3rem rgba(0,0,0,0.5),inset 0 -0.35rem 0.7rem rgba(255,255,255,0.6),0 0.6rem 0.8rem -0.4rem rgba(0,0,0,0.7);}
 /* ── CUBE BUTTON ───────────────────────────────────────────────────────────── */
-.cube-btn{display:inline-block;padding:0.6em 1.4em;background:transparent;border:0;outline:none;color:var(--accent);letter-spacing:0.12em;font-family:'Bebas Neue',monospace;font-size:15px;font-weight:bold;cursor:pointer;position:relative;transition:all .5s;z-index:1;}
-.cube-btn.sm{font-size:11px;padding:0.45em 1em;letter-spacing:0.1em;}
+.cube-btn{display:inline-flex;align-items:center;justify-content:center;padding:0.62em 1.4em;background:var(--card);border:2px solid var(--brutal);border-radius:4px;box-shadow:3px 3px 0 var(--brutal);color:var(--brutal);letter-spacing:0.12em;font-family:'Bebas Neue',sans-serif;font-size:15px;font-weight:bold;cursor:pointer;transition:transform .1s,box-shadow .1s;}
+.cube-btn.sm{font-size:11px;padding:0.42em 1em;letter-spacing:0.1em;}
 .cube-btn:disabled{opacity:.38;cursor:not-allowed;pointer-events:none;}
-.cube-top{position:absolute;height:8px;background:var(--accent);bottom:100%;left:5px;right:-5px;transform:skew(-45deg,0);margin:0;transition:all .4s;}
-.cube-right{position:absolute;background:var(--accent);top:-5px;z-index:0;bottom:5px;width:8px;left:100%;transform:skew(0,-45deg);transition:all .4s;}
-.cube-face{position:absolute;left:0;bottom:0;top:0;right:0;background:var(--accent);transition:all .4s;}
-.cube-inner{background:#1A1917;position:absolute;left:2px;right:2px;top:2px;bottom:2px;transition:all .4s;}
-.cube-text{position:relative;transition:all .4s;}
-.cube-btn:not(:disabled):hover .cube-inner{background:var(--accent);}
-.cube-btn:not(:disabled):hover .cube-text{color:#1A1917;}
-.cube-btn:not(:disabled):hover .cube-right,.cube-btn:not(:disabled):hover .cube-face,.cube-btn:not(:disabled):hover .cube-top{background:#1A1917;}
-.cube-btn.saved .cube-inner{background:var(--green);}
-.cube-btn.saved{color:var(--green);}
-.cube-btn.saved .cube-top,.cube-btn.saved .cube-right,.cube-btn.saved .cube-face{background:var(--green);}
-.cube-btn:active:not(:disabled){animation:cubeBounce .1s linear;}
-@keyframes cubeBounce{50%{transform:scale(0.9);}}
+.cube-btn:not(:disabled):hover{transform:translate(-1px,-1px);box-shadow:4px 4px 0 var(--brutal);}
+.cube-btn:not(:disabled):active{transform:translate(2px,2px);box-shadow:1px 1px 0 var(--brutal);}
+.cube-btn.saved{border-color:var(--green);box-shadow:3px 3px 0 var(--green);color:var(--green);}
+.cube-btn.saved:not(:disabled):hover{box-shadow:4px 4px 0 var(--green);}
+.cube-btn.saved:not(:disabled):active{box-shadow:1px 1px 0 var(--green);}
 /* Secondary stat strip */
 .stat-strip{display:grid;grid-template-columns:1fr 1fr 1fr;gap:1px;margin:0 24px 20px;background:var(--brutal);border-radius:10px;overflow:hidden;border:2px solid var(--brutal);box-shadow:4px 4px 0 var(--brutal);}
 .stat-cell{background:var(--card);padding:14px 14px 12px;}
@@ -1645,45 +1583,11 @@ function AuthScreen() {
 function SSJLoading() {
   return (
     <div className="ssj-overlay">
-      <div className="ssj-flash" />
-      <div className="ssj-aura2" />
-      <div className="ssj-aura" />
-      <div className="ssj-lightning-wrap">
-        <div className="ssj-bolt ssj-b1"/><div className="ssj-bolt ssj-b2"/>
-        <div className="ssj-bolt ssj-b3"/><div className="ssj-bolt ssj-b4"/>
-        <div className="ssj-bolt ssj-b5"/>
+      <div className="apex-loader-word">APEX</div>
+      <div className="apex-loader-bar">
+        <div className="apex-loader-fill" />
       </div>
-      <div className="ssj-char">
-        {/* Hair */}
-        <div className="ssj-hair">
-          <div className="ssj-spike ssj-sp1"/><div className="ssj-spike ssj-sp2"/>
-          <div className="ssj-spike ssj-sp3"/><div className="ssj-spike ssj-sp4"/>
-          <div className="ssj-spike ssj-sp5"/><div className="ssj-spike ssj-sp6"/>
-          <div className="ssj-spike ssj-sp7"/><div className="ssj-hair-base"/>
-        </div>
-        {/* Head */}
-        <div className="ssj-head">
-          <div className="ssj-brow-l"/><div className="ssj-brow-r"/>
-          <div className="ssj-eye-l"/><div className="ssj-eye-r"/>
-          <div className="ssj-nose"/>
-        </div>
-        {/* Neck */}
-        <div className="ssj-neck"/>
-        {/* Body */}
-        <div className="ssj-body" style={{position:"relative"}}>
-          <div className="ssj-shoulder-l"/><div className="ssj-shoulder-r"/>
-          <div className="ssj-gi-v"/>
-          <div className="ssj-belt"/>
-          <div className="ssj-arm-l" style={{position:"absolute"}}><div className="ssj-glove-l"/></div>
-          <div className="ssj-arm-r" style={{position:"absolute"}}><div className="ssj-glove-r"/></div>
-        </div>
-        {/* Legs */}
-        <div className="ssj-legs">
-          <div><div className="ssj-leg-l"/><div className="ssj-boot-l"/></div>
-          <div><div className="ssj-leg-r"/><div className="ssj-boot-r"/></div>
-        </div>
-      </div>
-      <div className="ssj-power-text">POWERING UP</div>
+      <div className="apex-loader-label">Signing in</div>
     </div>
   );
 }
@@ -1699,10 +1603,7 @@ function CubeButton({ onClick, disabled, children, small, saved, style, classNam
       disabled={disabled}
       style={style}
     >
-      <div className="cube-top"><div className="cube-inner" /></div>
-      <div className="cube-right"><div className="cube-inner" /></div>
-      <div className="cube-face"><div className="cube-inner" /></div>
-      <div className="cube-text">{children}</div>
+      {children}
     </button>
   );
 }
@@ -5593,6 +5494,7 @@ function DashboardScreen({ user, weightLog, onLogWeight, onDeleteWeight, onEditW
   const [ciStress, setCiStress] = useState("5");
   const [ciEnergy, setCiEnergy] = useState("7");
   const [protocolData, setProtocolData] = useState(null);
+  const [showProtocol, setShowProtocol] = useState(false);
   const [bfOverride, setBfOverride] = useState(null);
   const [showBfEditor, setShowBfEditor] = useState(false);
   const [bfTab, setBfTab] = useState("manual");
@@ -6085,18 +5987,24 @@ function DashboardScreen({ user, weightLog, onLogWeight, onDeleteWeight, onEditW
         )}
       </div>
 
-      {/* ── PROTOCOL INTELLIGENCE ───────────────────────────────────────────── */}
-      <div style={{margin:"0 24px 10px",display:"flex",alignItems:"center",justifyContent:"space-between"}}>
-        <div>
-          <div style={{fontSize:11,fontWeight:700,letterSpacing:2,textTransform:"uppercase",color:C.text}}>Protocol Intelligence</div>
-          <div style={{fontSize:10,color:C.muted,marginTop:1}}>Your body, decoded</div>
-        </div>
-        <CubeButton small onClick={()=>setShowCheckIn(true)}>
-          {checkIn ? "Update Check-in" : "Check-in"}
-        </CubeButton>
+      {/* ── PROTOCOL INTELLIGENCE — collapsed by default ─────────────────────── */}
+      <div style={{margin:"0 24px 10px"}}>
+        <button onClick={()=>setShowProtocol(p=>!p)}
+          style={{width:"100%",display:"flex",alignItems:"center",justifyContent:"space-between",background:"none",border:"none",cursor:"pointer",padding:0,textAlign:"left"}}>
+          <div>
+            <div style={{fontSize:11,fontWeight:700,letterSpacing:2,textTransform:"uppercase",color:C.text}}>Coach View</div>
+            <div style={{fontSize:10,color:C.muted,marginTop:1}}>{showProtocol ? "Tap to collapse" : "Body composition · trends · readiness"}</div>
+          </div>
+          <div style={{display:"flex",alignItems:"center",gap:8}}>
+            <CubeButton small onClick={e=>{e.stopPropagation();setShowCheckIn(true);}}>
+              {checkIn ? "Update Check-in" : "Check-in"}
+            </CubeButton>
+            <div style={{fontSize:16,color:C.muted,transition:"transform .2s",transform:showProtocol?"rotate(180deg)":"none",marginLeft:4}}>⌄</div>
+          </div>
+        </button>
       </div>
 
-      <div className="pi-wrap">
+      {showProtocol && <div className="pi-wrap">
 
         {/* ── CARD 1: BODY COMPOSITION ── */}
         <div className="pi-card">
@@ -6107,7 +6015,12 @@ function DashboardScreen({ user, weightLog, onLogWeight, onDeleteWeight, onEditW
               onMouseOver={e=>e.currentTarget.style.background="var(--up)"}
               onMouseOut={e=>e.currentTarget.style.background=""}>
               <div className="pi-body-val" style={{color:bfOverride!=null?C.accent:"var(--text)"}}>{displayComp.bfPct}%</div>
-              <div className="pi-body-label">Body Fat {bfOverride!=null?"· edited":"· tap to set"}</div>
+              <div className="pi-body-label" style={{display:"flex",alignItems:"center",justifyContent:"center",gap:4}}>
+                Body Fat
+                <span style={{fontSize:8,background:bfOverride!=null?`${C.accent}20`:"var(--up)",border:`1px solid ${bfOverride!=null?C.accent:"var(--border)"}`,borderRadius:3,padding:"1px 5px",color:bfOverride!=null?C.accent:"var(--muted)",letterSpacing:.5}}>
+                  {bfOverride!=null?"edited":"edit"}
+                </span>
+              </div>
             </div>
             <div style={{width:1,background:"var(--border)",margin:"4px 0"}}/>
             <div className="pi-body-cell">
@@ -6156,11 +6069,11 @@ function DashboardScreen({ user, weightLog, onLogWeight, onDeleteWeight, onEditW
           <div className="pi-group">Today's Readiness</div>
           {[
             { name:"Recovery",     val:userState.rcs,               max:100, unit:"/100", color:userState.rcs>=75?C.green:userState.rcs>=55?C.accent:C.red,
-              sub:userState.rcs>=75?"Good":"Low — rest or deload" },
-            { name:"Logging",      val:protocolDecision.adherence,  max:100, unit:"%",   color:protocolDecision.adherence>=85?C.green:protocolDecision.adherence>=70?C.accent:C.red,
-              sub:protocolDecision.adherence>=85?"Consistent":"Log daily to unlock AI" },
+              sub:userState.rcs>=75?"Ready to train hard":userState.rcs>=55?"Train at moderate intensity":"Rest or deload today" },
+            { name:"Nutrition Logging", val:protocolDecision.adherence, max:100, unit:"%", color:protocolDecision.adherence>=85?C.green:protocolDecision.adherence>=70?C.accent:C.red,
+              sub:protocolDecision.adherence>=85?"Consistent — AI coaching active":"Log meals daily for AI recommendations" },
             { name:"Training Load",val:Math.min(protocolDecision.fatigueDebt,100), max:100, unit:"", color:protocolDecision.fatigueDebt>60?C.red:protocolDecision.fatigueDebt>30?C.accent:C.green,
-              sub:protocolDecision.fatigueDebt>60?"High — reduce volume":protocolDecision.fatigueDebt>30?"Moderate":"Fresh" },
+              sub:protocolDecision.fatigueDebt>60?"High — consider dropping volume":protocolDecision.fatigueDebt>30?"Moderate — monitor recovery":"Fresh — push hard today" },
           ].map(r => (
             <div key={r.name} className="pi-ready-row">
               <div className="pi-ready-name">{r.name}</div>
@@ -6226,7 +6139,7 @@ function DashboardScreen({ user, weightLog, onLogWeight, onDeleteWeight, onEditW
           </div>
         )}
 
-      </div>
+      </div>}
 
       {/* ── BF% EDITOR ──────────────────────────────────────────────────────────── */}
       {showBfEditor && (
@@ -6488,7 +6401,6 @@ function AppInner() {
 
   return (
     <div className="app">
-      <WaveField fixed opacity={0.22} />
       {!user ? <OnboardScreen onComplete={u=>{ window.storage.set(USER_KEY, JSON.stringify(u)).catch(()=>{}); setUser(u); setTab("home"); }}/> : (
           <>
             {tab==="home"&&<DashboardScreen user={enrichedUser} weightLog={weightLog} onLogWeight={handleLogWeight} onDeleteWeight={handleDeleteWeight} onEditWeight={handleEditWeight} onNavigate={setTab}/>}
