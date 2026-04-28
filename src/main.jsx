@@ -6,10 +6,13 @@ import App from "./App.jsx";
 
 const APEX_KEYS = [
   "apex_user_v1", "apex_weight_log_v1", "apex_training_v2",
-  "apex_nutrition_v1", "apex_rebound_v3", "apex_live_session_v1",
+  "apex_nutrition_v1", "apex_rebound_v3",
   "apex_session_feedback_v1", "apex_checkins_v1", "apex_protocol_v1",
   "apex_bf_override_v1",
 ];
+// Session key is intentionally excluded — it is device-local only.
+// An active workout on your phone must never sync to or be wiped by another device.
+const SESSION_KEY_LOCAL = "apex_live_session_v1";
 
 const UID_KEY = "apex_session_uid";
 let _uid = null;
@@ -43,7 +46,8 @@ window.storage = {
       return;
     }
 
-    // New device — clear stale data, pull from Firestore
+    // New device — clear stale user data, pull from Firestore
+    // Preserve SESSION_KEY_LOCAL — do not wipe an in-progress workout on sign-in
     if (prevUid) APEX_KEYS.forEach(k => localStorage.removeItem(k));
     localStorage.setItem(UID_KEY, uid);
 

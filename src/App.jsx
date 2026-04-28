@@ -1884,8 +1884,8 @@ function SessionProvider({ children }) {
       const raw = localStorage.getItem(SESSION_KEY);
       if (!raw) return null;
       const parsed = JSON.parse(raw);
-      // Only restore sessions started within the last 6 hours
-      if (parsed?.startedAt && Date.now() - parsed.startedAt < 6 * 60 * 60 * 1000) return parsed;
+      // Restore any session that has a valid startedAt — no time limit, user ends manually
+      if (parsed?.startedAt) return parsed;
     } catch {}
     return null;
   });
