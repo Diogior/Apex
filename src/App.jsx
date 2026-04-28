@@ -812,11 +812,12 @@ const GOALS = [
 // WPLAN removed — training is now fully dynamic via the Adaptive Training Engine
 
 // MEALS removed — replaced by AI-driven nutrition logging
-const USER_KEY      = "apex_user_v1";
-const NUTRITION_KEY = "apex_nutrition_v1";
-const CHECKIN_KEY   = "apex_checkins_v1";
-const PROTOCOL_KEY  = "apex_protocol_v1";
-const BF_KEY        = "apex_bf_override_v1";
+const USER_KEY        = "apex_user_v1";
+const NUTRITION_KEY   = "apex_nutrition_v1";
+const CHECKIN_KEY     = "apex_checkins_v1";
+const PROTOCOL_KEY    = "apex_protocol_v1";
+const BF_KEY          = "apex_bf_override_v1";
+const CUSTOM_EX_KEY   = "apex_custom_exercises_v1";
 
 const FALLBACK = [
   "Solid question. Based on your current phase, your priority should be progressive overload on your compounds. Are you tracking your lifts week to week?",
@@ -2528,13 +2529,24 @@ function CustomWorkoutLogger({onComplete,onBack,muscleVol,level}) {
   const [showSearch,setShowSearch]=useState(false);
   const [timer,setTimer]=useState(0);
   const timerRef=useRef(null);
+  const [customExDB,setCustomExDB]=useState({});
   const alerts=generateMuscleAlerts(muscleVol,level,C);
+
   useEffect(()=>{timerRef.current=setInterval(()=>setTimer(t=>t+1),1000);return()=>clearInterval(timerRef.current);},[]);
-  const allNames=Object.keys(EX_DB);
-  const filtered=search.length>=1?allNames.filter(n=>n.toLowerCase().includes(search.toLowerCase())).slice(0,8):[];
+
+  // Load saved custom exercises on mount
+  useEffect(()=>{
+    window.storage.get(CUSTOM_EX_KEY).then(r=>{
+      if(r?.value) try{ setCustomExDB(JSON.parse(r.value)||{}); }catch{}
+    }).catch(()=>{});
+  },[]);
+
+  // All searchable names: built-in DB + saved custom exercises (deduplicated)
+  const allNames=[...Object.keys(EX_DB),...Object.keys(customExDB).filter(n=>!EX_DB[n])];
+  const filtered=search.length>=1?allNames.filter(n=>n.toLowerCase().includes(search.toLowerCase())).slice(0,10):[];
 
   const addExercise=name=>{
-    const tag=EX_DB[name]||{primary:"custom",secondary:[],movement:"custom",stim:5};
+    const tag=EX_DB[name]||customExDB[name]||{primary:"custom",secondary:[],movement:"custom",stim:5};
     setExercises(prev=>[...prev,{id:`cx_${Date.now()}_${Math.random().toString(36).slice(2)}`,name,muscle:tag.primary,category:tag.movement==="isolation"?"isolation":"compound",loggedSets:[{weight:"",reps:"",rpe:""}],tag,isCustom:!EX_DB[name]}]);
     setSearch(""); setShowSearch(false);
   };
@@ -2548,10 +2560,18 @@ function CustomWorkoutLogger({onComplete,onBack,muscleVol,level}) {
   const handleComplete=()=>{
     const ce=exercises.map(ex=>({
       id:ex.id, name:ex.name, muscle:ex.muscle,
-      // Persist tag so computeMuscleVolume can classify without EX_DB lookup
       tag: ex.tag || resolveExerciseTag(ex.name) || {primary:"custom",secondary:[],movement:"custom",stim:5},
       loggedSets:ex.loggedSets.filter(s=>s.reps&&s.weight),
     })).filter(ex=>ex.loggedSets.length>0);
+
+    // Auto-save any new custom exercises (not in built-in DB) for future sessions
+    const newCustom=exercises.filter(ex=>ex.isCustom&&!customExDB[ex.name]&&ex.loggedSets.some(s=>s.reps&&s.weight));
+    if(newCustom.length>0){
+      const updated={...customExDB};
+      newCustom.forEach(ex=>{ updated[ex.name]={...(ex.tag||{}),savedAt:Date.now()}; });
+      window.storage.set(CUSTOM_EX_KEY,JSON.stringify(updated)).catch(()=>{});
+    }
+
     onComplete({dayKey:`custom_${Date.now()}`,completedExercises:ce,duration:timer,ts:Date.now(),isCustom:true});
   };
   return (
@@ -2639,22 +2659,30 @@ function CustomWorkoutLogger({onComplete,onBack,muscleVol,level}) {
               marginTop:4,
             }}>
               <div style={{padding:"8px 14px 4px",fontSize:9,letterSpacing:1.5,textTransform:"uppercase",color:C.muted,borderBottom:`1px solid ${C.border}`}}>
-                DB Suggestions — or keep typing your own
+                Exercises — or press Enter to add your own
               </div>
               {filtered.map(name=>{
-                const tag=EX_DB[name],bench=MUSCLE_BENCHMARKS[tag?.primary];
+                const isBuiltIn=!!EX_DB[name];
+                const isSavedCustom=!isBuiltIn&&!!customExDB[name];
+                const tag=EX_DB[name]||customExDB[name];
+                const bench=MUSCLE_BENCHMARKS[tag?.primary];
                 return (
                   <div key={name} onClick={()=>addExercise(name)}
                     style={{padding:"10px 16px",cursor:"pointer",borderBottom:`1px solid ${C.border}`,display:"flex",alignItems:"center",justifyContent:"space-between",transition:"background .12s"}}
                     onMouseOver={e=>e.currentTarget.style.background=C.up}
                     onMouseOut={e=>e.currentTarget.style.background="transparent"}>
                     <div>
-                      <div style={{fontSize:13,fontWeight:600,color:C.text}}>{name}</div>
-                      <div style={{fontSize:10,color:C.muted,marginTop:1}}>{tag?.movement?.replace(/_/g," ")} · Stim {tag?.stim}/10</div>
+                      <div style={{display:"flex",alignItems:"center",gap:7}}>
+                        <span style={{fontSize:13,fontWeight:600,color:C.text}}>{name}</span>
+                        {isSavedCustom&&<span style={{fontSize:8,fontWeight:700,letterSpacing:1,textTransform:"uppercase",background:`${C.accent}20`,color:C.accent,border:`1px solid ${C.accent}40`,borderRadius:3,padding:"1px 5px"}}>saved</span>}
+                      </div>
+                      <div style={{fontSize:10,color:C.muted,marginTop:1}}>
+                        {isBuiltIn ? `${tag?.movement?.replace(/_/g," ")} · Stim ${tag?.stim}/10` : isSavedCustom ? `Custom · ${tag?.primary||"custom"}` : "Custom exercise"}
+                      </div>
                     </div>
                     <div style={{display:"flex",gap:4,alignItems:"center"}}>
                       {bench&&<div style={{width:7,height:7,borderRadius:"50%",background:bench.color}}/>}
-                      <span style={{fontSize:10,color:bench?.color||C.muted}}>{bench?.label||tag?.primary}</span>
+                      <span style={{fontSize:10,color:bench?.color||C.muted}}>{bench?.label||tag?.primary||""}</span>
                     </div>
                   </div>
                 );
