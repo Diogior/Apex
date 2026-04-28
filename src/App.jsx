@@ -584,13 +584,13 @@ body{background:var(--bg);color:var(--text);font-family:'Inter',sans-serif;-webk
 .pi-bar-label{display:flex;justify-content:space-between;font-size:9px;color:var(--muted);margin-bottom:4px;}
 .pi-bar{height:5px;background:var(--up);border-radius:3px;overflow:hidden;border:1px solid var(--border);}
 .pi-bar-fill{height:100%;border-radius:3px;transition:width .8s cubic-bezier(.22,1,.36,1);}
-.pi-ready-row{display:flex;align-items:center;gap:10px;padding:6px 0;}
+.pi-ready-row{display:grid;grid-template-columns:80px 1fr 48px;gap:10px;align-items:center;padding:10px 0;}
 .pi-ready-row+.pi-ready-row{border-top:1px solid var(--border);}
-.pi-ready-name{font-size:11px;font-weight:600;color:var(--muted);width:96px;flex-shrink:0;text-transform:uppercase;letter-spacing:.5px;}
-.pi-ready-bar{flex:1;height:5px;background:var(--up);border-radius:3px;overflow:hidden;border:1px solid var(--border);}
+.pi-ready-name{font-size:9px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;line-height:1.3;}
+.pi-ready-bar{height:5px;background:var(--up);border-radius:3px;overflow:hidden;border:1px solid var(--border);}
 .pi-ready-fill{height:100%;border-radius:3px;transition:width .8s cubic-bezier(.22,1,.36,1);}
-.pi-ready-val{font-family:'Bebas Neue',sans-serif;font-size:16px;width:40px;text-align:right;flex-shrink:0;line-height:1;}
-.pi-ready-sub{font-size:9px;color:var(--muted);width:44px;flex-shrink:0;text-align:right;}
+.pi-ready-val{font-family:'Bebas Neue',sans-serif;font-size:15px;text-align:right;flex-shrink:0;line-height:1;}
+.pi-ready-sub{font-size:9px;color:var(--muted);grid-column:2 / 4;margin-top:2px;line-height:1.4;}
 .pi-alert-card{background:var(--card);border:2px solid var(--brutal);border-radius:10px;padding:14px 16px;box-shadow:4px 4px 0 var(--brutal);display:flex;gap:12px;align-items:flex-start;}
 .pi-alert-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;margin-top:3px;}
 .pi-alert-priority{font-size:9px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;margin-bottom:4px;}
@@ -3537,7 +3537,7 @@ Give post-session feedback: what was solid, anything to flag, and one specific f
         <div style={{ margin:"0 24px 20px",background:C.card||C.surface,border:`2px solid ${C.brutal||C.border}`,borderRadius:10,overflow:"hidden",boxShadow:`4px 4px 0 ${C.brutal||C.border}`,animation:"slideUp .3s ease" }}>
           <div style={{ padding:"16px 18px 10px",display:"flex",alignItems:"center",justifyContent:"space-between" }}>
             <div><div style={{fontSize:10,letterSpacing:2,textTransform:"uppercase",color:C.purple}}>● Physique Balance</div><div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:20,letterSpacing:1}}>MUSCLE BALANCE CHART</div></div>
-            <div style={{fontSize:10,color:C.muted,textAlign:"right",lineHeight:1.5}}>Drag to rotate<br/>Tap point to inspect</div>
+            <div style={{fontSize:9,color:C.faint}}>Drag · Pinch to zoom</div>
           </div>
           <HimboStatChart muscleVol={muscleVol} level={user.level||"intermediate"}/>
           <div style={{padding:"10px 18px 12px",display:"flex",gap:14,justifyContent:"center"}}>
@@ -5964,8 +5964,10 @@ function DashboardScreen({ user, weightLog, onLogWeight, onDeleteWeight, onEditW
       <div className="stat-strip" style={{gridTemplateColumns: calTarget?.cyclingActive ? "1fr 1fr 1fr 1fr" : "1fr 1fr 1fr"}}>
         <div className="stat-cell">
           <div className="stat-label">Sessions</div>
-          <div className="stat-val">{history.length || "—"}</div>
-          <div className="stat-sub">total logged</div>
+          <div className="stat-val" style={{color: history.length ? "var(--text)" : "var(--muted)", fontSize: history.length ? undefined : 18}}>
+            {history.length || "—"}
+          </div>
+          <div className="stat-sub">{history.length ? "total logged" : "none yet"}</div>
         </div>
         {calTarget?.cyclingActive ? (
           <>
@@ -6050,12 +6052,8 @@ function DashboardScreen({ user, weightLog, onLogWeight, onDeleteWeight, onEditW
 
       {/* WEIGHT GRAPH */}
       <div style={{margin:"0 24px 20px",background:"var(--surface)",border:"1px solid var(--border)",borderRadius:16,overflow:"hidden"}}>
-        <div style={{padding:"16px 18px 10px",display:"flex",alignItems:"center",justifyContent:"space-between"}}>
-          <div>
-            <div style={{fontSize:10,fontWeight:600,color:"var(--muted)"}}>30-Day Trend</div>
-            <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:18,letterSpacing:1,color:"var(--text)"}}>BODYWEIGHT CHART</div>
-          </div>
-          <div style={{fontSize:10,color:"var(--muted)",textAlign:"right"}}>Drag to rotate<br/>Scroll to zoom</div>
+        <div style={{padding:"14px 18px 8px"}}>
+          <div style={{fontSize:10,fontWeight:600,color:"var(--muted)"}}>30-Day Bodyweight Trend</div>
         </div>
         {sortedLog.length >= 1 ? (
           <WeightGraph3D logs={sortedLog} ceilingWeight={reboundData?.ceiling||null} stageWeight={reboundData?.stageWeight||null}/>
@@ -6069,19 +6067,18 @@ function DashboardScreen({ user, weightLog, onLogWeight, onDeleteWeight, onEditW
 
       {/* ── PROTOCOL INTELLIGENCE — collapsed by default ─────────────────────── */}
       <div style={{margin:"0 24px 10px"}}>
-        <button onClick={()=>setShowProtocol(p=>!p)}
-          style={{width:"100%",display:"flex",alignItems:"center",justifyContent:"space-between",background:"none",border:"none",cursor:"pointer",padding:0,textAlign:"left"}}>
-          <div>
+        <div style={{display:"flex",alignItems:"center",justifyContent:"space-between"}}>
+          <button onClick={()=>setShowProtocol(p=>!p)}
+            style={{display:"flex",alignItems:"center",gap:10,background:"none",border:"none",cursor:"pointer",padding:0,textAlign:"left"}}>
             <div style={{fontSize:11,fontWeight:700,letterSpacing:2,textTransform:"uppercase",color:C.text}}>Coach View</div>
-            <div style={{fontSize:10,color:C.muted,marginTop:1}}>{showProtocol ? "Tap to collapse" : "Body composition · trends · readiness"}</div>
-          </div>
-          <div style={{display:"flex",alignItems:"center",gap:8}}>
-            <CubeButton small onClick={e=>{e.stopPropagation();setShowCheckIn(true);}}>
-              {checkIn ? "Update Check-in" : "Check-in"}
-            </CubeButton>
-            <div style={{fontSize:16,color:C.muted,transition:"transform .2s",transform:showProtocol?"rotate(180deg)":"none",marginLeft:4}}>⌄</div>
-          </div>
-        </button>
+            <div style={{width:20,height:20,borderRadius:4,border:`1px solid var(--border)`,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,transition:"transform .2s",transform:showProtocol?"rotate(180deg)":"none"}}>
+              <svg viewBox="0 0 12 8" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" style={{width:10,color:"var(--muted)"}}><path d="M1 1.5l5 5 5-5"/></svg>
+            </div>
+          </button>
+          <CubeButton small onClick={()=>setShowCheckIn(true)}>
+            {checkIn ? "Update Check-in" : "Check-in"}
+          </CubeButton>
+        </div>
       </div>
 
       {showProtocol && <div className="pi-wrap">
@@ -6089,26 +6086,26 @@ function DashboardScreen({ user, weightLog, onLogWeight, onDeleteWeight, onEditW
         {/* ── CARD 1: BODY COMPOSITION ── */}
         <div className="pi-card">
           <div className="pi-group">Body Composition</div>
-          <div className="pi-body-grid">
-            <div className="pi-body-cell" onClick={()=>{setBfInput(String(displayComp.bfPct));setBfTab("manual");setShowBfEditor(true);}}
-              style={{cursor:"pointer",borderRadius:6,transition:"background .15s"}}
+          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:0,textAlign:"center"}}>
+            {/* Body Fat — tappable to edit */}
+            <div onClick={()=>{setBfInput(String(displayComp.bfPct));setBfTab("manual");setShowBfEditor(true);}}
+              style={{cursor:"pointer",padding:"4px 8px",borderRadius:6,transition:"background .15s"}}
               onMouseOver={e=>e.currentTarget.style.background="var(--up)"}
               onMouseOut={e=>e.currentTarget.style.background=""}>
               <div className="pi-body-val" style={{color:bfOverride!=null?C.accent:"var(--text)"}}>{displayComp.bfPct}%</div>
-              <div className="pi-body-label" style={{display:"flex",alignItems:"center",justifyContent:"center",gap:4}}>
+              <div className="pi-body-label" style={{display:"flex",alignItems:"center",justifyContent:"center",gap:3}}>
                 Body Fat
-                <span style={{fontSize:8,background:bfOverride!=null?`${C.accent}20`:"var(--up)",border:`1px solid ${bfOverride!=null?C.accent:"var(--border)"}`,borderRadius:3,padding:"1px 5px",color:bfOverride!=null?C.accent:"var(--muted)",letterSpacing:.5}}>
-                  {bfOverride!=null?"edited":"edit"}
-                </span>
+                <svg viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"
+                  style={{width:8,height:8,color:bfOverride!=null?C.accent:"var(--muted)",flexShrink:0}}>
+                  <path d="M8 2l2 2-6 6H2V8L8 2z"/>
+                </svg>
               </div>
             </div>
-            <div style={{width:1,background:"var(--border)",margin:"4px 0"}}/>
-            <div className="pi-body-cell">
+            <div style={{padding:"4px 8px",borderLeft:"1px solid var(--border)",borderRight:"1px solid var(--border)"}}>
               <div className="pi-body-val">{displayComp.lbmLbs}</div>
               <div className="pi-body-label">Lean Mass (lbs)</div>
             </div>
-            <div style={{width:1,background:"var(--border)",margin:"4px 0"}}/>
-            <div className="pi-body-cell">
+            <div style={{padding:"4px 8px"}}>
               <div className="pi-body-val">{userState.tdee.toLocaleString()}</div>
               <div className="pi-body-label">Daily Burn (kcal)</div>
             </div>
@@ -6120,22 +6117,30 @@ function DashboardScreen({ user, weightLog, onLogWeight, onDeleteWeight, onEditW
           <div className="pi-group">Weight Trend · Last 14 Days</div>
           <div className="pi-trend-row">
             <div>
-              <div className="pi-trend-val" style={{color:weightTrend.rate>0?C.green:weightTrend.rate<0?C.blue:C.muted}}>
-                {weightTrend.dataPoints<3 ? "—" : `${weightTrend.rate>0?"+":""}${weightTrend.rate}`}
-              </div>
-              <div className="pi-trend-desc">
-                {weightTrend.dataPoints<3
-                  ? "Log 3+ weights to see your trend"
-                  : `lbs / week · ${weightTrend.classification.replace(/_/g," ")}`}
-              </div>
+              {weightTrend.dataPoints<3 ? (
+                <>
+                  <div className="pi-trend-val" style={{fontSize:28,color:C.muted}}>—</div>
+                  <div className="pi-trend-desc">Log 3+ weights to see your trend</div>
+                </>
+              ) : (
+                <>
+                  <div className="pi-trend-val" style={{color:weightTrend.rate>0?C.green:weightTrend.rate<0?C.blue:C.muted}}>
+                    {`${weightTrend.rate>0?"+":""}${weightTrend.rate}`}
+                  </div>
+                  <div className="pi-trend-desc">{`lbs / week · ${weightTrend.classification.replace(/_/g," ")}`}</div>
+                </>
+              )}
             </div>
             <div>
               <div style={{fontSize:10,fontWeight:600,letterSpacing:1,textTransform:"uppercase",color:C.muted,marginBottom:6}}>Tracking Quality</div>
-              <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:22,color:confidenceScore>=0.75?C.green:confidenceScore>=0.5?C.accent:C.red,lineHeight:1,marginBottom:6}}>
+              <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:22,
+                color:confidenceScore>=0.75?C.green:confidenceScore>=0.5?C.accent:C.muted,
+                lineHeight:1,marginBottom:6}}>
                 {Math.round(confidenceScore*100)}%
               </div>
               <div className="pi-bar">
-                <div className="pi-bar-fill" style={{width:`${Math.round(confidenceScore*100)}%`,background:confidenceScore>=0.75?C.green:confidenceScore>=0.5?C.accent:C.red}}/>
+                <div className="pi-bar-fill" style={{width:`${Math.round(confidenceScore*100)}%`,
+                  background:confidenceScore>=0.75?C.green:confidenceScore>=0.5?C.accent:C.muted}}/>
               </div>
               <div style={{fontSize:9,color:C.faint,marginTop:4}}>
                 {confidenceScore>=0.75?"Reliable data":"Log more to improve accuracy"}
@@ -6148,20 +6153,22 @@ function DashboardScreen({ user, weightLog, onLogWeight, onDeleteWeight, onEditW
         <div className="pi-card">
           <div className="pi-group">Today's Readiness</div>
           {[
-            { name:"Recovery",     val:userState.rcs,               max:100, unit:"/100", color:userState.rcs>=75?C.green:userState.rcs>=55?C.accent:C.red,
+            { name:"Recovery",      val:userState.rcs,               unit:"/100", color:userState.rcs>=75?C.green:userState.rcs>=55?C.accent:C.red,
               sub:userState.rcs>=75?"Ready to train hard":userState.rcs>=55?"Train at moderate intensity":"Rest or deload today" },
-            { name:"Nutrition Logging", val:protocolDecision.adherence, max:100, unit:"%", color:protocolDecision.adherence>=85?C.green:protocolDecision.adherence>=70?C.accent:C.red,
-              sub:protocolDecision.adherence>=85?"Consistent — AI coaching active":"Log meals daily for AI recommendations" },
-            { name:"Training Load",val:Math.min(protocolDecision.fatigueDebt,100), max:100, unit:"", color:protocolDecision.fatigueDebt>60?C.red:protocolDecision.fatigueDebt>30?C.accent:C.green,
-              sub:protocolDecision.fatigueDebt>60?"High — consider dropping volume":protocolDecision.fatigueDebt>30?"Moderate — monitor recovery":"Fresh — push hard today" },
+            { name:"Nutrition",     val:protocolDecision.adherence,  unit:"%",    color:protocolDecision.adherence>=85?C.green:protocolDecision.adherence>=70?C.accent:C.muted,
+              sub:protocolDecision.adherence>=85?"Consistent":"Log meals daily to unlock AI coaching" },
+            { name:"Training Load", val:Math.min(protocolDecision.fatigueDebt,100), unit:"", color:protocolDecision.fatigueDebt>60?C.red:protocolDecision.fatigueDebt>30?C.accent:C.green,
+              sub:protocolDecision.fatigueDebt>60?"High — reduce volume":protocolDecision.fatigueDebt>30?"Moderate":"Fresh" },
           ].map(r => (
             <div key={r.name} className="pi-ready-row">
               <div className="pi-ready-name">{r.name}</div>
-              <div className="pi-ready-bar">
-                <div className="pi-ready-fill" style={{width:`${r.val}%`,background:r.color}}/>
+              <div style={{display:"flex",flexDirection:"column",gap:5}}>
+                <div className="pi-ready-bar">
+                  <div className="pi-ready-fill" style={{width:`${r.val}%`,background:r.color}}/>
+                </div>
+                <div style={{fontSize:9,color:C.faint,lineHeight:1.3}}>{r.sub}</div>
               </div>
               <div className="pi-ready-val" style={{color:r.color}}>{r.val}{r.unit}</div>
-              <div className="pi-ready-sub">{r.sub}</div>
             </div>
           ))}
         </div>
