@@ -2862,6 +2862,31 @@ function WorkoutSession({ dayKey, dayPlan, adaptation, history = [], onComplete,
     return { prevMap: map, prevDate: label };
   })();
 
+  // Load relevant coach note from previous session of the same type
+  const [coachNote, setCoachNote] = useState(null);
+  const [noteVisible, setNoteVisible] = useState(true);
+  useEffect(() => {
+    try {
+      const stored = localStorage.getItem(FEEDBACK_KEY);
+      if (!stored) return;
+      const all = JSON.parse(stored);
+      if (!all || typeof all !== "object") return;
+
+      // Exact dayKey match first
+      const exact = all[dayKey];
+      if (exact?.text) { setCoachNote(exact); return; }
+
+      // Fallback: find feedback with overlapping muscles
+      const currentMuscles = new Set(dayPlan?.muscles || []);
+      const best = Object.values(all)
+        .filter(fb => fb?.text && Array.isArray(fb.muscles))
+        .map(fb => ({ fb, overlap: fb.muscles.filter(m => currentMuscles.has(m)).length }))
+        .filter(({ overlap }) => overlap > 0)
+        .sort((a, b) => b.overlap - a.overlap || (b.fb.ts||0) - (a.fb.ts||0))[0];
+      if (best) setCoachNote(best.fb);
+    } catch {}
+  }, [dayKey]);
+
   // All persistent state lives in context — local state only for UI
   const loggedSets = session?.loggedSets || {};
   const activeEx   = session?.activeEx || null;
@@ -2993,6 +3018,27 @@ function WorkoutSession({ dayKey, dayPlan, adaptation, history = [], onComplete,
           </div>
         )}
       </div>
+
+      {/* COACH NOTE — from last session of same type */}
+      {coachNote?.text && noteVisible && (
+        <div style={{ margin: "0 24px 16px", background: "var(--card)", border: `2px solid var(--accent)`, borderRadius: 10, boxShadow: `3px 3px 0 var(--accent)`, overflow: "hidden", animation: "slideUp .3s ease" }}>
+          <div style={{ padding: "10px 14px", background: `${C.accent}15`, borderBottom: `1px solid ${C.accent}30`, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ width: 13, height: 13, color: C.accent }}>
+                <path d="M13 10V3L4 14h7v7l9-11h-7z"/>
+              </svg>
+              <div style={{ fontSize: 9, fontWeight: 700, letterSpacing: 2, textTransform: "uppercase", color: C.accent }}>
+                Coach Note · Last {coachNote.dayKey ? coachNote.dayKey.replace(/_/g," ").toUpperCase() : "Session"}
+              </div>
+            </div>
+            <button onClick={() => setNoteVisible(false)}
+              style={{ background: "none", border: "none", color: C.muted, cursor: "pointer", fontSize: 14, padding: "0 2px", lineHeight: 1 }}>✕</button>
+          </div>
+          <div style={{ padding: "10px 14px", fontSize: 12, color: C.faint, lineHeight: 1.65, whiteSpace: "pre-wrap" }}>
+            {coachNote.text}
+          </div>
+        </div>
+      )}
 
       {/* EXERCISES */}
       <div style={{ padding: "20px 0 0" }}>
@@ -3359,9 +3405,16 @@ Give post-session feedback: what was solid, anything to flag, and one specific f
       });
       const data = await res.json();
       const text = data.content?.find(b => b.type === "text")?.text || data.content?.[0]?.text || "Strong session. Check your balance chart and keep the momentum.";
-      const fb = { text, ts: result.ts };
+      const muscles = (result.completedExercises||[]).map(ex=>ex.muscle||ex.tag?.primary).filter(Boolean);
+      const fb = { text, ts: result.ts, dayKey: result.dayKey, muscles, read: false };
       setSessionFeedback({ ...fb, loading: false });
-      try { localStorage.setItem(FEEDBACK_KEY, JSON.stringify({ ...fb, read: false })); } catch {}
+      // Save keyed by dayKey so future sessions of same type can surface it
+      try {
+        const existing = JSON.parse(localStorage.getItem(FEEDBACK_KEY)||"{}");
+        const updated = { ...existing, [result.dayKey]: fb };
+        localStorage.setItem(FEEDBACK_KEY, JSON.stringify(updated));
+        window.storage.set(FEEDBACK_KEY, JSON.stringify(updated)).catch(()=>{});
+      } catch {}
     } catch {
       const fb = { text: "Session logged. Open the Coach tab for your full analysis.", ts: result.ts };
       setSessionFeedback({ ...fb, loading: false });
@@ -5084,17 +5137,26 @@ function CoachScreen({user}) {
   const msgsRef=useRef(null);
   const fileRef=useRef(null);
 
-  // Inject unread post-session feedback on first open
+  // Inject unread post-session feedback on first open (handles both old flat and new keyed format)
   useEffect(()=>{
     try {
       const stored=localStorage.getItem(FEEDBACK_KEY);
       if(!stored) return;
-      const fb=JSON.parse(stored);
-      if(!fb.read&&fb.text){
-        setMessages(prev=>[...prev,{role:"coach",text:`📊 Post-session recap:\n\n${fb.text}`,time:"now"}]);
-        localStorage.setItem(FEEDBACK_KEY,JSON.stringify({...fb,read:true}));
-        setTimeout(()=>{ if(msgsRef.current) msgsRef.current.scrollTop=msgsRef.current.scrollHeight; },120);
-      }
+      const parsed=JSON.parse(stored);
+      // New format: { dayKey: { text, ts, read, ... }, ... }
+      const entries = parsed && typeof parsed === "object" && !parsed.text
+        ? Object.values(parsed) : [parsed];
+      const unread = entries.filter(fb=>fb?.text&&!fb?.read);
+      if(!unread.length) return;
+      const latest = unread.sort((a,b)=>(b.ts||0)-(a.ts||0))[0];
+      const dayLabel = latest.dayKey ? ` (${latest.dayKey.replace(/_/g," ").toUpperCase()})` : "";
+      setMessages(prev=>[...prev,{role:"coach",text:`Post-session recap${dayLabel}:\n\n${latest.text}`,time:"now"}]);
+      // Mark all as read
+      const updated = typeof parsed === "object" && !parsed.text
+        ? Object.fromEntries(Object.entries(parsed).map(([k,v])=>[k,{...v,read:true}]))
+        : {...parsed,read:true};
+      localStorage.setItem(FEEDBACK_KEY,JSON.stringify(updated));
+      setTimeout(()=>{ if(msgsRef.current) msgsRef.current.scrollTop=msgsRef.current.scrollHeight; },120);
     } catch {}
   },[]);
 
