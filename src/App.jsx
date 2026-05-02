@@ -2524,7 +2524,9 @@ function PathSelector({dayTag,onSelectGenerated,onSelectCustom}) {
 // ── CUSTOM WORKOUT LOGGER ─────────────────────────────────────────────────────
 function CustomWorkoutLogger({onComplete,onBack,muscleVol,level}) {
   const C = useThemeColors();
-  const [exercises,setExercises]=useState([]);
+  const { session, updateSession } = useSession();
+  // Restore exercises from session context on mount (survives iOS Safari refresh)
+  const [exercises,setExercises]=useState(()=>session?.customExercises||[]);
   const [search,setSearch]=useState("");
   const [showSearch,setShowSearch]=useState(false);
   const [timer,setTimer]=useState(0);
@@ -2533,6 +2535,11 @@ function CustomWorkoutLogger({onComplete,onBack,muscleVol,level}) {
   const alerts=generateMuscleAlerts(muscleVol,level,C);
 
   useEffect(()=>{timerRef.current=setInterval(()=>setTimer(t=>t+1),1000);return()=>clearInterval(timerRef.current);},[]);
+
+  // Persist exercise list into session context whenever it changes
+  useEffect(()=>{
+    if(exercises.length>0) updateSession({ customExercises: exercises });
+  },[exercises]);
 
   // Load saved custom exercises on mount
   useEffect(()=>{
@@ -3491,7 +3498,20 @@ Give post-session feedback: what was solid, anything to flag, and one specific f
     </div>
   );
 
-  if (!tState) return null;
+  // If tState not yet loaded but a session is active, show loading rather than null
+  // This prevents the workout UI from vanishing during the async load on iOS refresh
+  if (!tState) {
+    if (session?.startedAt) {
+      return (
+        <div className="loading">
+          <div style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:18, letterSpacing:2, color:C.muted, animation:"pulse 2s infinite" }}>
+            RESTORING SESSION...
+          </div>
+        </div>
+      );
+    }
+    return null;
+  }
 
   // ── ACTIVE SESSIONS — read from global context ──
   if (session?.type === "custom") {
@@ -6423,6 +6443,17 @@ function AppInner() {
   const { authUser, signOut } = useAuth();
   const [retrying, setRetrying] = useState(false);
   const [retryFailed, setRetryFailed] = useState(false);
+  const sessionRestoredRef = useRef(false);
+
+  // If an active session exists when the app loads (e.g. after iOS Safari refresh),
+  // immediately restore to the Training tab so the workout is not hidden
+  useEffect(() => {
+    if (sessionRestoredRef.current) return;
+    if (userLoaded && session?.startedAt) {
+      sessionRestoredRef.current = true;
+      setTab("training");
+    }
+  }, [userLoaded, session?.startedAt]);
 
   // Load user profile — gate render until resolved so returning users never flash onboarding
   useEffect(() => {
