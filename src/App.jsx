@@ -41,7 +41,7 @@ function useThemeColors() {
 // ─── STYLES ──────────────────────────────────────────────────────────────────
 
 const styles = `
-@import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=DM+Mono:wght@400;500&display=swap');
 
 :root{
   --bg:#F5F3EF;--surface:#FFFFFF;--up:#EDEAE4;--border:#DDD9D0;
@@ -62,7 +62,7 @@ const styles = `
   }
 }
 *{box-sizing:border-box;margin:0;padding:0;}
-body{background:var(--bg);color:var(--text);font-family:'Inter',sans-serif;-webkit-font-smoothing:antialiased;overflow-x:hidden;}
+body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;-webkit-font-smoothing:antialiased;overflow-x:hidden;}
 .app{max-width:430px;min-height:100vh;margin:0 auto;background:var(--bg);position:relative;}
 
 /* ─── AUTH ──────────────────────────────────────────────────────────────────── */
@@ -76,7 +76,7 @@ body{background:var(--bg);color:var(--text);font-family:'Inter',sans-serif;-webk
 .auth-tab{padding:10px;background:var(--bg);border:none;cursor:pointer;font-family:'Bebas Neue',sans-serif;font-size:13px;letter-spacing:1.5px;color:var(--muted);transition:all .15s;}
 .auth-tab:first-child{border-right:2px solid var(--brutal);}
 .auth-tab.active{background:var(--brutal);color:var(--card);}
-.auth-input{width:100%;height:46px;border-radius:4px;border:2px solid var(--brutal);background:var(--bg);box-shadow:3px 3px 0 var(--brutal);font-size:14px;font-weight:600;color:var(--text);padding:0 14px;outline:none;font-family:'Inter',sans-serif;transition:border-color .15s,box-shadow .15s;}
+.auth-input{width:100%;height:46px;border-radius:4px;border:2px solid var(--brutal);background:var(--bg);box-shadow:3px 3px 0 var(--brutal);font-size:14px;font-weight:600;color:var(--text);padding:0 14px;outline:none;font-family:'DM Sans',sans-serif;transition:border-color .15s,box-shadow .15s;}
 .auth-input::placeholder{color:var(--muted);font-weight:400;}
 .auth-input:focus{border-color:var(--accent);box-shadow:3px 3px 0 var(--accent);}
 .auth-field{display:flex;flex-direction:column;gap:6px;}
@@ -291,7 +291,7 @@ body{background:var(--bg);color:var(--text);font-family:'Inter',sans-serif;-webk
   padding:13px 16px;
   color:var(--text);
   font-size:16px;
-  font-family:'Inter',sans-serif;
+  font-family:'DM Sans',sans-serif;
   outline:none;
   transition:border-color .15s,box-shadow .15s;
   width:100%;
@@ -345,13 +345,13 @@ body{background:var(--bg);color:var(--text);font-family:'Inter',sans-serif;-webk
 .btn:not(:disabled):hover::before{transform:translateY(-5%);}
 .btn:not(:disabled):hover::after{opacity:0.4;transform:translateY(5%);}
 .btn:not(:disabled):hover{box-shadow:inset 0 0.3rem 0.5rem rgba(255,255,255,0.45),inset 0 -0.1rem 0.3rem rgba(0,0,0,0.5),inset 0 -0.4rem 0.9rem rgba(255,255,255,0.65),0 1rem 1.2rem -0.6rem rgba(0,0,0,0.7);}
-.btn-outline{background:var(--up);border:2px solid var(--brutal);color:var(--muted);padding:10px 18px;border-radius:100px;font-family:'Inter',sans-serif;font-size:13px;cursor:pointer;transition:all .15s ease;box-shadow:inset 0 0.2rem 0.5rem rgba(255,255,255,0.15),inset 0 -0.2rem 0.4rem rgba(0,0,0,0.3);}
+.btn-outline{background:var(--up);border:2px solid var(--brutal);color:var(--muted);padding:10px 18px;border-radius:100px;font-family:'DM Sans',sans-serif;font-size:13px;cursor:pointer;transition:all .15s ease;box-shadow:inset 0 0.2rem 0.5rem rgba(255,255,255,0.15),inset 0 -0.2rem 0.4rem rgba(0,0,0,0.3);}
 .btn-outline:hover{border-color:var(--accent);color:var(--accent);}
 
 /* INPUTS */
 .igroup{display:flex;flex-direction:column;gap:6px;}
 .ilabel{font-size:11px;font-weight:500;letter-spacing:.3px;color:var(--muted);}
-.ifield{background:var(--up);border:2px solid var(--brutal);border-radius:10px;padding:13px 16px;color:var(--text);font-size:15px;font-family:'Inter',sans-serif;outline:none;transition:border-color .2s,box-shadow .2s;width:100%;}
+.ifield{background:var(--up);border:2px solid var(--brutal);border-radius:10px;padding:13px 16px;color:var(--text);font-size:15px;font-family:'DM Sans',sans-serif;outline:none;transition:border-color .2s,box-shadow .2s;width:100%;}
 .ifield:focus{border-color:var(--accent);box-shadow:3px 3px 0 var(--accent);}
 .irow{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
 
@@ -512,7 +512,7 @@ body{background:var(--bg);color:var(--text);font-family:'Inter',sans-serif;-webk
 
 /* CHAT INPUT */
 .ci-area{position:fixed;left:50%;transform:translateX(-50%);width:100%;max-width:430px;padding:10px 14px;background:var(--surface);border-top:1px solid var(--border);display:flex;gap:8px;align-items:flex-end;z-index:50;transition:bottom .2s;}
-.ci{flex:1;background:var(--up);border:2px solid var(--brutal);border-radius:10px;padding:11px 14px;color:var(--text);font-size:14px;font-family:'Inter',sans-serif;outline:none;resize:none;max-height:100px;line-height:1.4;transition:border-color .2s,box-shadow .2s;}
+.ci{flex:1;background:var(--up);border:2px solid var(--brutal);border-radius:10px;padding:11px 14px;color:var(--text);font-size:14px;font-family:'DM Sans',sans-serif;outline:none;resize:none;max-height:100px;line-height:1.4;transition:border-color .2s,box-shadow .2s;}
 .ci:focus{border-color:var(--accent);box-shadow:3px 3px 0 var(--accent);}
 .ci-send{width:40px;height:40px;border-radius:12px;background:var(--accent);border:none;display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0;transition:all .2s;color:#FFF;}
 .ci-send svg{width:18px;height:18px;}
@@ -714,7 +714,7 @@ body{background:var(--bg);color:var(--text);font-family:'Inter',sans-serif;-webk
 .msv-timer{
   padding:13px 16px;
   border-right:1px solid var(--border);
-  font-family:'JetBrains Mono',monospace;
+  font-family:'DM Mono',monospace;
   font-size:16px;font-weight:700;
   color:var(--accent);
   letter-spacing:.5px;
@@ -1453,7 +1453,7 @@ function MacroRing({protein,carbs,fat,calories}) {
         {paths.map((p,i)=><path key={i} d={p.d} fill={p.color} style={{opacity:.85,animation:`macroSegIn .5s cubic-bezier(.22,1,.36,1) ${i*100}ms both`}}/>)}
         <circle cx={cx} cy={cy} r={30} fill={C.surface}/>
         <text x={cx} y={cy-3} textAnchor="middle" fill={C.text} fontSize="13" fontFamily="Bebas Neue,sans-serif" letterSpacing="1">{calories}</text>
-        <text x={cx} y={cy+12} textAnchor="middle" fill={C.muted} fontSize="8" fontFamily="Inter,sans-serif">KCAL</text>
+        <text x={cx} y={cy+12} textAnchor="middle" fill={C.muted} fontSize="8" fontFamily="DM Sans,sans-serif">KCAL</text>
       </svg>
       <div style={{flex:1,display:"flex",flexDirection:"column",gap:10}}>
         {[{l:"Protein",v:`${protein}g`,cl:C.accent},{l:"Carbs",v:`${carbs}g`,cl:C.green},{l:"Fat",v:`${fat}g`,cl:C.blue}].map(m=>(
@@ -1462,7 +1462,7 @@ function MacroRing({protein,carbs,fat,calories}) {
               <div style={{width:7,height:7,borderRadius:"50%",background:m.cl}}/>
               <span style={{fontSize:13,color:C.faint}}>{m.l}</span>
             </div>
-            <span style={{fontFamily:"'JetBrains Mono',monospace",fontSize:13,color:C.text}}>{m.v}</span>
+            <span style={{fontFamily:"'DM Mono',monospace",fontSize:13,color:C.text}}>{m.v}</span>
           </div>
         ))}
       </div>
@@ -2436,9 +2436,9 @@ function HimboStatChart({muscleVol,level}) {
         const v=muscleVol[key]||{sets:0},mav=bench.mav*levelMod,pct=v.sets/mav;
         const sc=pct<.5?cc.red:pct<1?cc.accent:cc.green,ih=stateRef.current.hoveredAxis===i;
         ctx.textAlign="center";
-        ctx.font=`${ih?"bold ":""}9px 'Inter',sans-serif`; ctx.fillStyle=ih?bench.color:sc;
+        ctx.font=`${ih?"bold ":""}9px 'DM Sans',sans-serif`; ctx.fillStyle=ih?bench.color:sc;
         ctx.fillText(bench.label,lx,ly-3);
-        ctx.font="8px 'Inter',monospace"; ctx.fillStyle=ih?cc.text:cc.muted;
+        ctx.font="8px 'DM Mono',monospace"; ctx.fillStyle=ih?cc.text:cc.muted;
         ctx.fillText(`${Math.round(v.sets)}/${Math.round(mav)}`,lx,ly+7); ctx.textAlign="left";
       });
       // Center hub
@@ -2457,11 +2457,11 @@ function HimboStatChart({muscleVol,level}) {
         ctx.strokeStyle=`${bench.color}60`; ctx.lineWidth=1; ctx.stroke();
         ctx.fillStyle=bench.color; ctx.font="bold 11px 'Bebas Neue',sans-serif"; ctx.textAlign="left";
         ctx.fillText(bench.label.toUpperCase(),tx+12,ty+18);
-        ctx.fillStyle=sc; ctx.font="bold 9px 'Inter',sans-serif";
+        ctx.fillStyle=sc; ctx.font="bold 9px 'DM Sans',sans-serif";
         ctx.fillText(status,tx+tw-12-ctx.measureText(status).width,ty+18);
-        ctx.fillStyle=cc.text; ctx.font="10px 'Inter',monospace";
+        ctx.fillStyle=cc.text; ctx.font="10px 'DM Mono',monospace";
         ctx.fillText(`Sets: ${Math.round(v.sets)} / ${Math.round(mav)} target`,tx+12,ty+34);
-        ctx.fillStyle=cc.muted; ctx.font="9px 'Inter',sans-serif";
+        ctx.fillStyle=cc.muted; ctx.font="9px 'DM Sans',sans-serif";
         ctx.fillText(`MEV ${Math.round(mev)} · MAV ${Math.round(mav)} · MRV ${bench.mrv}`,tx+12,ty+50);
         ctx.fillText(`Freq: ${v.freq} sessions this week`,tx+12,ty+62);
       }
@@ -2587,7 +2587,7 @@ function CustomWorkoutLogger({onComplete,onBack,muscleVol,level}) {
         <button onClick={onBack} style={{background:"none",border:"none",color:C.muted,fontSize:13,cursor:"pointer",marginBottom:12}}>← Back</button>
         <div style={{display:"flex",alignItems:"flex-start",justifyContent:"space-between"}}>
           <div><div style={{fontSize:10,letterSpacing:2,textTransform:"uppercase",color:C.blue,marginBottom:4}}>Custom Session</div><div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:28,letterSpacing:2}}>LOG WORKOUT</div></div>
-          <div style={{textAlign:"right"}}><div style={{fontFamily:"'JetBrains Mono',monospace",fontSize:20,color:C.blue}}>{fmt(timer)}</div><div style={{fontSize:10,color:C.muted}}>{totalSets} sets</div></div>
+          <div style={{textAlign:"right"}}><div style={{fontFamily:"'DM Mono',monospace",fontSize:20,color:C.blue}}>{fmt(timer)}</div><div style={{fontSize:10,color:C.muted}}>{totalSets} sets</div></div>
         </div>
       </div>
       {alerts.length>0&&(
@@ -2626,7 +2626,7 @@ function CustomWorkoutLogger({onComplete,onBack,muscleVol,level}) {
                 border:`2px solid ${search.trim()?C.blue:C.border}`,
                 borderRadius:12,padding:"14px 16px",
                 color:C.text,fontSize:15,
-                fontFamily:"'Inter',sans-serif",
+                fontFamily:"'DM Sans',sans-serif",
                 outline:"none",transition:"border-color .2s",
               }}
             />
@@ -2733,10 +2733,10 @@ function CustomWorkoutLogger({onComplete,onBack,muscleVol,level}) {
                 const d=set.reps&&set.weight;
                 return (
                   <div key={si} style={{display:"grid",gridTemplateColumns:"24px 1fr 1fr 1fr 20px",gap:5,marginBottom:5,alignItems:"center"}}>
-                    <div style={{fontFamily:"'JetBrains Mono',monospace",fontSize:11,color:d?C.blue:C.muted,textAlign:"center"}}>{si+1}</div>
-                    <input type="number" placeholder="lbs" value={set.weight} onChange={e=>updateSet(ei,si,"weight",e.target.value)} style={{background:C.up,border:`1px solid ${d?C.blue+"50":C.border}`,borderRadius:7,padding:"8px 6px",color:C.text,fontSize:12,fontFamily:"'JetBrains Mono',monospace",textAlign:"center",outline:"none",width:"100%"}}/>
-                    <input type="number" placeholder="reps" value={set.reps} onChange={e=>updateSet(ei,si,"reps",e.target.value)} style={{background:C.up,border:`1px solid ${d?C.blue+"50":C.border}`,borderRadius:7,padding:"8px 6px",color:C.text,fontSize:12,fontFamily:"'JetBrains Mono',monospace",textAlign:"center",outline:"none",width:"100%"}}/>
-                    <input type="number" min="6" max="10" step=".5" placeholder="RPE" value={set.rpe} onChange={e=>updateSet(ei,si,"rpe",e.target.value)} style={{background:C.up,border:`1px solid ${set.rpe?rpeC(set.rpe)+"50":C.border}`,borderRadius:7,padding:"8px 6px",color:set.rpe?rpeC(set.rpe):C.muted,fontSize:12,fontFamily:"'JetBrains Mono',monospace",textAlign:"center",outline:"none",width:"100%"}}/>
+                    <div style={{fontFamily:"'DM Mono',monospace",fontSize:11,color:d?C.blue:C.muted,textAlign:"center"}}>{si+1}</div>
+                    <input type="number" placeholder="lbs" value={set.weight} onChange={e=>updateSet(ei,si,"weight",e.target.value)} style={{background:C.up,border:`1px solid ${d?C.blue+"50":C.border}`,borderRadius:7,padding:"8px 6px",color:C.text,fontSize:12,fontFamily:"'DM Mono',monospace",textAlign:"center",outline:"none",width:"100%"}}/>
+                    <input type="number" placeholder="reps" value={set.reps} onChange={e=>updateSet(ei,si,"reps",e.target.value)} style={{background:C.up,border:`1px solid ${d?C.blue+"50":C.border}`,borderRadius:7,padding:"8px 6px",color:C.text,fontSize:12,fontFamily:"'DM Mono',monospace",textAlign:"center",outline:"none",width:"100%"}}/>
+                    <input type="number" min="6" max="10" step=".5" placeholder="RPE" value={set.rpe} onChange={e=>updateSet(ei,si,"rpe",e.target.value)} style={{background:C.up,border:`1px solid ${set.rpe?rpeC(set.rpe)+"50":C.border}`,borderRadius:7,padding:"8px 6px",color:set.rpe?rpeC(set.rpe):C.muted,fontSize:12,fontFamily:"'DM Mono',monospace",textAlign:"center",outline:"none",width:"100%"}}/>
                     <div style={{display:"flex",alignItems:"center",justifyContent:"center"}}>{d&&<div style={{width:14,height:14,borderRadius:"50%",background:C.green,display:"flex",alignItems:"center",justifyContent:"center",fontSize:8}}>✓</div>}</div>
                   </div>
                 );
@@ -3009,7 +3009,7 @@ function WorkoutSession({ dayKey, dayPlan, adaptation, history = [], onComplete,
             <div style={{ fontFamily: "'Bebas Neue',sans-serif", fontSize: 30, letterSpacing: 2, lineHeight: 1 }}>ACTIVE SESSION</div>
           </div>
           <div style={{ textAlign: "right" }}>
-            <div style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: 22, color: C.accent }}>{formatTime(timer)}</div>
+            <div style={{ fontFamily: "'DM Mono',monospace", fontSize: 22, color: C.accent }}>{formatTime(timer)}</div>
             <div style={{ fontSize: 10, color: C.muted, marginTop: 2 }}>{totalSets} sets logged</div>
           </div>
         </div>
@@ -3081,7 +3081,7 @@ function WorkoutSession({ dayKey, dayPlan, adaptation, history = [], onComplete,
                         <span style={{ fontSize: 9, background: `${C.accent}25`, color: C.accent, padding: "1px 7px", borderRadius: 10, letterSpacing: 1, fontWeight: 700 }}>▲ PR</span>
                       )}
                     </div>
-                    <div style={{ fontFamily: "'Inter',sans-serif", fontSize: 15, fontWeight: 600, color: C.text }}>{ex.name}</div>
+                    <div style={{ fontFamily: "'DM Sans',sans-serif", fontSize: 15, fontWeight: 600, color: C.text }}>{ex.name}</div>
                     <div style={{ display: "flex", gap: 8, marginTop: 5, flexWrap: "wrap" }}>
                       <span style={{ fontSize: 11, color: C.faint }}>{sets.length} sets</span>
                       <span style={{ fontSize: 11, color: C.muted }}>·</span>
@@ -3090,7 +3090,7 @@ function WorkoutSession({ dayKey, dayPlan, adaptation, history = [], onComplete,
                       <span style={{ fontSize: 11, color: C.faint }}>Target SFR {ex.rpe >= 8 ? "3" : ex.rpe >= 7 ? "4" : "5"}</span>
                     </div>
                     {prevSummary && !isOpen && (
-                      <div style={{ marginTop: 6, fontSize: 10, color: C.muted, fontFamily: "'JetBrains Mono',monospace" }}>
+                      <div style={{ marginTop: 6, fontSize: 10, color: C.muted, fontFamily: "'DM Mono',monospace" }}>
                         <span style={{ color: C.faint, marginRight: 4 }}>{prevDate}:</span>{prevSummary}
                       </div>
                     )}
@@ -3114,7 +3114,7 @@ function WorkoutSession({ dayKey, dayPlan, adaptation, history = [], onComplete,
                   {prevSummary && (
                     <div style={{ background: `${C.accent}0D`, border: `1px solid ${C.accent}25`, borderRadius: 8, padding: "8px 12px", marginBottom: 12, display: "flex", alignItems: "center", gap: 8 }}>
                       <span style={{ fontSize: 9, fontWeight: 700, letterSpacing: 1.5, textTransform: "uppercase", color: C.accent, flexShrink: 0 }}>Last {prevDate}</span>
-                      <span style={{ fontSize: 11, fontFamily: "'JetBrains Mono',monospace", color: C.muted, lineHeight: 1.5 }}>{prevSummary}</span>
+                      <span style={{ fontSize: 11, fontFamily: "'DM Mono',monospace", color: C.muted, lineHeight: 1.5 }}>{prevSummary}</span>
                     </div>
                   )}
                   {!prevSummary && prevDate === null && (
@@ -3140,25 +3140,25 @@ function WorkoutSession({ dayKey, dayPlan, adaptation, history = [], onComplete,
                         {prev && (
                           <div style={{ display: "grid", gridTemplateColumns: "28px 1fr 1fr 1fr 28px", gap: 6, marginBottom: 2 }}>
                             <div/>
-                            <div style={{ fontSize: 9, color: C.faint, fontFamily: "'JetBrains Mono',monospace", textAlign: "center", letterSpacing: .5 }}>{prev.weight || "—"}</div>
-                            <div style={{ fontSize: 9, color: C.faint, fontFamily: "'JetBrains Mono',monospace", textAlign: "center", letterSpacing: .5 }}>{prev.reps || "—"}</div>
-                            <div style={{ fontSize: 9, color: C.faint, fontFamily: "'JetBrains Mono',monospace", textAlign: "center", letterSpacing: .5 }}>{prev.rpe || "—"}</div>
+                            <div style={{ fontSize: 9, color: C.faint, fontFamily: "'DM Mono',monospace", textAlign: "center", letterSpacing: .5 }}>{prev.weight || "—"}</div>
+                            <div style={{ fontSize: 9, color: C.faint, fontFamily: "'DM Mono',monospace", textAlign: "center", letterSpacing: .5 }}>{prev.reps || "—"}</div>
+                            <div style={{ fontSize: 9, color: C.faint, fontFamily: "'DM Mono',monospace", textAlign: "center", letterSpacing: .5 }}>{prev.rpe || "—"}</div>
                             {/* rpe field preserved in data as-is for backwards compat */}
                             <div/>
                           </div>
                         )}
                         <div style={{ display: "grid", gridTemplateColumns: "28px 1fr 1fr 1fr 28px", gap: 6, alignItems: "center" }}>
-                          <div style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: 12, color: done ? C.accent : C.muted, textAlign: "center" }}>{si + 1}</div>
+                          <div style={{ fontFamily: "'DM Mono',monospace", fontSize: 12, color: done ? C.accent : C.muted, textAlign: "center" }}>{si + 1}</div>
                           <input type="number" placeholder={weightPlaceholder} value={set.weight}
                             onChange={e => updateSet(ex.id, si, "weight", e.target.value)}
-                            style={{ background: C.surface, border: `2px solid ${isPR ? C.accent : done ? C.accent + "40" : C.border}`, borderRadius: 8, padding: "9px 8px", color: isPR ? C.accent : C.text, fontSize: 13, fontFamily: "'JetBrains Mono',monospace", textAlign: "center", outline: "none", width: "100%", transition: "all .2s", fontWeight: isPR ? 700 : 400 }} />
+                            style={{ background: C.surface, border: `2px solid ${isPR ? C.accent : done ? C.accent + "40" : C.border}`, borderRadius: 8, padding: "9px 8px", color: isPR ? C.accent : C.text, fontSize: 13, fontFamily: "'DM Mono',monospace", textAlign: "center", outline: "none", width: "100%", transition: "all .2s", fontWeight: isPR ? 700 : 400 }} />
                           <input type="number" placeholder={repsPlaceholder} value={set.reps}
                             onChange={e => updateSet(ex.id, si, "reps", e.target.value)}
-                            style={{ background: C.surface, border: `2px solid ${done ? C.accent + "40" : C.border}`, borderRadius: 8, padding: "9px 8px", color: C.text, fontSize: 13, fontFamily: "'JetBrains Mono',monospace", textAlign: "center", outline: "none", width: "100%", transition: "border-color .2s" }} />
+                            style={{ background: C.surface, border: `2px solid ${done ? C.accent + "40" : C.border}`, borderRadius: 8, padding: "9px 8px", color: C.text, fontSize: 13, fontFamily: "'DM Mono',monospace", textAlign: "center", outline: "none", width: "100%", transition: "border-color .2s" }} />
                           <input type="number" min="1" max="5" step="1" placeholder="SFR"
                             value={set.rpe}
                             onChange={e => updateSet(ex.id, si, "rpe", e.target.value)}
-                            style={{ background: C.surface, border: `1px solid ${set.rpe ? sfrColor(set.rpe) + "50" : C.border}`, borderRadius: 8, padding: "9px 8px", color: set.rpe ? sfrColor(set.rpe) : C.muted, fontSize: 13, fontFamily: "'JetBrains Mono',monospace", textAlign: "center", outline: "none", width: "100%" }} />
+                            style={{ background: C.surface, border: `1px solid ${set.rpe ? sfrColor(set.rpe) + "50" : C.border}`, borderRadius: 8, padding: "9px 8px", color: set.rpe ? sfrColor(set.rpe) : C.muted, fontSize: 13, fontFamily: "'DM Mono',monospace", textAlign: "center", outline: "none", width: "100%" }} />
                           <div style={{ display: "flex", alignItems: "center", justifyContent: "center" }}>
                             {isPR ? <div style={{ fontSize: 10, color: C.accent, fontWeight: 700 }}>▲</div>
                               : done ? <div style={{ width: 16, height: 16, borderRadius: "50%", background: C.green, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 9 }}>✓</div>
@@ -3488,7 +3488,7 @@ Give post-session feedback: what was solid, anything to flag, and one specific f
           ].map(r => (
             <div key={r.label} style={{ display: "flex", justifyContent: "space-between", marginBottom: 4 }}>
               <span style={{ fontSize: 12, color: C.muted }}>{r.label}</span>
-              <span style={{ fontSize: 12, color: C.faint, fontFamily: "'JetBrains Mono',monospace", textTransform: "capitalize" }}>{r.value}</span>
+              <span style={{ fontSize: 12, color: C.faint, fontFamily: "'DM Mono',monospace", textTransform: "capitalize" }}>{r.value}</span>
             </div>
           ))}
         </div>
@@ -3681,7 +3681,7 @@ Give post-session feedback: what was solid, anything to flag, and one specific f
                       </div>
                       <div style={{ display:"flex", alignItems:"center", gap:12 }}>
                         <div style={{ textAlign:"right" }}>
-                          <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:12, color:C.accent }}>{volLoad > 0 ? `${(volLoad/1000).toFixed(1)}k lbs` : `${setsLogged} sets`}</div>
+                          <div style={{ fontFamily:"'DM Mono',monospace", fontSize:12, color:C.accent }}>{volLoad > 0 ? `${(volLoad/1000).toFixed(1)}k lbs` : `${setsLogged} sets`}</div>
                           <div style={{ fontSize:9, color:C.muted }}>{setsLogged} sets logged</div>
                         </div>
                         <div style={{ fontSize:14, color: isOpen ? C.accent : C.muted, transition:"transform .2s", transform: isOpen ? "rotate(180deg)" : "none" }}>⌄</div>
@@ -3697,13 +3697,13 @@ Give post-session feedback: what was solid, anything to flag, and one specific f
                             <div key={ei} style={{ marginBottom: ei < sess.completedExercises.length-1 ? 14 : 0 }}>
                               <div style={{ display:"flex", alignItems:"baseline", justifyContent:"space-between", marginBottom:6 }}>
                                 <div style={{ fontSize:12, fontWeight:600, color:C.text }}>{ex.name}</div>
-                                <div style={{ fontSize:10, color:C.accent, fontFamily:"'JetBrains Mono',monospace" }}>
+                                <div style={{ fontSize:10, color:C.accent, fontFamily:"'DM Mono',monospace" }}>
                                   {topSet.weight && `Top: ${topSet.weight} × ${topSet.reps}`}
                                 </div>
                               </div>
                               <div style={{ display:"flex", flexWrap:"wrap", gap:4 }}>
                                 {workSets.map((set, si) => (
-                                  <div key={si} style={{ fontSize:10, fontFamily:"'JetBrains Mono',monospace", background:`${C.accent}12`, border:`1px solid ${C.accent}30`, borderRadius:4, padding:"3px 8px", color:C.faint }}>
+                                  <div key={si} style={{ fontSize:10, fontFamily:"'DM Mono',monospace", background:`${C.accent}12`, border:`1px solid ${C.accent}30`, borderRadius:4, padding:"3px 8px", color:C.faint }}>
                                     {set.weight}×{set.reps}{set.rpe ? ` @${set.rpe}` : ""}
                                   </div>
                                 ))}
@@ -3805,11 +3805,11 @@ Give post-session feedback: what was solid, anything to flag, and one specific f
                   </div>
                   <div style={{ display: "flex", gap: 16 }}>
                     <div style={{ textAlign: "right" }}>
-                      <div style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: 14, color: C.text }}>{prevSets}</div>
+                      <div style={{ fontFamily: "'DM Mono',monospace", fontSize: 14, color: C.text }}>{prevSets}</div>
                       <div style={{ fontSize: 9, color: C.muted }}>sets</div>
                     </div>
                     <div style={{ textAlign: "right" }}>
-                      <div style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: 14, color: C.accent }}>{prevVol > 0 ? `${(prevVol / 1000).toFixed(1)}k` : "—"}</div>
+                      <div style={{ fontFamily: "'DM Mono',monospace", fontSize: 14, color: C.accent }}>{prevVol > 0 ? `${(prevVol / 1000).toFixed(1)}k` : "—"}</div>
                       <div style={{ fontSize: 9, color: C.muted }}>lbs vol</div>
                     </div>
                   </div>
@@ -3836,9 +3836,9 @@ Give post-session feedback: what was solid, anything to flag, and one specific f
                     </div>
                     <div className="ec-name">{ex.name}</div>
                     <div style={{ display: "flex", gap: 10, marginTop: 6 }}>
-                      <span style={{ fontSize: 11, fontFamily: "'JetBrains Mono',monospace", color: C.faint }}>{ex.repRange} reps</span>
+                      <span style={{ fontSize: 11, fontFamily: "'DM Mono',monospace", color: C.faint }}>{ex.repRange} reps</span>
                       <span style={{ fontSize: 11, color: C.muted }}>·</span>
-                      <span style={{ fontSize: 11, fontFamily: "'JetBrains Mono',monospace", color: C.faint }}>RPE {ex.rpe}</span>
+                      <span style={{ fontSize: 11, fontFamily: "'DM Mono',monospace", color: C.faint }}>RPE {ex.rpe}</span>
                     </div>
                     {ex.notes && <div style={{ fontSize: 11, color: C.muted, marginTop: 4, fontStyle: "italic" }}>{ex.notes}</div>}
                   </div>
@@ -4221,7 +4221,7 @@ function MealLogModal({ onSave, onClose, existingLog }) {
             <div style={{ display: "flex", gap: 8, marginBottom: 18 }}>
               {[{ id: "free", label: "Free Entry" }, { id: "quick", label: "Quick Refs" }].map(m => (
                 <button key={m.id} onClick={() => setInputMode(m.id)}
-                  style={{ flex: 1, padding: "10px", background: inputMode === m.id ? `${C.green}15` : C.up, border: `1px solid ${inputMode === m.id ? C.green : C.border}`, borderRadius: 10, color: inputMode === m.id ? C.green : C.muted, fontSize: 12, cursor: "pointer", fontFamily: "'Inter',sans-serif", display: "flex", alignItems: "center", justifyContent: "center", gap: 6 }}>
+                  style={{ flex: 1, padding: "10px", background: inputMode === m.id ? `${C.green}15` : C.up, border: `1px solid ${inputMode === m.id ? C.green : C.border}`, borderRadius: 10, color: inputMode === m.id ? C.green : C.muted, fontSize: 12, cursor: "pointer", fontFamily: "'DM Sans',sans-serif", display: "flex", alignItems: "center", justifyContent: "center", gap: 6 }}>
                   {m.label}
                 </button>
               ))}
@@ -4265,7 +4265,7 @@ function MealLogModal({ onSave, onClose, existingLog }) {
               </div>
               <textarea value={rawInput} onChange={e => setRawInput(e.target.value)}
                 placeholder={"Examples:\n• 8oz chicken breast, 1.5 cups white rice, 1 tbsp olive oil\n• Chipotle bowl with chicken, rice, black beans, cheese, salsa\n• 2 scoops whey, 1 banana, handful of oats\n• About 6 oz salmon, sweet potato medium"}
-                style={{ width: "100%", background: C.up, border: `1px solid ${rawInput ? C.green : C.border}`, borderRadius: 10, padding: "14px", color: C.text, fontSize: 14, fontFamily: "'Inter',sans-serif", outline: "none", resize: "none", height: 130, lineHeight: 1.5, transition: "border-color .2s" }} />
+                style={{ width: "100%", background: C.up, border: `1px solid ${rawInput ? C.green : C.border}`, borderRadius: 10, padding: "14px", color: C.text, fontSize: 14, fontFamily: "'DM Sans',sans-serif", outline: "none", resize: "none", height: 130, lineHeight: 1.5, transition: "border-color .2s" }} />
             </div>
             <div style={{ fontSize: 11, color: C.muted, marginBottom: 16 }}>
               Include amounts: "8oz", "200g", "1 cup", "2 tablespoons", "1 medium", "handful"
@@ -4334,7 +4334,7 @@ function MealLogModal({ onSave, onClose, existingLog }) {
                     <div style={{ fontSize: 11, color: C.muted, marginTop: 2 }}>{item.qty} {item.unit} · {item.qty_g}g</div>
                   </div>
                   <div style={{ textAlign: "right", flexShrink: 0 }}>
-                    <div style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: 12, color: C.text }}>{Math.round(item.calories)} kcal</div>
+                    <div style={{ fontFamily: "'DM Mono',monospace", fontSize: 12, color: C.text }}>{Math.round(item.calories)} kcal</div>
                     <div style={{ fontSize: 10, color: C.muted, marginTop: 2 }}>
                       <span style={{ color: C.accent }}>P:{Math.round(item.protein_g)}</span>
                       {" · "}
@@ -4375,7 +4375,7 @@ function MacroProgressBar({ label, consumed, target, color }) {
     <div style={{ marginBottom: 10 }}>
       <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 5 }}>
         <span style={{ fontSize: 11, color: C.muted, letterSpacing: 1, textTransform: "uppercase" }}>{label}</span>
-        <span style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: 11, color: over ? C.red : C.faint }}>
+        <span style={{ fontFamily: "'DM Mono',monospace", fontSize: 11, color: over ? C.red : C.faint }}>
           {Math.round(consumed)}g / {target}g
           {over && <span style={{ color: C.red, marginLeft: 4 }}>↑</span>}
         </span>
@@ -4560,7 +4560,7 @@ function NutritionScreen({ user }) {
                 <div style={{ fontSize: 10, color: C.muted, letterSpacing: 1, textTransform: "uppercase", marginBottom: 4 }}>{t.label}</div>
                 <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
                   <input type="number" value={tempTargets[t.key]} onChange={e => setTempTargets(prev => ({ ...prev, [t.key]: parseInt(e.target.value) || 0 }))}
-                    style={{ flex: 1, background: C.up, border: `1px solid ${C.border}`, borderRadius: 8, padding: "10px 10px", color: C.text, fontSize: 14, fontFamily: "'JetBrains Mono',monospace", outline: "none" }} />
+                    style={{ flex: 1, background: C.up, border: `1px solid ${C.border}`, borderRadius: 8, padding: "10px 10px", color: C.text, fontSize: 14, fontFamily: "'DM Mono',monospace", outline: "none" }} />
                   <span style={{ fontSize: 11, color: C.muted, flexShrink: 0 }}>{t.unit}</span>
                 </div>
               </div>
@@ -4617,8 +4617,8 @@ function NutritionScreen({ user }) {
                 strokeLinecap="round" strokeDashoffset={2 * Math.PI * 38 * 0.25}
                 style={{ transition: "stroke-dasharray 1s ease", filter: `drop-shadow(0 0 6px ${calPct >= 1 ? C.red : C.green}80)` }} />
               <text x={48} y={44} textAnchor="middle" fill={C.text} fontSize="13" fontFamily="Bebas Neue,sans-serif" letterSpacing="1">{Math.round(todayTotals.calories)}</text>
-              <text x={48} y={57} textAnchor="middle" fill={C.muted} fontSize="8" fontFamily="Inter,sans-serif">/ {activeTargets.cal}</text>
-              <text x={48} y={68} textAnchor="middle" fill={C.muted} fontSize="7" fontFamily="Inter,sans-serif">KCAL</text>
+              <text x={48} y={57} textAnchor="middle" fill={C.muted} fontSize="8" fontFamily="DM Sans,sans-serif">/ {activeTargets.cal}</text>
+              <text x={48} y={68} textAnchor="middle" fill={C.muted} fontSize="7" fontFamily="DM Sans,sans-serif">KCAL</text>
             </svg>
           </div>
           {/* Macro bars */}
@@ -4738,7 +4738,7 @@ function NutritionScreen({ user }) {
                     { l: "C", v: Math.round(log.totals?.carbs_g || 0), cl: C.green },
                     { l: "F", v: Math.round(log.totals?.fat_g || 0), cl: C.blue },
                   ].map(m => (
-                    <span key={m.l} style={{ fontSize: 11, fontFamily: "'JetBrains Mono',monospace", color: m.cl, background: `${m.cl}15`, padding: "2px 8px", borderRadius: 4 }}>{m.l}: {m.v}g</span>
+                    <span key={m.l} style={{ fontSize: 11, fontFamily: "'DM Mono',monospace", color: m.cl, background: `${m.cl}15`, padding: "2px 8px", borderRadius: 4 }}>{m.l}: {m.v}g</span>
                   ))}
                   {log.confidence && (
                     <span style={{ fontSize: 10, color: confidenceColor[log.confidence] || C.muted, background: `${confidenceColor[log.confidence] || C.muted}12`, padding: "2px 8px", borderRadius: 4 }}>
@@ -4809,7 +4809,7 @@ function NutritionScreen({ user }) {
               <div className="mc-items">{meal.items}</div>
               <div style={{ display: "flex", gap: 6, marginTop: 8 }}>
                 {[{ l: "P", v: meal.p, cl: C.accent }, { l: "C", v: meal.c, cl: C.green }, { l: "F", v: meal.f, cl: C.blue }].map(m => (
-                  <span key={m.l} style={{ fontSize: 11, fontFamily: "'JetBrains Mono',monospace", color: m.cl, background: `${m.cl}15`, padding: "2px 8px", borderRadius: 4 }}>{m.l}: {m.v}g</span>
+                  <span key={m.l} style={{ fontSize: 11, fontFamily: "'DM Mono',monospace", color: m.cl, background: `${m.cl}15`, padding: "2px 8px", borderRadius: 4 }}>{m.l}: {m.v}g</span>
                 ))}
               </div>
               <div className="pbar"><div className="pfill" style={{ width: `${(meal.cal / targets.cal) * 100}%`, background: i % 2 === 0 ? C.accent : C.green }} /></div>
@@ -5399,44 +5399,37 @@ function WeightGraph3D({ logs, ceilingWeight, stageWeight }) {
       ctx.clearRect(0, 0, cW, cH);
       const s = stateRef.current;
 
-      // Background
-      ctx.fillStyle = cc.bg; ctx.fillRect(0, 0, cW, cH);
+      // Background — match card color
+      ctx.fillStyle = cc.card || cc.bg; ctx.fillRect(0, 0, cW, cH);
 
-      // ── GRID FLOOR ──
       const gridY = 0.05;
-      for (let xi = 0; xi <= 4; xi++) {
-        const xf = xi / 4;
-        const p1 = project(xf, gridY, 0), p2 = project(xf, gridY, 1);
-        ctx.beginPath(); ctx.moveTo(p1.px, p1.py); ctx.lineTo(p2.px, p2.py);
-        ctx.strokeStyle = hex2rgba(cc.border, 0.7); ctx.lineWidth = 1; ctx.stroke();
-      }
-      for (let zi = 0; zi <= 4; zi++) {
-        const zf = zi / 4;
-        const p1 = project(0, gridY, zf), p2 = project(1, gridY, zf);
-        ctx.beginPath(); ctx.moveTo(p1.px, p1.py); ctx.lineTo(p2.px, p2.py);
-        ctx.strokeStyle = hex2rgba(cc.border, 0.7); ctx.lineWidth = 1; ctx.stroke();
-      }
 
-      // ── AXES ──
+      // ── AXES — thick, brutal ──
       const origin = project(0, gridY, 0);
       const axX = project(1, gridY, 0);
       const axY = project(0, 1, 0);
       const axZ = project(0, gridY, 1);
 
+      // Base floor line (single clean baseline, not a full grid)
+      ctx.beginPath(); ctx.moveTo(project(0,gridY,0).px, project(0,gridY,0).py);
+      ctx.lineTo(project(1,gridY,0).px, project(1,gridY,0).py);
+      ctx.strokeStyle = hex2rgba(cc.brutal||cc.accent, 0.5); ctx.lineWidth = 2; ctx.stroke();
+
       ctx.beginPath(); ctx.moveTo(origin.px, origin.py); ctx.lineTo(axX.px, axX.py);
-      ctx.strokeStyle = hex2rgba(cc.accent, 0.4); ctx.lineWidth = 1.5; ctx.stroke();
-      ctx.fillStyle = hex2rgba(cc.accent, 0.7); ctx.font = `bold ${9 / s.scale}px Inter`;
-      ctx.fillText("DAYS", axX.px + 4, axX.py + 3);
+      ctx.strokeStyle = hex2rgba(cc.brutal||cc.accent, 0.6); ctx.lineWidth = 2; ctx.stroke();
+      ctx.fillStyle = hex2rgba(cc.brutal||cc.accent, 1);
+      ctx.font = `700 ${10 / s.scale}px 'DM Sans',sans-serif`;
+      ctx.fillText("DAYS", axX.px + 6, axX.py + 4);
 
       ctx.beginPath(); ctx.moveTo(origin.px, origin.py); ctx.lineTo(axY.px, axY.py);
-      ctx.strokeStyle = hex2rgba(cc.green, 0.4); ctx.lineWidth = 1.5; ctx.stroke();
-      ctx.fillStyle = hex2rgba(cc.green, 0.7);
-      ctx.fillText("LBS", axY.px - 18, axY.py - 4);
+      ctx.strokeStyle = hex2rgba(cc.green, 0.7); ctx.lineWidth = 2; ctx.stroke();
+      ctx.fillStyle = hex2rgba(cc.green, 1);
+      ctx.fillText("LBS", axY.px - 24, axY.py - 4);
 
       ctx.beginPath(); ctx.moveTo(origin.px, origin.py); ctx.lineTo(axZ.px, axZ.py);
-      ctx.strokeStyle = hex2rgba(cc.blue, 0.3); ctx.lineWidth = 1; ctx.stroke();
-      ctx.fillStyle = hex2rgba(cc.blue, 0.6);
-      ctx.fillText("ΔRATE", axZ.px + 3, axZ.py + 3);
+      ctx.strokeStyle = hex2rgba(cc.brutal||cc.accent, 0.3); ctx.lineWidth = 1; ctx.stroke();
+      ctx.fillStyle = hex2rgba(cc.brutal||cc.accent, 0.6);
+      ctx.fillText("ΔRATE", axZ.px + 4, axZ.py + 4);
 
       // ── CEILING & STAGE PLANES ──
       if (ceilingWeight && stageWeight) {
@@ -5475,27 +5468,35 @@ function WeightGraph3D({ logs, ceilingWeight, stageWeight }) {
         const baseColor = nearCeiling ? cc.red : delta > 0.3 ? cc.green : delta < -0.3 ? cc.blue : cc.accent;
         const barColor = hex2rgba(baseColor, isHov ? 1 : 0.65);
 
+        // Thick brutalist bar
         ctx.beginPath(); ctx.moveTo(bot.px, bot.py); ctx.lineTo(top.px, top.py);
-        ctx.strokeStyle = barColor; ctx.lineWidth = isHov ? 3 : 2; ctx.stroke();
+        ctx.strokeStyle = barColor; ctx.lineWidth = isHov ? 5 : 3; ctx.stroke();
 
-        ctx.beginPath();
-        ctx.arc(top.px, top.py, isHov ? 5 : 3.5, 0, Math.PI * 2);
-        ctx.fillStyle = barColor; ctx.fill();
-        ctx.strokeStyle = hex2rgba(cc.bg, 0.8); ctx.lineWidth = 1; ctx.stroke();
+        // Square cap (brutalist — no circles)
+        const capSz = isHov ? 5 : 3;
+        ctx.fillStyle = barColor;
+        ctx.fillRect(top.px - capSz, top.py - capSz, capSz * 2, capSz * 2);
 
         if (isHov) {
           const label = `${d.weight} lbs`;
           const dateStr = d.date;
-          const lw = Math.max(ctx.measureText(label).width, ctx.measureText(dateStr).width) + 12;
-          const lx = top.px - lw / 2, ly = top.py - 42;
-          ctx.fillStyle = cc.surface;
-          ctx.beginPath(); ctx.roundRect(lx, ly, lw, 34, 5); ctx.fill();
-          ctx.strokeStyle = hex2rgba(cc.accent, 0.5); ctx.lineWidth = 1; ctx.stroke();
-          ctx.fillStyle = cc.accent; ctx.font = `bold ${10 / s.scale}px 'Inter',sans-serif`;
+          ctx.font = `600 ${10 / s.scale}px 'DM Sans',sans-serif`;
+          const lw = Math.max(ctx.measureText(label).width, ctx.measureText(dateStr).width) + 18;
+          const lx = top.px - lw / 2, ly = top.py - 48;
+          // Brutalist tooltip: hard offset shadow + border
+          ctx.fillStyle = cc.brutal || cc.accent;
+          ctx.fillRect(lx + 3, ly + 3, lw, 36);
+          ctx.fillStyle = cc.card || cc.surface;
+          ctx.fillRect(lx, ly, lw, 36);
+          ctx.strokeStyle = cc.brutal || cc.accent; ctx.lineWidth = 2;
+          ctx.strokeRect(lx, ly, lw, 36);
+          ctx.fillStyle = cc.brutal || cc.accent;
+          ctx.font = `700 ${10 / s.scale}px 'DM Sans',sans-serif`;
           ctx.textAlign = "center";
-          ctx.fillText(label, top.px, ly + 13);
-          ctx.fillStyle = cc.muted; ctx.font = `${9 / s.scale}px 'Inter',sans-serif`;
-          ctx.fillText(dateStr, top.px, ly + 27);
+          ctx.fillText(label, top.px, ly + 15);
+          ctx.fillStyle = cc.muted;
+          ctx.font = `500 ${9 / s.scale}px 'DM Sans',sans-serif`;
+          ctx.fillText(dateStr, top.px, ly + 29);
           ctx.textAlign = "left";
         }
       });
@@ -5510,8 +5511,8 @@ function WeightGraph3D({ logs, ceilingWeight, stageWeight }) {
           const pt = project(xf, yf, zf);
           i === 0 ? ctx.moveTo(pt.px, pt.py) : ctx.lineTo(pt.px, pt.py);
         });
-        ctx.strokeStyle = hex2rgba(cc.accent, 0.35); ctx.lineWidth = 1.5;
-        ctx.setLineDash([3, 3]); ctx.stroke(); ctx.setLineDash([]);
+        ctx.strokeStyle = hex2rgba(cc.accent, 0.7); ctx.lineWidth = 2.5;
+        ctx.stroke();
       }
 
       // ── Y AXIS TICK LABELS ──
@@ -5519,8 +5520,9 @@ function WeightGraph3D({ logs, ceilingWeight, stageWeight }) {
         const tf = t / 4;
         const wVal = Math.round(minW + tf * wRange);
         const pt = project(0, tf, 0);
-        ctx.fillStyle = hex2rgba(cc.muted, 0.8); ctx.font = `${8 / s.scale}px 'Inter',monospace`;
-        ctx.fillText(wVal, pt.px - 22, pt.py + 3);
+        ctx.fillStyle = hex2rgba(cc.muted, 0.9);
+        ctx.font = `500 ${8 / s.scale}px 'DM Mono',monospace`;
+        ctx.fillText(wVal, pt.px - 26, pt.py + 3);
       }
     }
 
@@ -6266,7 +6268,7 @@ function DashboardScreen({ user, weightLog, onLogWeight, onDeleteWeight, onEditW
               <div className="pi-alert-msg">{d.msg}</div>
               {d.type==="calories" && protocolDecision.calAdjustment!==0 && (
                 <div style={{fontSize:10,color:C.muted,marginTop:6}}>
-                  Suggested target: <span style={{fontFamily:"'JetBrains Mono',monospace",color:C.accent,fontWeight:700}}>{calTarget?(calTarget.cal+protocolDecision.calAdjustment).toLocaleString():"—"} kcal</span>
+                  Suggested target: <span style={{fontFamily:"'DM Mono',monospace",color:C.accent,fontWeight:700}}>{calTarget?(calTarget.cal+protocolDecision.calAdjustment).toLocaleString():"—"} kcal</span>
                 </div>
               )}
             </div>
@@ -6373,7 +6375,7 @@ function DashboardScreen({ user, weightLog, onLogWeight, onDeleteWeight, onEditW
 
             {bfOverride != null && (
               <button onClick={clearBfOverride}
-                style={{width:"100%",marginTop:12,background:"none",border:"none",color:C.muted,fontSize:12,cursor:"pointer",padding:8,fontFamily:"'Inter',sans-serif"}}>
+                style={{width:"100%",marginTop:12,background:"none",border:"none",color:C.muted,fontSize:12,cursor:"pointer",padding:8,fontFamily:"'DM Sans',sans-serif"}}>
                 Remove override — revert to formula estimate
               </button>
             )}
@@ -6395,7 +6397,7 @@ function DashboardScreen({ user, weightLog, onLogWeight, onDeleteWeight, onEditW
               <div key={field.key} style={{marginBottom:18}}>
                 <div style={{display:"flex",justifyContent:"space-between",alignItems:"baseline",marginBottom:6}}>
                   <div style={{fontSize:12,fontWeight:600,color:C.text}}>{field.label}</div>
-                  <div style={{fontFamily:"'JetBrains Mono',monospace",fontSize:14,color:C.accent}}>{field.val}{field.unit}</div>
+                  <div style={{fontFamily:"'DM Mono',monospace",fontSize:14,color:C.accent}}>{field.val}{field.unit}</div>
                 </div>
                 <input type="range" min={field.min} max={field.max} step={field.step} value={field.val}
                   onChange={e=>field.set(e.target.value)} className="slider"
@@ -6406,7 +6408,7 @@ function DashboardScreen({ user, weightLog, onLogWeight, onDeleteWeight, onEditW
               </div>
             ))}
             <CubeButton onClick={saveCheckIn} style={{marginTop:4,width:"100%"}}>SAVE CHECK-IN</CubeButton>
-            {checkIn && <button onClick={()=>setShowCheckIn(false)} style={{width:"100%",marginTop:10,background:"none",border:"none",color:C.muted,fontSize:13,cursor:"pointer",padding:6,fontFamily:"'Inter',sans-serif"}}>Dismiss</button>}
+            {checkIn && <button onClick={()=>setShowCheckIn(false)} style={{width:"100%",marginTop:10,background:"none",border:"none",color:C.muted,fontSize:13,cursor:"pointer",padding:6,fontFamily:"'DM Sans',sans-serif"}}>Dismiss</button>}
           </div>
         </div>
       )}
@@ -6572,7 +6574,7 @@ function AppInner() {
         <button className="auth-submit" style={{marginTop:8,background:"none",border:"2px solid var(--brutal)",color:"var(--text)",boxShadow:"3px 3px 0 var(--brutal)"}} onClick={()=>setUser(null)||setUserLoaded(true)}>
           START FRESH ON THIS DEVICE →
         </button>
-        <button onClick={signOut} style={{width:"100%",marginTop:8,background:"none",border:"none",color:"var(--muted)",fontSize:12,cursor:"pointer",padding:8,fontFamily:"'Inter',sans-serif"}}>
+        <button onClick={signOut} style={{width:"100%",marginTop:8,background:"none",border:"none",color:"var(--muted)",fontSize:12,cursor:"pointer",padding:8,fontFamily:"'DM Sans',sans-serif"}}>
           Sign out
         </button>
       </div>
