@@ -847,6 +847,7 @@ const NOTIF_KEY       = "apex_notif_v1";
 const GOAL_CONFIG_KEY = "apex_goal_config_v1";
 const SNAPSHOTS_KEY     = "apex_snapshots_v1";
 const GOAL_ANALYSIS_KEY = "apex_goal_analysis_v1";
+const GOAL_HISTORY_KEY  = "apex_goal_history_v1";
 const NUTRITION_KEY   = "apex_nutrition_v1";
 const CHECKIN_KEY     = "apex_checkins_v1";
 const PROTOCOL_KEY    = "apex_protocol_v1";
@@ -6324,7 +6325,7 @@ function WeightGraph3D({ logs, ceilingWeight, stageWeight }) {
 
 // ─── DASHBOARD ────────────────────────────────────────────────────────────────
 
-function AvatarMenu({ initial }) {
+function AvatarMenu({ initial, onEditProfile }) {
   const { signOut } = useAuth();
   const [open, setOpen] = useState(false);
   useEffect(() => {
@@ -6333,15 +6334,27 @@ function AvatarMenu({ initial }) {
     setTimeout(() => window.addEventListener("click", close), 0);
     return () => window.removeEventListener("click", close);
   }, [open]);
+  const itemStyle = {
+    width:"100%", padding:"12px 16px", background:"none", border:"none",
+    cursor:"pointer", fontFamily:"'Bebas Neue',sans-serif", fontSize:14,
+    letterSpacing:1.5, color:"var(--text)", textAlign:"left", transition:"background .15s",
+  };
   return (
     <div style={{position:"relative"}}>
       <div className="sh-avatar" style={{cursor:"pointer"}} onClick={e=>{e.stopPropagation();setOpen(o=>!o);}}>
         {initial}
       </div>
       {open && (
-        <div style={{position:"absolute",top:"calc(100% + 8px)",right:0,background:"var(--card)",border:"2px solid var(--brutal)",borderRadius:6,boxShadow:"4px 4px 0 var(--brutal)",overflow:"hidden",zIndex:200,minWidth:140}}>
+        <div style={{position:"absolute",top:"calc(100% + 8px)",right:0,background:"var(--card)",border:"2px solid var(--brutal)",borderRadius:6,boxShadow:"4px 4px 0 var(--brutal)",overflow:"hidden",zIndex:200,minWidth:152}}>
+          <button onClick={()=>{setOpen(false);onEditProfile?.();}}
+            style={itemStyle}
+            onMouseOver={e=>e.currentTarget.style.background="var(--up)"}
+            onMouseOut={e=>e.currentTarget.style.background="none"}>
+            EDIT PROFILE
+          </button>
+          <div style={{height:1,background:"var(--border)"}}/>
           <button onClick={signOut}
-            style={{width:"100%",padding:"12px 16px",background:"none",border:"none",cursor:"pointer",fontFamily:"'Bebas Neue',sans-serif",fontSize:14,letterSpacing:1.5,color:"var(--text)",textAlign:"left",transition:"background .15s"}}
+            style={{...itemStyle, color:"var(--muted)"}}
             onMouseOver={e=>e.currentTarget.style.background="var(--up)"}
             onMouseOut={e=>e.currentTarget.style.background="none"}>
             SIGN OUT
@@ -6352,7 +6365,7 @@ function AvatarMenu({ initial }) {
   );
 }
 
-function DashboardScreen({ user, weightLog, onLogWeight, onDeleteWeight, onEditWeight, onNavigate }) {
+function DashboardScreen({ user, weightLog, onLogWeight, onDeleteWeight, onEditWeight, onNavigate, onEditProfile }) {
   const C = useThemeColors();
   const [inputVal, setInputVal] = useState("");
   const [inputFocused, setInputFocused] = useState(false);
@@ -6377,6 +6390,9 @@ function DashboardScreen({ user, weightLog, onLogWeight, onDeleteWeight, onEditW
   const [storedGoalConfig, setStoredGoalConfig] = useState(null);
   const [snapshots, setSnapshots] = useState([]);
   const [goalRevision, setGoalRevision] = useState(null);
+  const [goalHistory, setGoalHistory] = useState([]);
+  const [showOverrideInput, setShowOverrideInput] = useState(false);
+  const [overrideVal, setOverrideVal] = useState("");
   const snapshotTriggerRef = useRef(-1);   // tracks sortedLog.length at last trigger
   const [bfOverride, setBfOverride] = useState(null);
   const [showBfEditor, setShowBfEditor] = useState(false);
@@ -6429,6 +6445,9 @@ function DashboardScreen({ user, weightLog, onLogWeight, onDeleteWeight, onEditW
     }).catch(() => {});
     window.storage.get(SNAPSHOTS_KEY).then(r => {
       if (r?.value) try { setSnapshots(JSON.parse(r.value) || []); } catch {}
+    }).catch(() => {});
+    window.storage.get(GOAL_HISTORY_KEY).then(r => {
+      if (r?.value) try { setGoalHistory(JSON.parse(r.value) || []); } catch {}
     }).catch(() => {});
   }, []);
 
@@ -6691,7 +6710,7 @@ function DashboardScreen({ user, weightLog, onLogWeight, onDeleteWeight, onEditW
           <div className="sh-label">{(()=>{const h=new Date().getHours();return h<11?"Good morning,":h<17?"Good afternoon,":h<21?"Good evening,":"Hey,"})()}</div>
           <div className="sh-title">{user.name.toUpperCase()}</div>
         </div>
-        <AvatarMenu initial={user.name[0].toUpperCase()} />
+        <AvatarMenu initial={user.name[0].toUpperCase()} onEditProfile={onEditProfile}/>
       </div>
 
       {/* BODY WEIGHT — DOMINANT HERO BLOCK */}
@@ -6934,9 +6953,64 @@ function DashboardScreen({ user, weightLog, onLogWeight, onDeleteWeight, onEditW
             <div style={{padding:"14px 16px 10px",borderBottom:"1px solid var(--border)",display:"flex",alignItems:"center",justifyContent:"space-between"}}>
               <div>
                 <div style={{fontSize:9,letterSpacing:2,textTransform:"uppercase",color:"var(--accent)",marginBottom:2}}>● Physique Target</div>
-                <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:20,letterSpacing:1,color:"var(--text)"}}>
-                  {goalConfig.isDualTarget ? "COMPOSITION SHIFT" : `${goalConfig.effectiveGoalWeight} LBS`}
-                </div>
+                {showOverrideInput ? (
+                  <div style={{display:"flex",alignItems:"center",gap:8,marginTop:4}}>
+                    <input type="number" step="0.5" autoFocus
+                      value={overrideVal}
+                      onChange={e => setOverrideVal(e.target.value)}
+                      placeholder={String(goalConfig.effectiveGoalWeight)}
+                      style={{width:90,background:"var(--up)",border:"1px solid var(--accent)",borderRadius:6,padding:"6px 10px",color:"var(--text)",fontSize:15,fontFamily:"'Bebas Neue',sans-serif",letterSpacing:1,outline:"none"}}/>
+                    <span style={{fontSize:11,color:"var(--muted)"}}>lbs</span>
+                    <button onClick={() => {
+                      const w = parseFloat(overrideVal);
+                      if (!w || w < 80 || w > 400) return;
+                      const updated = { ...goalConfig, userOverrideWeight: w, effectiveGoalWeight: w, updatedAt: Date.now() };
+                      window.storage.set(GOAL_CONFIG_KEY, JSON.stringify(updated)).catch(()=>{});
+                      setStoredGoalConfig(updated);
+                      setShowOverrideInput(false); setOverrideVal("");
+                    }} style={{padding:"5px 10px",background:"var(--accent)",color:"#080A0C",border:"none",borderRadius:6,fontFamily:"'Bebas Neue',sans-serif",fontSize:11,letterSpacing:1,cursor:"pointer"}}>
+                      SET
+                    </button>
+                    <button onClick={() => { setShowOverrideInput(false); setOverrideVal(""); }}
+                      style={{background:"none",border:"none",color:"var(--muted)",fontSize:14,cursor:"pointer",padding:"0 2px"}}>✕</button>
+                  </div>
+                ) : (
+                  <div style={{display:"flex",alignItems:"baseline",gap:8}}>
+                    <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:20,letterSpacing:1,color:"var(--text)"}}>
+                      {goalConfig.isDualTarget ? "COMPOSITION SHIFT" : `${goalConfig.effectiveGoalWeight} LBS`}
+                    </div>
+                    {!goalConfig.isDualTarget && (
+                      <button onClick={() => { setOverrideVal(String(goalConfig.effectiveGoalWeight)); setShowOverrideInput(true); }}
+                        style={{background:"none",border:"none",color:"var(--faint)",fontSize:10,cursor:"pointer",padding:0,letterSpacing:.5,textDecoration:"underline",textUnderlineOffset:2,fontFamily:"'DM Sans',sans-serif"}}>
+                        {goalConfig.userOverrideWeight ? "custom" : "customize"}
+                      </button>
+                    )}
+                    {goalConfig.userOverrideWeight && (
+                      <button onClick={() => {
+                        const reset = { ...goalConfig, userOverrideWeight:null, effectiveGoalWeight:goalConfig.goalWeight, updatedAt:Date.now() };
+                        window.storage.set(GOAL_CONFIG_KEY, JSON.stringify(reset)).catch(()=>{});
+                        setStoredGoalConfig(reset);
+                      }} style={{background:"none",border:"none",color:"var(--muted)",fontSize:9,cursor:"pointer",padding:0,letterSpacing:.5,textDecoration:"underline",textUnderlineOffset:2,fontFamily:"'DM Sans',sans-serif"}}>
+                        reset
+                      </button>
+                    )}
+                  </div>
+                )}
+                {/* Live BF preview when override input is open */}
+                {showOverrideInput && overrideVal && (() => {
+                  const w = parseFloat(overrideVal);
+                  if (!w || w < 80) return null;
+                  const projBf = Math.round((1 - userState.bodyComp.lbmKg / (w * 0.453592)) * 1000) / 10;
+                  const outcome = bfToVisualOutcome(projBf, user.sex);
+                  const inRange = w >= goalConfig.goalWeightRange[0] && w <= goalConfig.goalWeightRange[1];
+                  const col = inRange ? "var(--green)" : Math.abs(w - goalConfig.goalWeight) < 10 ? "var(--accent)" : "var(--red)";
+                  return (
+                    <div style={{marginTop:5,fontSize:10,color:col}}>
+                      {projBf.toFixed(1)}% BF · {outcome}
+                      {!inRange && <span style={{marginLeft:4,opacity:.7}}>(outside recommended range)</span>}
+                    </div>
+                  );
+                })()}
               </div>
               <div style={{display:"flex",flexDirection:"column",alignItems:"flex-end",gap:4}}>
                 <div style={{display:"inline-flex",alignItems:"center",gap:5,padding:"4px 10px",borderRadius:20,background:`color-mix(in srgb,${ratingCol} 12%,transparent)`,border:`1px solid color-mix(in srgb,${ratingCol} 30%,transparent)`}}>
@@ -7086,6 +7160,38 @@ function DashboardScreen({ user, weightLog, onLogWeight, onDeleteWeight, onEditW
                 </div>
               </div>
             )}
+          {/* Phase history footer */}
+          {goalHistory.length > 0 && (() => {
+            const completed = goalHistory.filter(p => p.outcome !== "ongoing");
+            const current   = goalHistory.find(p => p.outcome === "ongoing");
+            const weeksIn   = current
+              ? Math.round((Date.now() - current.startTs) / (7 * 86400000))
+              : null;
+            return (
+              <div style={{padding:"8px 16px",borderTop:"1px solid var(--border)",display:"flex",alignItems:"center",justifyContent:"space-between"}}>
+                <div style={{fontSize:9,color:"var(--muted)",letterSpacing:.5}}>
+                  {completed.length > 0
+                    ? `Phase ${goalHistory.length} · ${completed.length} completed`
+                    : "Phase 1 · Journey start"}
+                </div>
+                {weeksIn !== null && (
+                  <div style={{fontSize:9,color:"var(--faint)"}}>{weeksIn}w in</div>
+                )}
+                {completed.length > 0 && (
+                  <div style={{display:"flex",gap:4}}>
+                    {completed.slice(-3).map((p, i) => (
+                      <div key={i} style={{fontSize:8,padding:"2px 6px",borderRadius:4,background:"var(--up)",color:"var(--muted)",fontFamily:"'Bebas Neue',sans-serif",letterSpacing:.5}}>
+                        {p.phase.toUpperCase().slice(0,3)}
+                        {p.endWeight && p.startWeight
+                          ? ` ${p.endWeight - p.startWeight > 0 ? "+" : ""}${(p.endWeight - p.startWeight).toFixed(0)}`
+                          : ""}
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            );
+          })()}
           </div>
         );
       })()}
@@ -7526,6 +7632,117 @@ function NavIcon({ id }) {
   );
 }
 
+// ─── PROFILE EDIT MODAL ───────────────────────────────────────────────────────
+
+function ProfileEditModal({ user, onSave, onClose }) {
+  const C = useThemeColors();
+  const [weight,   setWeight]   = useState(String(user.weight  || ""));
+  const [height,   setHeight]   = useState(String(user.height  || ""));
+  const [age,      setAge]      = useState(String(user.age     || ""));
+  const [sex,      setSex]      = useState(user.sex      || "male");
+  const [goal,     setGoal]     = useState(user.goal     || "bulk");
+  const [level,    setLevel]    = useState(user.level    || "intermediate");
+  const [activity, setActivity] = useState(user.activity || "moderately_active");
+
+  const canSave = !!(weight && height && age &&
+    parseFloat(weight) >= 50 && parseFloat(height) >= 48 && parseFloat(age) >= 13);
+
+  const handleSave = () => {
+    if (!canSave) return;
+    onSave({ ...user, weight, height, age, sex, goal, level, activity });
+  };
+
+  const inputStyle = {
+    flex:1, background:"var(--up)", border:"1px solid var(--border)", borderRadius:8,
+    padding:"10px 12px", color:"var(--text)", fontSize:15,
+    fontFamily:"'DM Mono',monospace", outline:"none",
+  };
+
+  return (
+    <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,.55)",zIndex:400,display:"flex",alignItems:"flex-end",justifyContent:"center"}}
+      onClick={e=>{if(e.target===e.currentTarget)onClose();}}>
+      <div style={{width:"100%",maxWidth:430,background:"var(--surface)",borderRadius:"20px 20px 0 0",padding:"24px 24px 36px",animation:"slideUp .3s cubic-bezier(.22,1,.36,1)",maxHeight:"88vh",overflowY:"auto"}}>
+
+        <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:24,letterSpacing:1.5,marginBottom:4}}>EDIT PROFILE</div>
+        <div style={{fontSize:12,color:"var(--muted)",marginBottom:20}}>Changes recompute your physique target and open a new goal phase.</div>
+
+        {/* Body metrics */}
+        <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10,marginBottom:14}}>
+          {[
+            {label:"Weight (lbs)",val:weight,set:setWeight,placeholder:"185"},
+            {label:"Height (in)", val:height, set:setHeight, placeholder:"71"},
+            {label:"Age",         val:age,    set:setAge,    placeholder:"28"},
+          ].map(f=>(
+            <div key={f.label} style={{gridColumn: f.label==="Age" ? "span 1" : "span 1"}}>
+              <div style={{fontSize:10,color:"var(--muted)",letterSpacing:1,textTransform:"uppercase",marginBottom:5}}>{f.label}</div>
+              <input type="number" value={f.val} placeholder={f.placeholder}
+                onChange={e=>f.set(e.target.value)} style={inputStyle}/>
+            </div>
+          ))}
+          <div>
+            <div style={{fontSize:10,color:"var(--muted)",letterSpacing:1,textTransform:"uppercase",marginBottom:5}}>Sex</div>
+            <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:4}}>
+              {["male","female"].map(s=>(
+                <button key={s} onClick={()=>setSex(s)}
+                  style={{padding:"10px 0",border:`1px solid ${sex===s?"var(--accent)":"var(--border)"}`,borderRadius:8,background:sex===s?`color-mix(in srgb,var(--accent) 14%,transparent)`:"var(--up)",color:sex===s?"var(--accent)":"var(--muted)",fontFamily:"'Bebas Neue',sans-serif",fontSize:13,letterSpacing:1,cursor:"pointer",textTransform:"capitalize"}}>
+                  {s}
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        {/* Goal */}
+        <div style={{marginBottom:14}}>
+          <div style={{fontSize:10,color:"var(--muted)",letterSpacing:1,textTransform:"uppercase",marginBottom:7}}>Goal</div>
+          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:6}}>
+            {GOALS.map(g=>(
+              <button key={g.id} onClick={()=>setGoal(g.id)}
+                style={{padding:"8px 6px",border:`1px solid ${goal===g.id?"var(--accent)":"var(--border)"}`,borderRadius:8,background:goal===g.id?`color-mix(in srgb,var(--accent) 12%,transparent)`:"var(--up)",color:goal===g.id?"var(--accent)":"var(--muted)",fontFamily:"'Bebas Neue',sans-serif",fontSize:10,letterSpacing:.8,cursor:"pointer",textAlign:"center"}}>
+                {g.label}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Level */}
+        <div style={{marginBottom:14}}>
+          <div style={{fontSize:10,color:"var(--muted)",letterSpacing:1,textTransform:"uppercase",marginBottom:7}}>Training Level</div>
+          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr 1fr",gap:6}}>
+            {["beginner","intermediate","advanced","competitor"].map(l=>(
+              <button key={l} onClick={()=>setLevel(l)}
+                style={{padding:"8px 4px",border:`1px solid ${level===l?"var(--accent)":"var(--border)"}`,borderRadius:8,background:level===l?`color-mix(in srgb,var(--accent) 12%,transparent)`:"var(--up)",color:level===l?"var(--accent)":"var(--muted)",fontFamily:"'Bebas Neue',sans-serif",fontSize:9,letterSpacing:.5,cursor:"pointer",textAlign:"center",textTransform:"capitalize"}}>
+                {l}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Activity */}
+        <div style={{marginBottom:24}}>
+          <div style={{fontSize:10,color:"var(--muted)",letterSpacing:1,textTransform:"uppercase",marginBottom:5}}>Activity Level</div>
+          <select value={activity} onChange={e=>setActivity(e.target.value)}
+            style={{width:"100%",padding:"10px 12px",background:"var(--up)",border:"1px solid var(--border)",borderRadius:8,color:"var(--text)",fontSize:13,outline:"none"}}>
+            <option value="sedentary">Sedentary — desk job, little movement</option>
+            <option value="lightly_active">Lightly Active — 1–3 workouts/wk</option>
+            <option value="moderately_active">Moderately Active — 3–5 workouts/wk</option>
+            <option value="very_active">Very Active — hard training 5–6 days</option>
+            <option value="extra_active">Extra Active — physical job + daily training</option>
+          </select>
+        </div>
+
+        <CubeButton onClick={handleSave} disabled={!canSave} style={{width:"100%",marginBottom:10}}>
+          SAVE PROFILE
+        </CubeButton>
+        <button onClick={onClose}
+          style={{width:"100%",background:"none",border:"none",color:"var(--muted)",fontSize:13,cursor:"pointer",padding:8,fontFamily:"'DM Sans',sans-serif"}}>
+          Cancel
+        </button>
+      </div>
+    </div>
+  );
+}
+
 // Fires once after onboarding; sends GoalConfig data to Claude for a
 // personalised opening analysis, saves to GOAL_ANALYSIS_KEY for injection
 // into the Coach tab on first open.
@@ -7689,6 +7906,44 @@ function AppInner() {
   ];
 
   const [endConfirm, setEndConfirm] = useState(false);
+  const [showProfileEdit, setShowProfileEdit] = useState(false);
+
+  const handleProfileSave = async (newUser) => {
+    setShowProfileEdit(false);
+    // Persist updated user
+    window.storage.set(USER_KEY, JSON.stringify(newUser)).catch(() => {});
+    // Recompute goal config for new profile
+    const newGc = computeGoalConfig(newUser);
+    window.storage.set(GOAL_CONFIG_KEY, JSON.stringify(newGc)).catch(() => {});
+    // Close the current open phase and open a new one
+    try {
+      const r = await window.storage.get(GOAL_HISTORY_KEY);
+      const hist = r?.value ? (JSON.parse(r.value) || []) : [];
+      const now  = Date.now();
+      // Close the most recent open phase
+      const closed = hist.map((p, i) =>
+        i === hist.length - 1 && p.outcome === "ongoing"
+          ? { ...p, endTs: now, endWeight: currentWeight, outcome: "revised" }
+          : p
+      );
+      // Open a new phase for the new goal
+      closed.push({
+        phase:       newUser.goal  || "bulk",
+        startTs:     now,
+        endTs:       null,
+        startWeight: currentWeight,
+        endWeight:   null,
+        startBfPct:  newGc.startBfPct,
+        endBfPct:    null,
+        goalWeight:  newGc.effectiveGoalWeight,
+        outcome:     "ongoing",
+      });
+      window.storage.set(GOAL_HISTORY_KEY, JSON.stringify(closed)).catch(() => {});
+    } catch {}
+    // Re-generate AI rationale for updated goal
+    generateGoalRationale(newUser, newGc);
+    setUser(newUser);
+  };
 
   const handleMiniEnd = () => {
     if (endConfirm) { endSession(); setEndConfirm(false); }
@@ -7755,12 +8010,21 @@ function AppInner() {
 
   return (
     <div className="app">
+      {showProfileEdit && user && (
+        <ProfileEditModal user={user} onSave={handleProfileSave} onClose={()=>setShowProfileEdit(false)}/>
+      )}
       {!user ? <OnboardScreen onComplete={u=>{
         window.storage.set(USER_KEY, JSON.stringify(u)).catch(()=>{});
         const gc = computeGoalConfig(u);
         window.storage.set(GOAL_CONFIG_KEY, JSON.stringify(gc)).catch(()=>{});
-        // Fire AI rationale in the background — saves to GOAL_ANALYSIS_KEY
-        // for injection into Coach on first open (non-blocking)
+        // Write first phase record
+        const firstPhase = [{
+          phase: u.goal || "bulk", startTs: Date.now(), endTs: null,
+          startWeight: parseFloat(u.weight) || 0, endWeight: null,
+          startBfPct: gc.startBfPct, endBfPct: null,
+          goalWeight: gc.effectiveGoalWeight, outcome: "ongoing",
+        }];
+        window.storage.set(GOAL_HISTORY_KEY, JSON.stringify(firstPhase)).catch(()=>{});
         generateGoalRationale(u, gc);
         setUser(u); setTab("home");
       }}/> : (
@@ -7774,7 +8038,7 @@ function AppInner() {
                 onLogNow={() => setTab("home")}
               />
             )}
-            {tab==="home"&&<DashboardScreen user={enrichedUser} weightLog={weightLog} onLogWeight={handleLogWeight} onDeleteWeight={handleDeleteWeight} onEditWeight={handleEditWeight} onNavigate={setTab}/>}
+            {tab==="home"&&<DashboardScreen user={enrichedUser} weightLog={weightLog} onLogWeight={handleLogWeight} onDeleteWeight={handleDeleteWeight} onEditWeight={handleEditWeight} onNavigate={setTab} onEditProfile={()=>setShowProfileEdit(true)}/>}
             {tab==="training"&&<TrainingScreen user={enrichedUser} onNavigate={setTab}/>}
             {tab==="nutrition"&&<NutritionScreen user={enrichedUser}/>}
             {tab==="postprep"&&user?.goal==="contest"&&<PostPrepScreen user={enrichedUser}/>}
