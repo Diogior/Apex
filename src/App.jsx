@@ -844,6 +844,7 @@ const GOALS = [
 // MEALS removed — replaced by AI-driven nutrition logging
 const USER_KEY        = "apex_user_v1";
 const NOTIF_KEY       = "apex_notif_v1";
+const GOAL_CONFIG_KEY = "apex_goal_config_v1";
 const NUTRITION_KEY   = "apex_nutrition_v1";
 const CHECKIN_KEY     = "apex_checkins_v1";
 const PROTOCOL_KEY    = "apex_protocol_v1";
@@ -1395,6 +1396,202 @@ function computeGoalPacing(weightLog, user) {
     dataPoints: trend.dataPoints,
     confidence: trend.confidence,
     forecast7d: trend.forecast7d,
+  };
+}
+
+// ── GOAL CONFIG ENGINE ────────────────────────────────────────────────────────
+// Derives a physiologically-grounded goal weight from body composition targets,
+// not from user-entered preference. Source of truth for all trajectory logic.
+
+function bfToVisualOutcome(bf, sex) {
+  if (sex === "male") {
+    if (bf <= 6)  return "stage conditioning — extreme definition, visible striations";
+    if (bf <= 8)  return "contest lean — very visible abs, vascularity";
+    if (bf <= 10) return "shredded — sharp ab definition in any lighting";
+    if (bf <= 13) return "athletic lean — clear abs in good lighting";
+    if (bf <= 17) return "fit — muscular appearance, some ab definition";
+    if (bf <= 22) return "average lean — healthy, no visible abs";
+    return "recomposition zone — meaningful body composition work ahead";
+  } else {
+    if (bf <= 12) return "stage conditioning — competition ready";
+    if (bf <= 15) return "very lean — bikini/figure athlete";
+    if (bf <= 18) return "athletic — visible core definition";
+    if (bf <= 23) return "fit and toned";
+    if (bf <= 28) return "healthy average";
+    return "recomposition zone — meaningful body composition work ahead";
+  }
+}
+
+function computeGoalConfig(user) {
+  const goal  = user.goal  || "bulk";
+  const level = user.level || "intermediate";
+  const sex   = user.sex   || "male";
+
+  // Body comp from current profile (uses height-in-inches conversion internally)
+  const bodyComp = computeBodyComp(user);
+  const { lbmKg, bfPct, ffmi, weightKg } = bodyComp;
+  const heightCm = parseFloat(user.height) ? parseFloat(user.height) * 2.54 : 175;
+  const heightM  = heightCm / 100;
+
+  const currentWeightLbs = Math.round(weightKg * 2.20462 * 10) / 10;
+  const currentLbmLbs    = Math.round(lbmKg    * 2.20462 * 10) / 10;
+
+  // ── TARGET BF% BY GOAL × SEX × LEVEL ─────────────────────────────────────
+  const TARGET_BF = {
+    cut: {
+      male:   { beginner:15, intermediate:12, advanced:10, competitor:8  },
+      female: { beginner:22, intermediate:20, advanced:18, competitor:12 },
+    },
+    contest: {
+      male:   { beginner:10, intermediate:8,  advanced:7,  competitor:6  },
+      female: { beginner:16, intermediate:14, advanced:12, competitor:10 },
+    },
+    lifestyle: {
+      male:   { beginner:18, intermediate:16, advanced:14, competitor:12 },
+      female: { beginner:25, intermediate:23, advanced:21, competitor:18 },
+    },
+  };
+
+  // ── COMPUTE GOAL WEIGHT ───────────────────────────────────────────────────
+  let goalWeightLbs, goalBfPct, goalLbmLbs, goalLbmKg, goalFFMI;
+  let isDualTarget = false;
+
+  if (goal === "recomp" || goal === "maintain") {
+    // Weight stays roughly flat; composition shifts
+    isDualTarget   = true;
+    const bfDrop   = goal === "recomp" ? 3.5 : 1;
+    const lbmGainKg = goal === "recomp" ? 2 : 0;
+    goalBfPct      = Math.max(bfPct - bfDrop, sex === "male" ? 6 : 12);
+    goalLbmKg      = lbmKg + lbmGainKg;
+    goalLbmLbs     = Math.round(goalLbmKg * 2.20462 * 10) / 10;
+    const goalWtKg = goalLbmKg / (1 - goalBfPct / 100);
+    goalWeightLbs  = Math.round(goalWtKg * 2.20462 * 10) / 10;
+    goalFFMI       = Math.round((goalLbmKg / (heightM * heightM)) * 10) / 10;
+
+  } else if (goal === "bulk") {
+    // FFMI headroom model — project 1 year of natural muscle gain
+    const CEILING   = sex === "male" ? 25.5 : 21;
+    const YR_GAIN   = { beginner:1.5, intermediate:0.8, advanced:0.4, competitor:0.2 };
+    const headroom  = Math.max(0, CEILING - ffmi);
+    const potential = Math.min(headroom, YR_GAIN[level] || 0.8);
+    goalFFMI        = Math.round(Math.min(ffmi + potential, CEILING) * 10) / 10;
+    goalLbmKg       = goalFFMI * (heightM * heightM);
+    goalLbmLbs      = Math.round(goalLbmKg * 2.20462 * 10) / 10;
+    const bfIncrease = { beginner:3, intermediate:2, advanced:2, competitor:1.5 }[level] || 2;
+    goalBfPct       = Math.min(bfPct + bfIncrease, sex === "male" ? 20 : 28);
+    const goalWtKg  = goalLbmKg / (1 - goalBfPct / 100);
+    goalWeightLbs   = Math.round(goalWtKg * 2.20462 * 10) / 10;
+
+  } else {
+    // cut / contest / lifestyle — preserve LBM, reduce fat to target %
+    const bfTable  = TARGET_BF[goal]?.[sex] || TARGET_BF.cut[sex];
+    goalBfPct      = bfTable[level] ?? (sex === "male" ? 12 : 20);
+    // Never target below essential fat
+    goalBfPct      = Math.max(goalBfPct, sex === "male" ? 5 : 12);
+    goalLbmKg      = lbmKg;  // LBM preserved on cut
+    goalLbmLbs     = currentLbmLbs;
+    const goalWtKg = goalLbmKg / (1 - goalBfPct / 100);
+    goalWeightLbs  = Math.round(goalWtKg * 2.20462 * 10) / 10;
+    goalFFMI       = Math.round((goalLbmKg / (heightM * heightM)) * 10) / 10;
+  }
+
+  goalBfPct = Math.round(goalBfPct * 10) / 10;
+
+  // Acceptable ±range (used for override validation and UI band)
+  const rangeBuffer  = isDualTarget ? 3 : 4;
+  const goalWeightRange = [
+    Math.round((goalWeightLbs - rangeBuffer) * 10) / 10,
+    Math.round((goalWeightLbs + rangeBuffer) * 10) / 10,
+  ];
+
+  // ── IDEAL WEEKLY RATE ─────────────────────────────────────────────────────
+  const IDEAL_RATE = {
+    cut:       { beginner:0.75, intermediate:0.75, advanced:0.75, competitor:1.0  },
+    contest:   { beginner:1.0,  intermediate:1.25, advanced:1.0,  competitor:1.5  },
+    bulk:      { beginner:0.5,  intermediate:0.4,  advanced:0.3,  competitor:0.25 },
+    recomp:    { beginner:0.3,  intermediate:0.2,  advanced:0.15, competitor:0.1  },
+    maintain:  { beginner:0,    intermediate:0,    advanced:0,    competitor:0    },
+    lifestyle: { beginner:0.5,  intermediate:0.5,  advanced:0.5,  competitor:0.5  },
+  };
+  const idealRate   = (IDEAL_RATE[goal] || IDEAL_RATE.bulk)[level] || 0.5;
+  const totalDelta  = Math.abs(goalWeightLbs - currentWeightLbs);
+  const etaWeeks    = idealRate > 0 ? Math.ceil(totalDelta / idealRate) : (isDualTarget ? 16 : 0);
+  const etaDate     = new Date(Date.now() + etaWeeks * 7 * 86400000)
+    .toLocaleDateString("en-US", { month:"long", year:"numeric" });
+
+  // ── SUSTAINABILITY SCORE (0-100) ──────────────────────────────────────────
+  let sustainScore = 100;
+  if      (totalDelta > 30) sustainScore -= 25;
+  else if (totalDelta > 20) sustainScore -= 12;
+  else if (totalDelta > 15) sustainScore -= 5;
+  if      (etaWeeks < 6)   sustainScore -= 20;
+  else if (etaWeeks < 8)   sustainScore -= 8;
+  if (etaWeeks >= 12 && etaWeeks <= 20) sustainScore += 5;
+  if (goalBfPct < (sex === "male" ? 7 : 14)) sustainScore -= 15;
+  if (goal === "bulk" && goalFFMI > 24 && sex === "male") sustainScore -= 10;
+  sustainScore = Math.max(0, Math.min(100, Math.round(sustainScore)));
+
+  // ── REALISTIC RATING ──────────────────────────────────────────────────────
+  let realisticRating;
+  if      (goal === "recomp" || goal === "maintain") realisticRating = "moderate";
+  else if (totalDelta <= 10 && etaWeeks >= 10)       realisticRating = "conservative";
+  else if (totalDelta <= 20 && etaWeeks >= 8)        realisticRating = "moderate";
+  else if (totalDelta <= 30 && etaWeeks >= 6)        realisticRating = "aggressive";
+  else                                               realisticRating = "unrealistic";
+
+  // ── VISUAL OUTCOMES ───────────────────────────────────────────────────────
+  const currentVisual = bfToVisualOutcome(bfPct,    sex);
+  const goalVisual    = bfToVisualOutcome(goalBfPct, sex);
+
+  // ── RATIONALE (shown to user) ─────────────────────────────────────────────
+  let rationale;
+  if (goal === "cut" || goal === "contest") {
+    rationale = `At ${currentWeightLbs} lbs and ~${bfPct.toFixed(1)}% body fat (${currentVisual}), your lean mass of ${currentLbmLbs} lbs supports a goal of ${goalWeightLbs} lbs at ${goalBfPct}% BF — ${goalVisual}. This preserves your muscle while achieving your visual outcome in ~${etaWeeks} weeks.`;
+  } else if (goal === "bulk") {
+    rationale = `Your FFMI of ${ffmi.toFixed(1)} gives meaningful room to grow. A ${etaWeeks}-week lean bulk targeting FFMI ${goalFFMI} puts you at ${goalWeightLbs} lbs at ~${goalBfPct}% BF — adding muscle while keeping fat gain controlled.`;
+  } else if (goal === "recomp") {
+    rationale = `Recomposition keeps your scale weight near ${currentWeightLbs} lbs while body fat drops from ${bfPct.toFixed(1)}% to ~${goalBfPct}% and lean mass increases ~${Math.round((goalLbmLbs - currentLbmLbs) * 10) / 10} lbs. Slower than a dedicated phase, but produces the most balanced outcome.`;
+  } else if (goal === "maintain") {
+    rationale = `Hold ${currentWeightLbs} lbs while gradually improving composition. Precision nutrition keeps BF near ${goalBfPct.toFixed(1)}% long-term.`;
+  } else {
+    rationale = `A ${goal} phase targeting ${goalWeightLbs} lbs at ${goalBfPct.toFixed(1)}% BF over ~${etaWeeks} weeks. Balanced pace for adherence.`;
+  }
+
+  return {
+    id:                   String(Date.now()),
+    createdAt:            Date.now(),
+    updatedAt:            Date.now(),
+    goalType:             goal,
+
+    // System-derived targets
+    goalWeight:           goalWeightLbs,
+    goalWeightRange,
+    goalBfPct,
+    goalLbmLbs,
+    goalFFMI,
+    isDualTarget,
+
+    // Evaluation
+    sustainabilityScore:  sustainScore,
+    realisticRating,
+    etaWeeks,
+    etaDate,
+    idealWeeklyRate:      idealRate,
+    projectedVisualOutcome: goalVisual,
+    currentVisualOutcome:   currentVisual,
+    rationale,
+
+    // Baselines for delta tracking
+    startWeight:          currentWeightLbs,
+    startBfPct:           Math.round(bfPct * 10) / 10,
+    startLbmLbs:          currentLbmLbs,
+    startFFMI:            ffmi,
+
+    // User override (empty until Phase 7)
+    userOverrideWeight:   null,
+    overrideAccepted:     false,
+    overrideTs:           null,
+    effectiveGoalWeight:  goalWeightLbs,
   };
 }
 
@@ -5991,6 +6188,7 @@ function DashboardScreen({ user, weightLog, onLogWeight, onDeleteWeight, onEditW
   const [ciEnergy, setCiEnergy] = useState("7");
   const [protocolData, setProtocolData] = useState(null);
   const [showProtocol, setShowProtocol] = useState(false);
+  const [storedGoalConfig, setStoredGoalConfig] = useState(null);
   const [bfOverride, setBfOverride] = useState(null);
   const [showBfEditor, setShowBfEditor] = useState(false);
   const [bfTab, setBfTab] = useState("manual");
@@ -6036,6 +6234,9 @@ function DashboardScreen({ user, weightLog, onLogWeight, onDeleteWeight, onEditW
     }).catch(() => {});
     window.storage.get(PROTOCOL_KEY).then(r => {
       if (r?.value) try { setProtocolData(JSON.parse(r.value)); } catch {}
+    }).catch(() => {});
+    window.storage.get(GOAL_CONFIG_KEY).then(r => {
+      if (r?.value) try { setStoredGoalConfig(JSON.parse(r.value)); } catch {}
     }).catch(() => {});
   }, []);
 
@@ -6156,6 +6357,11 @@ function DashboardScreen({ user, weightLog, onLogWeight, onDeleteWeight, onEditW
   const weightTrend     = analyzeWeightTrend(sortedLog);
   const weighInStreak   = computeWeighInStreak(sortedLog);
   const goalPacing      = computeGoalPacing(sortedLog, user);
+  // Use stored config if it matches current goal; otherwise recompute live
+  const goalConfig = useMemo(() => {
+    if (storedGoalConfig && storedGoalConfig.goalType === user.goal) return storedGoalConfig;
+    return computeGoalConfig(user);
+  }, [storedGoalConfig, user]);
   const confidenceScore = computeConfidenceScore(sortedLog, history, nutLogs);
 
   // Override body comp display if user has set a manual BF%
@@ -6483,6 +6689,61 @@ function DashboardScreen({ user, weightLog, onLogWeight, onDeleteWeight, onEditW
           </div>
         )}
       </div>
+
+      {/* GOAL CONFIG CARD */}
+      {goalConfig && (
+        <div style={{margin:"0 24px 20px",background:`var(--surface)`,border:`1px solid var(--border)`,borderRadius:16,overflow:"hidden"}}>
+          {/* Header */}
+          <div style={{padding:"14px 16px 10px",borderBottom:`1px solid var(--border)`,display:"flex",alignItems:"center",justifyContent:"space-between"}}>
+            <div>
+              <div style={{fontSize:9,letterSpacing:2,textTransform:"uppercase",color:`var(--accent)`,marginBottom:2}}>● Physique Target</div>
+              <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:18,letterSpacing:1,color:`var(--text)`}}>
+                {goalConfig.isDualTarget ? "COMPOSITION SHIFT" : `${goalConfig.effectiveGoalWeight} LBS`}
+              </div>
+            </div>
+            <div style={{textAlign:"right"}}>
+              {/* Sustainability badge */}
+              {(() => {
+                const s = goalConfig.sustainabilityScore;
+                const col = s >= 75 ? "var(--green)" : s >= 50 ? "var(--accent)" : "var(--red)";
+                return (
+                  <div style={{display:"inline-flex",alignItems:"center",gap:5,padding:"4px 10px",borderRadius:20,background:`color-mix(in srgb,${col} 12%,transparent)`,border:`1px solid color-mix(in srgb,${col} 30%,transparent)`}}>
+                    <div style={{width:5,height:5,borderRadius:"50%",background:col}}/>
+                    <span style={{fontSize:9,fontFamily:"'Bebas Neue',sans-serif",letterSpacing:1.5,color:col}}>{goalConfig.realisticRating.toUpperCase()}</span>
+                  </div>
+                );
+              })()}
+              <div style={{fontSize:10,color:`var(--muted)`,marginTop:4}}>{goalConfig.goalBfPct}% BF target</div>
+            </div>
+          </div>
+
+          {/* Key metrics row */}
+          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",borderBottom:`1px solid var(--border)`}}>
+            {[
+              { label:"ETA",      val: goalConfig.etaWeeks > 0 ? `${goalConfig.etaWeeks}w` : "—", sub: goalConfig.etaDate },
+              { label:"LBM",      val: `${goalConfig.goalLbmLbs}`, sub:"lbs lean mass" },
+              { label:"Sustain",  val: `${goalConfig.sustainabilityScore}`, sub:"/ 100" },
+            ].map((m, i) => (
+              <div key={m.label} style={{padding:"10px 12px",borderRight: i < 2 ? `1px solid var(--border)` : "none"}}>
+                <div style={{fontSize:9,letterSpacing:1.5,textTransform:"uppercase",color:`var(--muted)`,marginBottom:3}}>{m.label}</div>
+                <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:20,letterSpacing:.5,color:`var(--text)`,lineHeight:1}}>{m.val}</div>
+                <div style={{fontSize:9,color:`var(--faint)`,marginTop:2}}>{m.sub}</div>
+              </div>
+            ))}
+          </div>
+
+          {/* Visual outcome */}
+          <div style={{padding:"10px 16px 12px"}}>
+            <div style={{fontSize:10,fontWeight:600,color:`var(--muted)`,letterSpacing:.5,marginBottom:4}}>Projected outcome</div>
+            <div style={{fontSize:12,color:`var(--faint)`,lineHeight:1.55,fontStyle:"italic"}}>"{goalConfig.projectedVisualOutcome}"</div>
+            {goalConfig.currentVisualOutcome !== goalConfig.projectedVisualOutcome && (
+              <div style={{fontSize:10,color:`var(--muted)`,marginTop:5}}>
+                Currently: {goalConfig.currentVisualOutcome}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* SECONDARY STAT STRIP — Sessions / Train / Rest / Weekly Avg */}
       <div className="stat-strip" style={{gridTemplateColumns: calTarget?.cyclingActive ? "1fr 1fr 1fr 1fr" : "1fr 1fr 1fr"}}>
@@ -7111,7 +7372,13 @@ function AppInner() {
 
   return (
     <div className="app">
-      {!user ? <OnboardScreen onComplete={u=>{ window.storage.set(USER_KEY, JSON.stringify(u)).catch(()=>{}); setUser(u); setTab("home"); }}/> : (
+      {!user ? <OnboardScreen onComplete={u=>{
+        window.storage.set(USER_KEY, JSON.stringify(u)).catch(()=>{});
+        // Compute and persist goal config at onboarding time
+        const gc = computeGoalConfig(u);
+        window.storage.set(GOAL_CONFIG_KEY, JSON.stringify(gc)).catch(()=>{});
+        setUser(u); setTab("home");
+      }}/> : (
           <>
             {/* Weight reminder banner — fixed overlay, visible on all tabs */}
             {showNotif && (
