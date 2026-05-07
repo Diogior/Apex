@@ -398,6 +398,23 @@ body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;-we
 .goal-rate-val{font-family:'Bebas Neue',sans-serif;font-size:22px;letter-spacing:.5px;color:var(--text);}
 .goal-rate-status{font-size:10px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;}
 .goal-rate-target{font-size:10px;color:var(--faint);margin-top:3px;}
+/* Weigh-in streak pill */
+.streak-pill{display:inline-flex;align-items:center;gap:5px;padding:4px 10px;border-radius:20px;font-size:9px;font-family:'Bebas Neue',sans-serif;letter-spacing:1.5px;}
+.streak-pill.ok{background:rgba(26,158,88,.12);color:var(--green);border:1px solid rgba(26,158,88,.25);}
+.streak-pill.nudge{background:rgba(251,191,36,.12);color:#FBBF24;border:1px solid rgba(251,191,36,.25);}
+.streak-pill.warn{background:rgba(var(--accent-rgb),.12);color:var(--accent);border:1px solid rgba(var(--accent-rgb),.25);}
+.streak-pill.danger{background:rgba(var(--red-rgb),.12);color:var(--red);border:1px solid rgba(var(--red-rgb),.25);}
+/* Goal pacing card */
+.pace-card{margin-top:12px;padding-top:12px;border-top:1px solid var(--border);}
+.pace-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;}
+.pace-badge{font-size:9px;font-family:'Bebas Neue',sans-serif;letter-spacing:1.5px;padding:3px 9px;border-radius:4px;font-weight:700;}
+.pace-rate-num{font-family:'Bebas Neue',sans-serif;font-size:22px;letter-spacing:.5px;}
+.pace-bar-track{height:4px;background:var(--up);border-radius:2px;overflow:hidden;margin-bottom:6px;}
+.pace-bar-fill{height:100%;border-radius:2px;transition:width .9s cubic-bezier(.22,1,.36,1);}
+.pace-foot{display:flex;justify-content:space-between;align-items:center;}
+.pace-milestone{margin-top:8px;padding:7px 11px;background:var(--up);border-radius:7px;display:flex;align-items:center;justify-content:space-between;}
+/* Post-log reaction */
+.log-reaction{margin-top:8px;padding:9px 12px;border-radius:8px;font-size:12px;line-height:1.5;animation:slideUp .25s cubic-bezier(.22,1,.36,1);}
 .wt-history{display:flex;gap:6px;align-items:flex-end;height:40px;margin-bottom:14px;}
 .wt-bar-wrap{display:flex;flex-direction:column;align-items:center;flex:1;}
 .wt-bar{border-radius:3px 3px 0 0;min-height:4px;transition:height .5s ease;width:100%;max-width:18px;}
@@ -1246,6 +1263,125 @@ function classifyRate(rate, info) {
   }
   if (Math.abs(rate) <= 0.25) return { label:"Stable", key:"green" };
   return rate > 0 ? { label:"Gaining", key:"accent" } : { label:"Losing", key:"muted" };
+}
+
+// ── WEIGH-IN STREAK ───────────────────────────────────────────────────────────
+function computeWeighInStreak(weightLog) {
+  if (!weightLog || !weightLog.length)
+    return { current: 0, best: 0, lastDaysAgo: null, loggedToday: false, urgency: "none" };
+
+  const sorted = [...weightLog].sort((a, b) => a.ts - b.ts);
+  const toKey  = ts => new Date(ts).toDateString();
+  const days   = [...new Set(sorted.map(e => toKey(e.ts)))];
+
+  const todayKey    = new Date().toDateString();
+  const loggedToday = days.includes(todayKey);
+  const lastDaysAgo = Math.floor((Date.now() - sorted[sorted.length - 1].ts) / 86400000);
+
+  // Walk back from today (or yesterday) counting consecutive days
+  let current = 0;
+  const cursor = new Date();
+  if (!loggedToday) cursor.setDate(cursor.getDate() - 1);
+  for (let i = 0; i < 366; i++) {
+    if (days.includes(cursor.toDateString())) { current++; cursor.setDate(cursor.getDate() - 1); }
+    else break;
+  }
+
+  // All-time best streak
+  let best = current, run = 1;
+  for (let i = 1; i < days.length; i++) {
+    const gap = Math.round((new Date(days[i]) - new Date(days[i - 1])) / 86400000);
+    run = gap === 1 ? run + 1 : 1;
+    if (run > best) best = run;
+  }
+
+  const urgency = loggedToday ? "none"
+    : lastDaysAgo <= 1 ? "nudge"
+    : lastDaysAgo <= 2 ? "warn"
+    : "danger";
+
+  return { current, best, lastDaysAgo, loggedToday, urgency };
+}
+
+// ── GOAL PACING ENGINE ────────────────────────────────────────────────────────
+function computeGoalPacing(weightLog, user) {
+  const goal = user?.goal || "bulk";
+  const info = getGoalRateInfo(goal);
+  if (!info || !weightLog || weightLog.length < 3)
+    return { status: "insufficient_data" };
+
+  const trend = analyzeWeightTrend(weightLog);
+  if (trend.dataPoints < 3) return { status: "insufficient_data" };
+
+  const sorted      = [...weightLog].sort((a, b) => a.ts - b.ts);
+  const firstWeight = sorted[0].weight;
+  const totalChange = Math.round((trend.currentWeight - firstWeight) * 10) / 10;
+  const rate        = trend.rate;
+  const targetRate  = (info.min + info.max) / 2;   // ideal midpoint
+  const rateStatus  = classifyRate(rate, info);
+
+  // Status → label + color key
+  let status, statusLabel, colorKey;
+  const wrongDir = (info.dir === -1 && rate > 0.1) || (info.dir === 1 && rate < -0.1);
+  if (wrongDir) {
+    status = "off_course"; statusLabel = "WRONG DIRECTION"; colorKey = "red";
+  } else if (rateStatus.label === "On track" || rateStatus.label === "Stable") {
+    status = "on_track"; statusLabel = "ON TRACK"; colorKey = "green";
+  } else if (rateStatus.label === "Too fast") {
+    status = "ahead";
+    statusLabel = info.dir === -1 ? "CUTTING FAST" : "GAINING FAST";
+    colorKey = "accent";
+  } else {
+    const noMovement = Math.abs(rate) < 0.05;
+    status = noMovement ? "off_course" : "behind";
+    statusLabel = noMovement ? "NOT MOVING" : "BEHIND PACE";
+    colorKey = noMovement ? "red" : "red";
+  }
+
+  // Milestone targets (cumulative change from first weigh-in)
+  const MILESTONES = {
+    cut:      [-2.5, -5, -10, -15, -20, -25],
+    contest:  [-2.5, -5, -10, -15, -20, -25, -30],
+    bulk:     [2.5,  5,  10,  15,  20],
+    recomp:   [-5,  -2.5, 0, 2.5, 5],
+    maintain: [-2,  -1, 0, 1, 2],
+    lifestyle:[-5,  -2.5, 0, 2.5, 5],
+  };
+  const milestones = MILESTONES[goal] || MILESTONES.bulk;
+  const dir        = info.dir;
+
+  let nextMilestone = null, etaWeeks = null;
+  if (dir !== 0) {
+    const ahead = milestones.filter(m => dir > 0 ? m > totalChange : m < totalChange);
+    nextMilestone = ahead.length
+      ? ahead.reduce((a, b) => Math.abs(a - totalChange) < Math.abs(b - totalChange) ? a : b)
+      : null;
+    if (nextMilestone !== null && Math.abs(rate) > 0.05) {
+      etaWeeks = Math.ceil(Math.abs(nextMilestone - totalChange) / Math.abs(rate));
+    }
+  }
+
+  // Momentum 0-100
+  const rateDeviation = Math.abs(rate - (dir === 0 ? 0 : targetRate));
+  const idealHalf     = Math.abs(info.max - info.min) / 2 || 0.5;
+  const rateScore     = Math.max(0, Math.min(50, 50 * (1 - rateDeviation / (idealHalf * 4))));
+  const confScore     = trend.confidence * 25;
+  const dataScore     = Math.min(25, (trend.dataPoints / 14) * 25);
+  const momentum      = Math.round(rateScore + confScore + dataScore);
+
+  // Pace bar 0–100 (capped at target max = 100)
+  const paceBarPct = targetRate !== 0 ? Math.min(110, (Math.abs(rate) / Math.abs(targetRate)) * 100) : 0;
+
+  return {
+    status, statusLabel, colorKey,
+    rate, targetRate, totalChange,
+    etaWeeks, nextMilestone, momentum,
+    paceBarPct, dir,
+    info,
+    dataPoints: trend.dataPoints,
+    confidence: trend.confidence,
+    forecast7d: trend.forecast7d,
+  };
 }
 
 // ── SECTION 5: E1RM & STRENGTH TREND ─────────────────────────────────────────
@@ -5824,6 +5960,7 @@ function DashboardScreen({ user, weightLog, onLogWeight, onDeleteWeight, onEditW
   const [inputVal, setInputVal] = useState("");
   const [inputFocused, setInputFocused] = useState(false);
   const [justLogged, setJustLogged] = useState(false);
+  const [logReaction, setLogReaction] = useState(null); // {text, colorKey}
   const [tState, setTState] = useState(null);
   const [calTarget, setCalTarget] = useState(null);
   const [reboundData, setReboundData] = useState(null);
@@ -5949,6 +6086,45 @@ function DashboardScreen({ user, weightLog, onLogWeight, onDeleteWeight, onEditW
     setInputVal("");
     setJustLogged(true);
     setTimeout(() => setJustLogged(false), 2000);
+
+    // Post-log reaction — brief contextual insight
+    const newLog = [...sortedLog, { weight: w, ts: Date.now(), date: new Date().toLocaleDateString("en-US",{month:"short",day:"numeric"}) }];
+    const newStreak  = computeWeighInStreak(newLog);
+    const newPacing  = computeGoalPacing(newLog, user);
+    let text = null, colorKey = "green";
+
+    if      (newStreak.current === 30) { text = "30-day streak. Elite consistency."; colorKey = "green"; }
+    else if (newStreak.current === 14) { text = "14-day streak — habit locked in."; colorKey = "green"; }
+    else if (newStreak.current === 7)  { text = "7-day streak. This is how progress is built."; colorKey = "green"; }
+    else if (newPacing.status === "on_track") {
+      text = `Trending ${newPacing.rate > 0 ? "+" : ""}${newPacing.rate.toFixed(1)} lbs/wk — right on pace.`;
+      colorKey = "green";
+    } else if (newPacing.status === "ahead" && (user.goal === "cut" || user.goal === "contest")) {
+      text = `Dropping fast at ${Math.abs(newPacing.rate).toFixed(1)} lbs/wk. Monitor recovery.`;
+      colorKey = "accent";
+    } else if (newPacing.status === "ahead") {
+      text = `Gaining ${newPacing.rate.toFixed(1)} lbs/wk — slightly above target. Watch quality.`;
+      colorKey = "accent";
+    } else if (newPacing.status === "behind") {
+      const lever = user.goal === "bulk" ? "surplus" : "deficit";
+      text = `Rate: ${Math.abs(newPacing.rate).toFixed(1)} lbs/wk. Tighten your ${lever} to hit pace.`;
+      colorKey = "red";
+    } else if (newPacing.status === "off_course") {
+      text = "Trend not moving. Check nutrition targets and adherence.";
+      colorKey = "red";
+    } else if (newPacing.etaWeeks && newPacing.nextMilestone !== null) {
+      const sign = newPacing.dir > 0 ? "+" : "";
+      text = `Next milestone: ${sign}${newPacing.nextMilestone} lbs — ~${newPacing.etaWeeks} wks at this rate.`;
+      colorKey = "accent";
+    } else if (newLog.length <= 3) {
+      text = "Keep logging — trends unlock after 3 weigh-ins.";
+      colorKey = "muted";
+    }
+
+    if (text) {
+      setLogReaction({ text, colorKey });
+      setTimeout(() => setLogReaction(null), 5000);
+    }
   };
 
   // Mini sparkline: last 7 logged weights for the hero bar chart
@@ -5964,6 +6140,8 @@ function DashboardScreen({ user, weightLog, onLogWeight, onDeleteWeight, onEditW
   // ── ALGORITHM ENGINE — computed values for Protocol Intelligence panel ──────
   const userState       = computeUserState(user, sortedLog, checkIn);
   const weightTrend     = analyzeWeightTrend(sortedLog);
+  const weighInStreak   = computeWeighInStreak(sortedLog);
+  const goalPacing      = computeGoalPacing(sortedLog, user);
   const confidenceScore = computeConfidenceScore(sortedLog, history, nutLogs);
 
   // Override body comp display if user has set a manual BF%
@@ -6077,8 +6255,33 @@ function DashboardScreen({ user, weightLog, onLogWeight, onDeleteWeight, onEditW
       {/* BODY WEIGHT — DOMINANT HERO BLOCK */}
       <div className={`wt-hero${inputFocused?" focused":""}${justLogged?" logged":""}`}>
         <div className="wt-hero-top">
-          <div>
-            <div className="wt-label">Body Weight</div>
+          <div style={{flex:1}}>
+            {/* Header row: label + streak pill */}
+            <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:2}}>
+              <div className="wt-label">Body Weight</div>
+              {/* Streak / urgency pill */}
+              {(weighInStreak.current > 0 || weighInStreak.urgency !== "none") && (() => {
+                const { current, urgency, lastDaysAgo, loggedToday } = weighInStreak;
+                if (urgency === "danger") return (
+                  <div className="streak-pill danger">⚠ {lastDaysAgo}d since last log</div>
+                );
+                if (urgency === "warn") return (
+                  <div className="streak-pill warn">⚡ Log today</div>
+                );
+                if (urgency === "nudge") return (
+                  <div className="streak-pill nudge">● Log today</div>
+                );
+                if (current >= 7) return (
+                  <div className="streak-pill ok">🔥 {current}-day streak</div>
+                );
+                if (current > 0) return (
+                  <div className="streak-pill ok">✓ {current}-day streak</div>
+                );
+                return null;
+              })()}
+            </div>
+
+            {/* Weight number + change */}
             <div style={{display:"flex",alignItems:"baseline",gap:6}}>
               <div className={`wt-number${justLogged?" saved":""}`}>{currentWeight || "—"}</div>
               {currentWeight ? <span className="wt-unit">lbs</span> : null}
@@ -6088,36 +6291,67 @@ function DashboardScreen({ user, weightLog, onLogWeight, onDeleteWeight, onEditW
                 {changeVal > 0 ? "↑" : changeVal < 0 ? "↓" : "→"} {changeLabel}
               </div>
             )}
-            {weightTrend.dataPoints >= 3 && user.goal && (() => {
-              const info = getGoalRateInfo(user.goal);
-              if (!info) return null;
-              const rate = weightTrend.rate;
-              const status = classifyRate(rate, info);
-              const rateStr = rate > 0 ? `+${Math.abs(rate).toFixed(1)}` : `-${Math.abs(rate).toFixed(1)}`;
-              const targetStr = info.dir === 0
-                ? "±0.25 lbs / wk"
-                : `${info.min} to ${info.max > 0 ? "+" : ""}${info.max} lbs / wk`;
+
+            {/* Goal pacing card — replaces old goal-rate block */}
+            {goalPacing.status !== "insufficient_data" && (() => {
+              const { statusLabel, colorKey, rate, paceBarPct, info, totalChange, etaWeeks, nextMilestone, dir } = goalPacing;
+              const color = `var(--${colorKey})`;
+              const rateStr = rate === 0 ? "0.0" : (rate > 0 ? `+${rate.toFixed(1)}` : rate.toFixed(1));
+              const targetStr = info.dir === 0 ? "±0.25" : `${info.min > 0?"+":""}${info.min} to ${info.max > 0?"+":""}${info.max}`;
               return (
-                <div className="goal-rate">
-                  <div className="goal-rate-label">{info.label}</div>
-                  <div className="goal-rate-row">
-                    <span className="goal-rate-val">{rateStr} lbs/wk</span>
-                    <span className="goal-rate-status" style={{color:`var(--${status.key})`}}>● {status.label}</span>
+                <div className="pace-card">
+                  <div className="pace-top">
+                    <div style={{display:"flex",alignItems:"center",gap:8}}>
+                      <div className="pace-badge" style={{background:`color-mix(in srgb,${color} 14%,transparent)`,color,border:`1px solid color-mix(in srgb,${color} 30%,transparent)`}}>
+                        {statusLabel}
+                      </div>
+                      {totalChange !== 0 && (
+                        <div style={{fontSize:10,color:"var(--faint)"}}>
+                          {totalChange > 0 ? "+" : ""}{totalChange} lbs total
+                        </div>
+                      )}
+                    </div>
+                    <div>
+                      <span className="pace-rate-num" style={{color}}>{rateStr}</span>
+                      <span style={{fontSize:10,color:"var(--muted)",marginLeft:3}}>lbs/wk</span>
+                    </div>
                   </div>
-                  <div className="goal-rate-target">Target {targetStr}</div>
+                  <div className="pace-bar-track">
+                    <div className="pace-bar-fill" style={{width:`${Math.min(100, paceBarPct)}%`,background:color}}/>
+                  </div>
+                  <div className="pace-foot">
+                    <div style={{fontSize:10,color:"var(--faint)"}}>Target {targetStr} lbs/wk</div>
+                    {goalPacing.forecast7d && (
+                      <div style={{fontSize:10,color:"var(--faint)"}}>7d forecast: {goalPacing.forecast7d} lbs</div>
+                    )}
+                  </div>
+                  {etaWeeks !== null && nextMilestone !== null && (
+                    <div className="pace-milestone">
+                      <div style={{fontSize:10,color:"var(--muted)"}}>
+                        Next milestone: <span style={{color:"var(--text)",fontWeight:700}}>{dir > 0 ? "+" : ""}{nextMilestone} lbs</span>
+                      </div>
+                      <div style={{fontSize:11,fontFamily:"'Bebas Neue',sans-serif",letterSpacing:1,color:"var(--accent)"}}>
+                        ~{etaWeeks} WKS
+                      </div>
+                    </div>
+                  )}
                 </div>
               );
             })()}
           </div>
-          {/* Sparkline bars */}
+
+          {/* Sparkline bars — goal-tinted */}
           {recentWeights.length >= 2 && (
-            <div className="wt-history">
+            <div className="wt-history" style={{alignSelf:"flex-start",marginTop:28}}>
               {recentWeights.map((e, i) => {
                 const h = Math.max(6, Math.round(((e.weight - minW) / wRange) * 32) + 4);
                 const isLatest = i === recentWeights.length - 1;
+                const barColor = isLatest
+                  ? `var(--${goalPacing.colorKey || "accent"})`
+                  : "var(--faint)";
                 return (
                   <div key={e.ts} className="wt-bar-wrap">
-                    <div className="wt-bar" style={{height: h, background: isLatest ? "var(--accent)" : "var(--faint)", opacity: isLatest ? 1 : 0.5}}/>
+                    <div className="wt-bar" style={{height: h, background: barColor, opacity: isLatest ? 1 : 0.45}}/>
                   </div>
                 );
               })}
@@ -6150,6 +6384,17 @@ function DashboardScreen({ user, weightLog, onLogWeight, onDeleteWeight, onEditW
         </div>
         {inputVal && parseFloat(inputVal) < 50 && (
           <div style={{fontSize:11,color:"var(--red)",marginTop:6,paddingLeft:2}}>Enter a valid weight (50 – 500 lbs)</div>
+        )}
+
+        {/* Post-log reaction */}
+        {logReaction && (
+          <div className="log-reaction" style={{
+            background:`color-mix(in srgb,var(--${logReaction.colorKey}) 10%,transparent)`,
+            border:`1px solid color-mix(in srgb,var(--${logReaction.colorKey}) 25%,transparent)`,
+            color:`var(--${logReaction.colorKey})`
+          }}>
+            {logReaction.text}
+          </div>
         )}
 
         {/* Recent entries */}
