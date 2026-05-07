@@ -415,6 +415,19 @@ body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;-we
 .pace-milestone{margin-top:8px;padding:7px 11px;background:var(--up);border-radius:7px;display:flex;align-items:center;justify-content:space-between;}
 /* Post-log reaction */
 .log-reaction{margin-top:8px;padding:9px 12px;border-radius:8px;font-size:12px;line-height:1.5;animation:slideUp .25s cubic-bezier(.22,1,.36,1);}
+/* Weight reminder notification banner */
+.wt-notif-wrap{position:fixed;top:0;left:50%;transform:translateX(-50%);width:100%;max-width:430px;z-index:200;pointer-events:none;}
+.wt-notif{margin:8px 12px 0;padding:11px 14px 11px 13px;border-radius:12px;display:flex;align-items:center;gap:10px;pointer-events:all;animation:notifSlideDown .35s cubic-bezier(.22,1,.36,1);box-shadow:0 4px 16px rgba(0,0,0,.18);}
+.wt-notif.daily{background:color-mix(in srgb,var(--accent) 10%,var(--surface));border:1px solid color-mix(in srgb,var(--accent) 30%,transparent);}
+.wt-notif.week{background:color-mix(in srgb,var(--red) 10%,var(--surface));border:1px solid color-mix(in srgb,var(--red) 35%,transparent);}
+.wt-notif-icon{width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+.wt-notif-body{flex:1;min-width:0;}
+.wt-notif-title{font-family:'Bebas Neue',sans-serif;font-size:13px;letter-spacing:1.2px;line-height:1.1;margin-bottom:2px;}
+.wt-notif-sub{font-size:10px;color:var(--muted);line-height:1.4;}
+.wt-notif-actions{display:flex;gap:6px;align-items:center;flex-shrink:0;}
+.wt-notif-cta{padding:5px 11px;border:none;border-radius:6px;font-family:'Bebas Neue',sans-serif;font-size:11px;letter-spacing:1px;cursor:pointer;}
+.wt-notif-dismiss{background:none;border:none;color:var(--muted);font-size:14px;cursor:pointer;padding:2px 4px;line-height:1;opacity:.7;}
+@keyframes notifSlideDown{from{opacity:0;transform:translateY(-14px)}to{opacity:1;transform:translateY(0)}}
 .wt-history{display:flex;gap:6px;align-items:flex-end;height:40px;margin-bottom:14px;}
 .wt-bar-wrap{display:flex;flex-direction:column;align-items:center;flex:1;}
 .wt-bar{border-radius:3px 3px 0 0;min-height:4px;transition:height .5s ease;width:100%;max-width:18px;}
@@ -830,6 +843,7 @@ const GOALS = [
 
 // MEALS removed — replaced by AI-driven nutrition logging
 const USER_KEY        = "apex_user_v1";
+const NOTIF_KEY       = "apex_notif_v1";
 const NUTRITION_KEY   = "apex_nutrition_v1";
 const CHECKIN_KEY     = "apex_checkins_v1";
 const PROTOCOL_KEY    = "apex_protocol_v1";
@@ -6842,6 +6856,51 @@ function DashboardScreen({ user, weightLog, onLogWeight, onDeleteWeight, onEditW
   );
 }
 
+// ─── WEIGHT REMINDER BANNER ───────────────────────────────────────────────────
+
+function WeightReminderBanner({ type, daysAgo, onDismiss, onLogNow }) {
+  const C = useThemeColors();
+  const isWeek = type === "week";
+  const color  = isWeek ? C.red : C.accent;
+
+  const title = isWeek
+    ? `${daysAgo} DAYS WITHOUT A WEIGH-IN`
+    : "NO WEIGHT LOGGED TODAY";
+  const sub = isWeek
+    ? "Trend data is going stale — log now to keep your projections accurate."
+    : "A quick weigh-in keeps your streak and pace tracking live.";
+
+  return (
+    <div className="wt-notif-wrap">
+      <div className={`wt-notif ${type}`}>
+        {/* Icon */}
+        <div className="wt-notif-icon" style={{background:`color-mix(in srgb,${color} 18%,transparent)`}}>
+          {isWeek
+            ? <svg viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{width:14,height:14}}><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+            : <svg viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{width:14,height:14}}><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+          }
+        </div>
+        {/* Text */}
+        <div className="wt-notif-body">
+          <div className="wt-notif-title" style={{color}}>{title}</div>
+          <div className="wt-notif-sub">{sub}</div>
+        </div>
+        {/* Actions */}
+        <div className="wt-notif-actions">
+          <button className="wt-notif-cta"
+            onClick={onLogNow}
+            style={{background:`color-mix(in srgb,${color} 18%,transparent)`,color,border:`1px solid color-mix(in srgb,${color} 35%,transparent)`}}>
+            LOG →
+          </button>
+          {!isWeek && onDismiss && (
+            <button className="wt-notif-dismiss" onClick={onDismiss} aria-label="Dismiss">✕</button>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ─── APP ──────────────────────────────────────────────────────────────────────
 
 
@@ -6933,6 +6992,48 @@ function AppInner() {
   const currentWeight = sortedLog.length > 0 ? sortedLog[sortedLog.length-1].weight : (parseFloat(user?.weight) || 0);
   const enrichedUser = user ? {...user, weight: currentWeight || user.weight} : null;
 
+  // ── WEIGHT REMINDER NOTIFICATION ─────────────────────────────────────────
+  // Stable date key for throttling (YYYY-MM-DD, local time, timezone-safe)
+  const todayDateKey = (() => {
+    const d = new Date();
+    return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;
+  })();
+  // Today formatted the same way weight entries store their date
+  const todayDisplay = new Date().toLocaleDateString("en-US", {month:"short", day:"numeric"});
+
+  // Lazy-init dismissed state from localStorage — prevents flash-of-notification on reload
+  const [notifDismissed, setNotifDismissed] = useState(() => {
+    try {
+      const s = JSON.parse(localStorage.getItem(NOTIF_KEY) || "{}");
+      return s.dismissedDate === todayDateKey;
+    } catch { return false; }
+  });
+
+  // Derive notification state reactively — auto-clears when weight is logged
+  const notifState = useMemo(() => {
+    if (!user || !wtLoaded) return null;
+    const loggedToday = sortedLog.some(e => e.date === todayDisplay);
+    if (loggedToday) return null; // already logged — no notification
+
+    const lastEntry = sortedLog.length > 0 ? sortedLog[sortedLog.length - 1] : null;
+    const daysSince = lastEntry
+      ? Math.max(0, Math.floor((Date.now() - lastEntry.ts) / 86400000))
+      : null;
+
+    // 7+ days: urgent — no manual dismiss, must log to clear
+    if (daysSince !== null && daysSince >= 7) return { type: "week", daysAgo: daysSince };
+    // No log today: daily gentle reminder
+    return { type: "daily", daysAgo: daysSince };
+  }, [user, wtLoaded, sortedLog, todayDisplay]);
+
+  // Show if: week type (always) OR daily type and not yet dismissed today
+  const showNotif = !!(notifState && (notifState.type === "week" || !notifDismissed));
+
+  const handleDismissNotif = () => {
+    setNotifDismissed(true);
+    try { localStorage.setItem(NOTIF_KEY, JSON.stringify({ dismissedDate: todayDateKey })); } catch {}
+  };
+
   // Rebound tab only for contest goal
   const NAV = [
     {id:"home",label:"Home"},
@@ -7012,6 +7113,15 @@ function AppInner() {
     <div className="app">
       {!user ? <OnboardScreen onComplete={u=>{ window.storage.set(USER_KEY, JSON.stringify(u)).catch(()=>{}); setUser(u); setTab("home"); }}/> : (
           <>
+            {/* Weight reminder banner — fixed overlay, visible on all tabs */}
+            {showNotif && (
+              <WeightReminderBanner
+                type={notifState.type}
+                daysAgo={notifState.daysAgo}
+                onDismiss={notifState.type === "daily" ? handleDismissNotif : null}
+                onLogNow={() => setTab("home")}
+              />
+            )}
             {tab==="home"&&<DashboardScreen user={enrichedUser} weightLog={weightLog} onLogWeight={handleLogWeight} onDeleteWeight={handleDeleteWeight} onEditWeight={handleEditWeight} onNavigate={setTab}/>}
             {tab==="training"&&<TrainingScreen user={enrichedUser} onNavigate={setTab}/>}
             {tab==="nutrition"&&<NutritionScreen user={enrichedUser}/>}
