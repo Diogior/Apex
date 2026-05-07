@@ -845,7 +845,8 @@ const GOALS = [
 const USER_KEY        = "apex_user_v1";
 const NOTIF_KEY       = "apex_notif_v1";
 const GOAL_CONFIG_KEY = "apex_goal_config_v1";
-const SNAPSHOTS_KEY   = "apex_snapshots_v1";
+const SNAPSHOTS_KEY     = "apex_snapshots_v1";
+const GOAL_ANALYSIS_KEY = "apex_goal_analysis_v1";
 const NUTRITION_KEY   = "apex_nutrition_v1";
 const CHECKIN_KEY     = "apex_checkins_v1";
 const PROTOCOL_KEY    = "apex_protocol_v1";
@@ -1588,11 +1589,16 @@ function computeGoalConfig(user) {
     startLbmLbs:          currentLbmLbs,
     startFFMI:            ffmi,
 
-    // User override (empty until Phase 7)
+    // User override
     userOverrideWeight:   null,
     overrideAccepted:     false,
     overrideTs:           null,
     effectiveGoalWeight:  goalWeightLbs,
+
+    // Revision tracking (populated by Phase 3 accept/defer/dismiss)
+    acknowledgedTriggers: [],
+    snoozedUntil:         null,
+    revisionHistory:      [],
   };
 }
 
@@ -1683,44 +1689,44 @@ function computeProgressSnapshot(user, sortedLog, goalConfig, nutLogs, trainingH
 function evaluateGoalRevision(snap, goalConfig, allSnapshots) {
   if (!snap || !goalConfig) return null;
 
-  const goal    = goalConfig.goalType;
-  const recent  = allSnapshots.slice(-4);   // ~4 weeks lookback
+  // Respect snooze window (set by "Defer 7d")
+  if (goalConfig.snoozedUntil && Date.now() < goalConfig.snoozedUntil) return null;
+
+  const acked  = new Set(goalConfig.acknowledgedTriggers || []);
+  const goal   = goalConfig.goalType;
+  const recent = allSnapshots.slice(-4);   // ~4 weeks lookback
 
   // ── Trigger 1: LBM erosion on cut ─────────────────────────────────────────
-  if ((goal === "cut" || goal === "contest") && goalConfig.startLbmLbs) {
+  if (!acked.has("lbm_loss") && (goal === "cut" || goal === "contest") && goalConfig.startLbmLbs) {
     const lbmLoss = goalConfig.startLbmLbs - snap.estimatedLbmLbs;
     if (lbmLoss > 4) {
       const revised = Math.round(snap.estimatedLbmLbs / (1 - goalConfig.goalBfPct / 100) * 10) / 10;
       return {
-        suggested:          true,
-        trigger:            "lbm_loss",
-        confidence:         "high",
-        revisedGoalWeight:  revised,
+        suggested: true, trigger: "lbm_loss", confidence: "high",
+        revisedGoalWeight: revised,
         reason: `You've lost ~${lbmLoss.toFixed(1)} lbs of lean mass since starting. A revised goal of ${revised} lbs still hits ${goalConfig.goalBfPct}% BF while protecting what you've built.`,
       };
     }
   }
 
   // ── Trigger 2: Persistent plateau ─────────────────────────────────────────
-  const plateauStreak = recent.filter(s => s.plateauDetected).length;
-  if (snap.plateauDetected && plateauStreak >= 2) {
-    const lever = (goal === "cut" || goal === "contest") ? "calorie deficit" : "surplus";
-    return {
-      suggested:         true,
-      trigger:           "plateau",
-      confidence:        "medium",
-      revisedGoalWeight: null,
-      reason: `Trend stalled (< 0.15 lbs/wk) for ${plateauStreak + 1} consecutive snapshots. Your ${lever} may need recalibration, or this weight is a natural set-point worth reassessing.`,
-    };
+  if (!acked.has("plateau")) {
+    const plateauStreak = recent.filter(s => s.plateauDetected).length;
+    if (snap.plateauDetected && plateauStreak >= 2) {
+      const lever = (goal === "cut" || goal === "contest") ? "calorie deficit" : "surplus";
+      return {
+        suggested: true, trigger: "plateau", confidence: "medium",
+        revisedGoalWeight: null,
+        reason: `Trend stalled (< 0.15 lbs/wk) for ${plateauStreak + 1} consecutive snapshots. Your ${lever} may need recalibration, or this weight is a natural set-point worth reassessing.`,
+      };
+    }
   }
 
   // ── Trigger 3: Timeline slippage ≥ 1.6× original ──────────────────────────
-  if (snap.etaWeeks && goalConfig.etaWeeks && snap.rateConfidence >= 0.5) {
+  if (!acked.has("timeline_extended") && snap.etaWeeks && goalConfig.etaWeeks && snap.rateConfidence >= 0.5) {
     if (snap.etaWeeks > goalConfig.etaWeeks * 1.6) {
       return {
-        suggested:         true,
-        trigger:           "timeline_extended",
-        confidence:        "medium",
+        suggested: true, trigger: "timeline_extended", confidence: "medium",
         revisedGoalWeight: null,
         reason: `Original ETA was ${goalConfig.etaWeeks} weeks; at your current pace it's now ${snap.etaWeeks}. Tighten your protocol or reset the timeline.`,
       };
@@ -1728,33 +1734,29 @@ function evaluateGoalRevision(snap, goalConfig, allSnapshots) {
   }
 
   // ── Trigger 4: Running leaner than projected (cut ahead of pace) ───────────
-  if ((goal === "cut" || goal === "contest") && goalConfig.startBfPct && goalConfig.etaWeeks > 0) {
-    const weeksElapsed    = Math.max(1, Math.round((Date.now() - goalConfig.createdAt) / (7 * 86400000)));
-    const expectedDrop    = (goalConfig.startBfPct - goalConfig.goalBfPct) * (weeksElapsed / goalConfig.etaWeeks);
-    const actualDrop      = goalConfig.startBfPct - snap.estimatedBfPct;
+  if (!acked.has("ahead_of_pace") && (goal === "cut" || goal === "contest") && goalConfig.startBfPct && goalConfig.etaWeeks > 0) {
+    const weeksElapsed = Math.max(1, Math.round((Date.now() - goalConfig.createdAt) / (7 * 86400000)));
+    const expectedDrop = (goalConfig.startBfPct - goalConfig.goalBfPct) * (weeksElapsed / goalConfig.etaWeeks);
+    const actualDrop   = goalConfig.startBfPct - snap.estimatedBfPct;
     if (actualDrop > expectedDrop * 1.4 && actualDrop > 3 && weeksElapsed >= 4) {
       const projected = Math.round(snap.estimatedLbmLbs / (1 - goalConfig.goalBfPct / 100) * 10) / 10;
       return {
-        suggested:          true,
-        trigger:            "ahead_of_pace",
-        confidence:         "medium",
-        revisedGoalWeight:  projected,
+        suggested: true, trigger: "ahead_of_pace", confidence: "medium",
+        revisedGoalWeight: projected,
         reason: `You're leaning out ahead of schedule. At this rate you'll hit ${goalConfig.goalBfPct}% BF at ~${projected} lbs — ${(goalConfig.effectiveGoalWeight - projected).toFixed(1)} lbs above your original target. Stopping here protects performance and hormones.`,
       };
     }
   }
 
   // ── Trigger 5: Fat-dominant bulk (FFMI ceiling approaching) ───────────────
-  if (goal === "bulk" && snap.ffmi >= 22.5 && recent.length >= 2) {
-    const first   = recent[0];
-    const wtGain  = snap.weight - first.weight;
-    const lbmGain = snap.estimatedLbmLbs - first.estimatedLbmLbs;
+  if (!acked.has("ffmi_ceiling") && goal === "bulk" && snap.ffmi >= 22.5 && recent.length >= 2) {
+    const first      = recent[0];
+    const wtGain     = snap.weight - first.weight;
+    const lbmGain    = snap.estimatedLbmLbs - first.estimatedLbmLbs;
     const efficiency = wtGain > 0.5 ? lbmGain / wtGain : 1;
     if (efficiency < 0.35 && wtGain > 2) {
       return {
-        suggested:         true,
-        trigger:           "ffmi_ceiling",
-        confidence:        "medium",
+        suggested: true, trigger: "ffmi_ceiling", confidence: "medium",
         revisedGoalWeight: null,
         reason: `At FFMI ${snap.ffmi.toFixed(1)}, recent gains are ~${Math.round(efficiency * 100)}% lean mass. Fat-dominant gains near your ceiling suggest a cut phase would sharpen your physique before your next bulk.`,
       };
@@ -5857,6 +5859,21 @@ function CoachScreen({user}) {
   const msgsRef=useRef(null);
   const fileRef=useRef(null);
 
+  // Inject goal analysis rationale on first open (generated at onboarding time)
+  useEffect(()=>{
+    window.storage.get(GOAL_ANALYSIS_KEY).then(r=>{
+      try {
+        if(!r?.value) return;
+        const entry = JSON.parse(r.value);
+        if(!entry?.text || entry.read) return;
+        const goalLabel = entry.goalType ? ` — ${entry.goalType.toUpperCase()} to ${entry.goalWeight} lbs` : "";
+        setMessages(prev=>[...prev,{role:"coach",text:`Your goal analysis${goalLabel}:\n\n${entry.text}`,time:"now"}]);
+        window.storage.set(GOAL_ANALYSIS_KEY, JSON.stringify({...entry, read:true})).catch(()=>{});
+        setTimeout(()=>{ if(msgsRef.current) msgsRef.current.scrollTop=msgsRef.current.scrollHeight; },120);
+      } catch {}
+    }).catch(()=>{});
+  },[]);
+
   // Inject unread post-session feedback on first open
   useEffect(()=>{
     window.storage.get(FEEDBACK_KEY).then(r=>{
@@ -6999,21 +7016,73 @@ function DashboardScreen({ user, weightLog, onLogWeight, onDeleteWeight, onEditW
               )}
             </div>
 
-            {/* Goal revision suggestion */}
+            {/* Goal revision suggestion — Accept / Defer 7d / Dismiss */}
             {goalRevision?.suggested && (
-              <div style={{padding:"12px 16px",background:`color-mix(in srgb,var(--accent) 8%,transparent)`}}>
-                <div style={{display:"flex",alignItems:"flex-start",justifyContent:"space-between",gap:8}}>
-                  <div style={{flex:1}}>
-                    <div style={{fontSize:9,letterSpacing:2,textTransform:"uppercase",color:"var(--accent)",marginBottom:4}}>⚡ APEX SUGGESTS</div>
-                    <div style={{fontSize:12,color:"var(--faint)",lineHeight:1.6}}>{goalRevision.reason}</div>
-                    {goalRevision.revisedGoalWeight && (
-                      <div style={{marginTop:6,fontSize:11,fontFamily:"'Bebas Neue',sans-serif",letterSpacing:1,color:"var(--accent)"}}>
-                        Revised target: {goalRevision.revisedGoalWeight} lbs
-                      </div>
-                    )}
+              <div style={{padding:"12px 16px",background:"color-mix(in srgb,var(--accent) 8%,transparent)",borderTop:"1px solid var(--border)"}}>
+                <div style={{fontSize:9,letterSpacing:2,textTransform:"uppercase",color:"var(--accent)",marginBottom:6}}>⚡ APEX SUGGESTS</div>
+                <div style={{fontSize:12,color:"var(--faint)",lineHeight:1.65,marginBottom:10}}>{goalRevision.reason}</div>
+                {goalRevision.revisedGoalWeight && (
+                  <div style={{fontSize:11,fontFamily:"'Bebas Neue',sans-serif",letterSpacing:1,color:"var(--accent)",marginBottom:10}}>
+                    Revised target: {goalRevision.revisedGoalWeight} lbs
                   </div>
-                  <button onClick={() => setGoalRevision(null)}
-                    style={{background:"none",border:"none",color:"var(--muted)",fontSize:14,cursor:"pointer",padding:"0 2px",flexShrink:0,lineHeight:1}}>✕</button>
+                )}
+                <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
+                  {/* ACCEPT — updates effectiveGoalWeight + logs to revisionHistory */}
+                  {goalRevision.revisedGoalWeight && (
+                    <button onClick={() => {
+                      const updated = {
+                        ...goalConfig,
+                        effectiveGoalWeight: goalRevision.revisedGoalWeight,
+                        updatedAt: Date.now(),
+                        revisionHistory: [...(goalConfig.revisionHistory||[]), {
+                          ts: Date.now(), trigger: goalRevision.trigger,
+                          previousGoal: goalConfig.effectiveGoalWeight,
+                          newGoal: goalRevision.revisedGoalWeight,
+                          decision: "accepted",
+                        }],
+                      };
+                      window.storage.set(GOAL_CONFIG_KEY, JSON.stringify(updated)).catch(()=>{});
+                      setStoredGoalConfig(updated);
+                      setGoalRevision(null);
+                    }}
+                    style={{padding:"7px 14px",background:"var(--accent)",color:"#080A0C",border:"none",borderRadius:8,fontFamily:"'Bebas Neue',sans-serif",fontSize:12,letterSpacing:1.2,cursor:"pointer"}}>
+                      ACCEPT
+                    </button>
+                  )}
+                  {/* DEFER 7D — snoozes all revision triggers for 7 days */}
+                  <button onClick={() => {
+                    const updated = {
+                      ...goalConfig,
+                      snoozedUntil: Date.now() + 7 * 86400000,
+                      updatedAt: Date.now(),
+                      revisionHistory: [...(goalConfig.revisionHistory||[]), {
+                        ts: Date.now(), trigger: goalRevision.trigger, decision: "deferred_7d",
+                      }],
+                    };
+                    window.storage.set(GOAL_CONFIG_KEY, JSON.stringify(updated)).catch(()=>{});
+                    setStoredGoalConfig(updated);
+                    setGoalRevision(null);
+                  }}
+                  style={{padding:"7px 14px",background:"var(--up)",color:"var(--muted)",border:"1px solid var(--border)",borderRadius:8,fontFamily:"'Bebas Neue',sans-serif",fontSize:12,letterSpacing:1.2,cursor:"pointer"}}>
+                    DEFER 7D
+                  </button>
+                  {/* DISMISS — acknowledges this trigger, won't fire again */}
+                  <button onClick={() => {
+                    const updated = {
+                      ...goalConfig,
+                      acknowledgedTriggers: [...(goalConfig.acknowledgedTriggers||[]), goalRevision.trigger],
+                      updatedAt: Date.now(),
+                      revisionHistory: [...(goalConfig.revisionHistory||[]), {
+                        ts: Date.now(), trigger: goalRevision.trigger, decision: "dismissed",
+                      }],
+                    };
+                    window.storage.set(GOAL_CONFIG_KEY, JSON.stringify(updated)).catch(()=>{});
+                    setStoredGoalConfig(updated);
+                    setGoalRevision(null);
+                  }}
+                  style={{padding:"7px 14px",background:"none",color:"var(--faint)",border:"none",fontFamily:"'DM Sans',sans-serif",fontSize:12,cursor:"pointer",textDecoration:"underline",textUnderlineOffset:2}}>
+                    Dismiss
+                  </button>
                 </div>
               </div>
             )}
@@ -7457,6 +7526,44 @@ function NavIcon({ id }) {
   );
 }
 
+// Fires once after onboarding; sends GoalConfig data to Claude for a
+// personalised opening analysis, saves to GOAL_ANALYSIS_KEY for injection
+// into the Coach tab on first open.
+async function generateGoalRationale(user, gc) {
+  try {
+    const res = await fetch("/api/chat", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        model: "claude-haiku-4-5-20251001",
+        max_tokens: 420,
+        system: `You are APEX, an elite AI performance coach. Deliver a direct, specific post-onboarding goal analysis. 3 short paragraphs. No fluff — real training and physiology terminology only.`,
+        messages: [{
+          role: "user",
+          content: `New athlete:
+- ${user.name}, ${user.sex || "male"}, ${user.age}yo, ${user.level || "intermediate"} level
+- Current: ${gc.startWeight} lbs at ~${gc.startBfPct}% BF (${gc.currentVisualOutcome})
+- Goal: ${gc.goalType} → ${gc.effectiveGoalWeight} lbs at ${gc.goalBfPct}% BF
+- Target look: ${gc.projectedVisualOutcome}
+- Timeline: ${gc.etaWeeks} weeks · ${gc.realisticRating} · ${gc.sustainabilityScore}/100 sustainability
+
+Deliver their opening goal analysis:
+1. Why this target weight makes physiological sense for their specific body composition (reference lean mass and BF%)
+2. What the first 2 weeks should focus on to build the right foundation
+3. The single most important metric to track that will confirm they're on course
+
+Be specific and direct. Use their actual numbers. Don't hedge.`,
+        }],
+      }),
+    });
+    const data = await res.json();
+    const text = data.content?.find(b => b.type === "text")?.text;
+    if (!text) return;
+    const entry = { text, ts: Date.now(), goalType: gc.goalType, goalWeight: gc.effectiveGoalWeight, read: false };
+    window.storage.set(GOAL_ANALYSIS_KEY, JSON.stringify(entry)).catch(() => {});
+  } catch {}
+}
+
 function AppInner() {
   const [user,setUser]=useState(null);
   const [userLoaded, setUserLoaded]=useState(false);
@@ -7650,9 +7757,11 @@ function AppInner() {
     <div className="app">
       {!user ? <OnboardScreen onComplete={u=>{
         window.storage.set(USER_KEY, JSON.stringify(u)).catch(()=>{});
-        // Compute and persist goal config at onboarding time
         const gc = computeGoalConfig(u);
         window.storage.set(GOAL_CONFIG_KEY, JSON.stringify(gc)).catch(()=>{});
+        // Fire AI rationale in the background — saves to GOAL_ANALYSIS_KEY
+        // for injection into Coach on first open (non-blocking)
+        generateGoalRationale(u, gc);
         setUser(u); setTab("home");
       }}/> : (
           <>
