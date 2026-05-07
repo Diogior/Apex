@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect, useCallback, createContext, useContext } from "react";
+import { useState, useRef, useEffect, useCallback, useMemo, createContext, useContext } from "react";
 import { auth } from "./firebase.js";
 import {
   onAuthStateChanged,
@@ -1873,7 +1873,7 @@ function OnboardScreen({onComplete}) {
 // ═══════════════════════════════════════════════════════════════════════════════
 
 const TRAINING_KEY  = "apex_training_v2";
-const FEEDBACK_KEY  = "apex_session_feedback_v1";
+const FEEDBACK_KEY  = "apex_session_feedback_v2";
 const SESSION_KEY   = "apex_live_session_v1";
 
 // ── GLOBAL SESSION CONTEXT ────────────────────────────────────────────────────
@@ -2873,25 +2873,25 @@ function WorkoutSession({ dayKey, dayPlan, adaptation, history = [], onComplete,
   const [coachNote, setCoachNote] = useState(null);
   const [noteVisible, setNoteVisible] = useState(true);
   useEffect(() => {
-    try {
-      const stored = localStorage.getItem(FEEDBACK_KEY);
-      if (!stored) return;
-      const all = JSON.parse(stored);
-      if (!all || typeof all !== "object") return;
-
-      // Exact dayKey match first
-      const exact = all[dayKey];
-      if (exact?.text) { setCoachNote(exact); return; }
-
-      // Fallback: find feedback with overlapping muscles
-      const currentMuscles = new Set(dayPlan?.muscles || []);
-      const best = Object.values(all)
-        .filter(fb => fb?.text && Array.isArray(fb.muscles))
-        .map(fb => ({ fb, overlap: fb.muscles.filter(m => currentMuscles.has(m)).length }))
-        .filter(({ overlap }) => overlap > 0)
-        .sort((a, b) => b.overlap - a.overlap || (b.fb.ts||0) - (a.fb.ts||0))[0];
-      if (best) setCoachNote(best.fb);
-    } catch {}
+    window.storage.get(FEEDBACK_KEY).then(r => {
+      try {
+        if (!r?.value) return;
+        const parsed = JSON.parse(r.value);
+        const arr = Array.isArray(parsed) ? parsed : Object.values(parsed).filter(v => v?.text);
+        if (!arr.length) return;
+        // Most recent exact dayKey match
+        const exact = arr.filter(fb => fb.dayKey === dayKey).sort((a, b) => (b.ts||0) - (a.ts||0))[0];
+        if (exact?.text) { setCoachNote(exact); return; }
+        // Fallback: most overlap with current muscles
+        const currentMuscles = new Set(dayPlan?.muscles || []);
+        const best = arr
+          .filter(fb => fb?.text && Array.isArray(fb.muscles))
+          .map(fb => ({ fb, overlap: fb.muscles.filter(m => currentMuscles.has(m)).length }))
+          .filter(({ overlap }) => overlap > 0)
+          .sort((a, b) => b.overlap - a.overlap || (b.fb.ts||0) - (a.fb.ts||0))[0];
+        if (best) setCoachNote(best.fb);
+      } catch {}
+    }).catch(() => {});
   }, [dayKey]);
 
   // All persistent state lives in context — local state only for UI
@@ -3415,12 +3415,14 @@ Give post-session feedback: what was solid, anything to flag, and one specific f
       const muscles = (result.completedExercises||[]).map(ex=>ex.muscle||ex.tag?.primary).filter(Boolean);
       const fb = { text, ts: result.ts, dayKey: result.dayKey, muscles, read: false };
       setSessionFeedback({ ...fb, loading: false });
-      // Save keyed by dayKey so future sessions of same type can surface it
+      // Append to archive array — keeps full history, not just latest per day
       try {
-        const existing = JSON.parse(localStorage.getItem(FEEDBACK_KEY)||"{}");
-        const updated = { ...existing, [result.dayKey]: fb };
-        localStorage.setItem(FEEDBACK_KEY, JSON.stringify(updated));
-        window.storage.set(FEEDBACK_KEY, JSON.stringify(updated)).catch(()=>{});
+        const r = await window.storage.get(FEEDBACK_KEY).catch(() => ({ value: "[]" }));
+        const existing = JSON.parse(r?.value || "[]");
+        const arr = Array.isArray(existing) ? existing : Object.values(existing).filter(v => v?.text);
+        const entry = { ...fb, id: String(result.ts) };
+        const updated = [entry, ...arr];
+        window.storage.set(FEEDBACK_KEY, JSON.stringify(updated)).catch(() => {});
       } catch {}
     } catch {
       const fb = { text: "Session logged. Open the Coach tab for your full analysis.", ts: result.ts };
@@ -5142,6 +5144,188 @@ function PostPrepScreen({user}) {
   );
 }
 
+// ─── FEEDBACK ARCHIVE ─────────────────────────────────────────────────────────
+
+function FeedbackArchiveScreen() {
+  const C = useThemeColors();
+  const [feedbacks, setFeedbacks] = useState([]);
+  const [loaded, setLoaded] = useState(false);
+  const [groupBy, setGroupBy] = useState("date");
+  const [expanded, setExpanded] = useState(null);
+
+  useEffect(() => {
+    window.storage.get(FEEDBACK_KEY).then(r => {
+      try {
+        if (r?.value) {
+          const parsed = JSON.parse(r.value);
+          const arr = Array.isArray(parsed) ? parsed : Object.values(parsed).filter(v => v?.text);
+          setFeedbacks(arr.filter(f => f?.text).sort((a, b) => (b.ts||0) - (a.ts||0)));
+          // Mark all read
+          if (arr.some(f => !f.read)) {
+            const updated = arr.map(f => ({...f, read: true}));
+            window.storage.set(FEEDBACK_KEY, JSON.stringify(updated)).catch(() => {});
+          }
+        }
+      } catch {}
+      setLoaded(true);
+    }).catch(() => setLoaded(true));
+  }, []);
+
+  const DAY_LABEL = key => key ? key.replace(/_/g, " ").replace(/\b\w/g, c => c.toUpperCase()) : "Custom";
+
+  // Build grouped sections
+  const grouped = useMemo(() => {
+    if (!feedbacks.length) return [];
+    if (groupBy === "date") {
+      const byDate = {};
+      feedbacks.forEach(f => {
+        const d = new Date(f.ts);
+        const key = d.toLocaleDateString("en-US", { weekday:"short", month:"short", day:"numeric", year:"numeric" });
+        if (!byDate[key]) byDate[key] = { label: key, ts: f.ts, items: [] };
+        byDate[key].items.push(f);
+      });
+      return Object.values(byDate).sort((a, b) => b.ts - a.ts);
+    }
+    if (groupBy === "workout") {
+      const byDay = {};
+      feedbacks.forEach(f => {
+        const key = f.dayKey || "custom";
+        if (!byDay[key]) byDay[key] = { label: DAY_LABEL(key), ts: f.ts, items: [] };
+        byDay[key].items.push(f);
+      });
+      return Object.values(byDay).sort((a, b) => b.ts - a.ts);
+    }
+    if (groupBy === "muscle") {
+      const byMuscle = {};
+      feedbacks.forEach(f => {
+        const muscles = f.muscles?.length ? f.muscles : ["general"];
+        muscles.slice(0, 1).forEach(m => {
+          const key = m;
+          const label = MUSCLE_BENCHMARKS[m]?.label || m.charAt(0).toUpperCase() + m.slice(1);
+          if (!byMuscle[key]) byMuscle[key] = { label, ts: f.ts, items: [] };
+          byMuscle[key].items.push(f);
+        });
+      });
+      return Object.values(byMuscle).sort((a, b) => b.ts - a.ts);
+    }
+    return [];
+  }, [feedbacks, groupBy]);
+
+  const unreadCount = feedbacks.filter(f => !f.read).length;
+
+  if (!loaded) return (
+    <div className="loading">
+      <div style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:18, letterSpacing:2, color:C.muted, animation:"pulse 2s infinite" }}>LOADING ARCHIVE...</div>
+    </div>
+  );
+
+  return (
+    <div className="screen">
+      {/* HEADER */}
+      <div className="sh">
+        <div>
+          <div className="sh-label">Coach</div>
+          <div className="sh-title">FEEDBACK ARCHIVE</div>
+        </div>
+        {unreadCount > 0 && (
+          <div style={{ display:"flex", alignItems:"center", gap:6, padding:"6px 12px", background:`${C.accent}18`, border:`1px solid ${C.accent}40`, borderRadius:8 }}>
+            <div style={{ width:6, height:6, borderRadius:"50%", background:C.accent }}/>
+            <span style={{ fontSize:11, fontWeight:700, color:C.accent, letterSpacing:.5 }}>{unreadCount} NEW</span>
+          </div>
+        )}
+      </div>
+
+      {/* GROUP BY TOGGLE */}
+      <div style={{ margin:"0 24px 20px", display:"flex", background:C.up, borderRadius:10, padding:3 }}>
+        {[{id:"date",label:"BY DATE"},{id:"workout",label:"BY WORKOUT"},{id:"muscle",label:"BY MUSCLE"}].map(opt => (
+          <button key={opt.id} onClick={() => setGroupBy(opt.id)}
+            style={{ flex:1, padding:"8px 4px", border:"none", borderRadius:8, cursor:"pointer", fontSize:10, fontFamily:"'Bebas Neue',sans-serif", letterSpacing:1.5,
+              background: groupBy === opt.id ? C.accent : "transparent",
+              color: groupBy === opt.id ? "#080A0C" : C.muted,
+              transition:"all .15s" }}>
+            {opt.label}
+          </button>
+        ))}
+      </div>
+
+      {feedbacks.length === 0 ? (
+        <div style={{ margin:"60px 24px 0", textAlign:"center" }}>
+          <div style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:32, letterSpacing:2, color:C.muted, marginBottom:8 }}>NO SESSIONS YET</div>
+          <div style={{ fontSize:13, color:C.muted, lineHeight:1.6 }}>Complete a workout to receive<br/>AI coaching feedback here.</div>
+        </div>
+      ) : (
+        <div style={{ paddingBottom:32 }}>
+          {grouped.map(group => (
+            <div key={group.label}>
+              {/* GROUP HEADER */}
+              <div style={{ margin:"8px 24px 10px", display:"flex", alignItems:"center", gap:10 }}>
+                <div style={{ fontSize:10, letterSpacing:2, textTransform:"uppercase", color:C.muted, fontWeight:700 }}>
+                  {group.label}
+                </div>
+                <div style={{ flex:1, height:1, background:C.border }}/>
+                <div style={{ fontSize:10, color:C.muted }}>{group.items.length}</div>
+              </div>
+
+              {/* FEEDBACK CARDS */}
+              {group.items.map(fb => {
+                const isOpen = expanded === fb.id || expanded === String(fb.ts);
+                const date = new Date(fb.ts);
+                const timeStr = date.toLocaleTimeString("en-US", { hour:"numeric", minute:"2-digit" });
+                const dateStr = groupBy !== "date"
+                  ? date.toLocaleDateString("en-US", { month:"short", day:"numeric" })
+                  : timeStr;
+
+                return (
+                  <div key={fb.id || fb.ts} style={{ margin:"0 24px 10px", border:`1px solid ${isOpen ? C.accent : C.border}`, borderRadius:12, overflow:"hidden", transition:"border-color .2s" }}>
+                    {/* CARD HEADER */}
+                    <button onClick={() => setExpanded(isOpen ? null : (fb.id || String(fb.ts)))}
+                      style={{ width:"100%", background: isOpen ? `${C.accent}08` : C.surface, border:"none", padding:"14px 16px", cursor:"pointer", textAlign:"left", display:"flex", alignItems:"center", gap:12, transition:"background .15s" }}>
+                      {/* Unread dot */}
+                      <div style={{ width:6, height:6, borderRadius:"50%", flexShrink:0, background: !fb.read ? C.accent : "transparent", border: !fb.read ? "none" : `1px solid ${C.border}` }}/>
+                      <div style={{ flex:1, minWidth:0 }}>
+                        <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:4, flexWrap:"wrap" }}>
+                          <span style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:13, letterSpacing:1.5, color: isOpen ? C.accent : C.text }}>
+                            {DAY_LABEL(fb.dayKey)}
+                          </span>
+                          {(fb.muscles || []).slice(0, 3).map(m => (
+                            <span key={m} style={{ fontSize:9, fontWeight:700, letterSpacing:.5, textTransform:"uppercase", padding:"2px 6px", borderRadius:4, background:`${MUSCLE_BENCHMARKS[m]?.color || C.accent}18`, color: MUSCLE_BENCHMARKS[m]?.color || C.accent }}>
+                              {MUSCLE_BENCHMARKS[m]?.label || m}
+                            </span>
+                          ))}
+                        </div>
+                        <div style={{ fontSize:11, color:C.muted }}>{dateStr}</div>
+                      </div>
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"
+                        style={{ width:14, height:14, color:C.muted, flexShrink:0, transform: isOpen ? "rotate(180deg)" : "none", transition:"transform .2s" }}>
+                        <path d="M6 9l6 6 6-6"/>
+                      </svg>
+                    </button>
+
+                    {/* EXPANDED FEEDBACK TEXT */}
+                    {isOpen && (
+                      <div style={{ padding:"0 16px 16px", borderTop:`1px solid ${C.border}`, background:C.surface }}>
+                        <div style={{ paddingTop:14, fontSize:13, color:C.faint, lineHeight:1.75, whiteSpace:"pre-wrap" }}>
+                          {fb.text}
+                        </div>
+                        <div style={{ marginTop:12, paddingTop:10, borderTop:`1px solid ${C.border}`, display:"flex", alignItems:"center", justifyContent:"space-between" }}>
+                          <div style={{ fontSize:10, color:C.muted, letterSpacing:.5 }}>
+                            {date.toLocaleDateString("en-US", { weekday:"long", month:"long", day:"numeric" })} · {timeStr}
+                          </div>
+                          <div style={{ fontSize:10, color:C.accent, letterSpacing:.5, fontWeight:700 }}>APEX COACH</div>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 // ─── COACH ────────────────────────────────────────────────────────────────────
 
 function CoachScreen({user}) {
@@ -5157,27 +5341,24 @@ function CoachScreen({user}) {
   const msgsRef=useRef(null);
   const fileRef=useRef(null);
 
-  // Inject unread post-session feedback on first open (handles both old flat and new keyed format)
+  // Inject unread post-session feedback on first open
   useEffect(()=>{
-    try {
-      const stored=localStorage.getItem(FEEDBACK_KEY);
-      if(!stored) return;
-      const parsed=JSON.parse(stored);
-      // New format: { dayKey: { text, ts, read, ... }, ... }
-      const entries = parsed && typeof parsed === "object" && !parsed.text
-        ? Object.values(parsed) : [parsed];
-      const unread = entries.filter(fb=>fb?.text&&!fb?.read);
-      if(!unread.length) return;
-      const latest = unread.sort((a,b)=>(b.ts||0)-(a.ts||0))[0];
-      const dayLabel = latest.dayKey ? ` (${latest.dayKey.replace(/_/g," ").toUpperCase()})` : "";
-      setMessages(prev=>[...prev,{role:"coach",text:`Post-session recap${dayLabel}:\n\n${latest.text}`,time:"now"}]);
-      // Mark all as read
-      const updated = typeof parsed === "object" && !parsed.text
-        ? Object.fromEntries(Object.entries(parsed).map(([k,v])=>[k,{...v,read:true}]))
-        : {...parsed,read:true};
-      localStorage.setItem(FEEDBACK_KEY,JSON.stringify(updated));
-      setTimeout(()=>{ if(msgsRef.current) msgsRef.current.scrollTop=msgsRef.current.scrollHeight; },120);
-    } catch {}
+    window.storage.get(FEEDBACK_KEY).then(r=>{
+      try {
+        if(!r?.value) return;
+        const parsed=JSON.parse(r.value);
+        const arr = Array.isArray(parsed) ? parsed : Object.values(parsed).filter(v=>v?.text);
+        const unread = arr.filter(fb=>fb?.text&&!fb?.read);
+        if(!unread.length) return;
+        const latest = unread.sort((a,b)=>(b.ts||0)-(a.ts||0))[0];
+        const dayLabel = latest.dayKey ? ` (${latest.dayKey.replace(/_/g," ").toUpperCase()})` : "";
+        setMessages(prev=>[...prev,{role:"coach",text:`Post-session recap${dayLabel}:\n\n${latest.text}`,time:"now"}]);
+        // Mark all as read
+        const updated = arr.map(fb=>({...fb,read:true}));
+        window.storage.set(FEEDBACK_KEY,JSON.stringify(updated)).catch(()=>{});
+        setTimeout(()=>{ if(msgsRef.current) msgsRef.current.scrollTop=msgsRef.current.scrollHeight; },120);
+      } catch {}
+    }).catch(()=>{});
   },[]);
 
   const scrollBottom=()=>setTimeout(()=>{ if(msgsRef.current) msgsRef.current.scrollTop=msgsRef.current.scrollHeight; },60);
@@ -6513,6 +6694,7 @@ function AppInner() {
     {id:"training",label:"Training"},
     {id:"nutrition",label:"Nutrition"},
     ...(user?.goal==="contest" ? [{id:"postprep",label:"Rebound"}] : []),
+    {id:"archive",label:"Archive"},
     {id:"coach",label:"Coach"},
   ];
 
@@ -6589,6 +6771,7 @@ function AppInner() {
             {tab==="training"&&<TrainingScreen user={enrichedUser} onNavigate={setTab}/>}
             {tab==="nutrition"&&<NutritionScreen user={enrichedUser}/>}
             {tab==="postprep"&&user?.goal==="contest"&&<PostPrepScreen user={enrichedUser}/>}
+            {tab==="archive"&&<FeedbackArchiveScreen/>}
             {tab==="coach"&&<CoachScreen user={enrichedUser}/>}
             {/* Mini session view — shown on all non-training tabs when a session is active */}
             {session && tab !== "training" && (
