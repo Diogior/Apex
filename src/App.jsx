@@ -847,7 +847,8 @@ const NOTIF_KEY       = "apex_notif_v1";
 const GOAL_CONFIG_KEY = "apex_goal_config_v1";
 const SNAPSHOTS_KEY     = "apex_snapshots_v1";
 const GOAL_ANALYSIS_KEY = "apex_goal_analysis_v1";
-const GOAL_HISTORY_KEY  = "apex_goal_history_v1";
+const GOAL_HISTORY_KEY    = "apex_goal_history_v1";
+const WEEKLY_DIGEST_KEY   = "apex_weekly_digest_v1";
 const NUTRITION_KEY   = "apex_nutrition_v1";
 const CHECKIN_KEY     = "apex_checkins_v1";
 const PROTOCOL_KEY    = "apex_protocol_v1";
@@ -5875,6 +5876,20 @@ function CoachScreen({user}) {
     }).catch(()=>{});
   },[]);
 
+  // Inject unread weekly digest
+  useEffect(()=>{
+    window.storage.get(WEEKLY_DIGEST_KEY).then(r=>{
+      try {
+        if(!r?.value) return;
+        const entry = JSON.parse(r.value);
+        if(!entry?.text || entry.read) return;
+        setMessages(prev=>[...prev,{role:"coach",text:`Weekly progress update:\n\n${entry.text}`,time:"now"}]);
+        window.storage.set(WEEKLY_DIGEST_KEY,JSON.stringify({...entry,read:true})).catch(()=>{});
+        setTimeout(()=>{ if(msgsRef.current) msgsRef.current.scrollTop=msgsRef.current.scrollHeight; },150);
+      } catch {}
+    }).catch(()=>{});
+  },[]);
+
   // Inject unread post-session feedback on first open
   useEffect(()=>{
     window.storage.get(FEEDBACK_KEY).then(r=>{
@@ -6365,7 +6380,7 @@ function AvatarMenu({ initial, onEditProfile }) {
   );
 }
 
-function DashboardScreen({ user, weightLog, onLogWeight, onDeleteWeight, onEditWeight, onNavigate, onEditProfile }) {
+function DashboardScreen({ user, weightLog, onLogWeight, onDeleteWeight, onEditWeight, onNavigate, onEditProfile, onGoalTransition }) {
   const C = useThemeColors();
   const [inputVal, setInputVal] = useState("");
   const [inputFocused, setInputFocused] = useState(false);
@@ -6393,6 +6408,7 @@ function DashboardScreen({ user, weightLog, onLogWeight, onDeleteWeight, onEditW
   const [goalHistory, setGoalHistory] = useState([]);
   const [showOverrideInput, setShowOverrideInput] = useState(false);
   const [overrideVal, setOverrideVal] = useState("");
+  const [completionDismissed, setCompletionDismissed] = useState(false);
   const snapshotTriggerRef = useRef(-1);   // tracks sortedLog.length at last trigger
   const [bfOverride, setBfOverride] = useState(null);
   const [showBfEditor, setShowBfEditor] = useState(false);
@@ -6450,6 +6466,25 @@ function DashboardScreen({ user, weightLog, onLogWeight, onDeleteWeight, onEditW
       if (r?.value) try { setGoalHistory(JSON.parse(r.value) || []); } catch {}
     }).catch(() => {});
   }, []);
+
+  // ── WEEKLY DIGEST TRIGGER ─────────────────────────────────────────────────
+  // Checks once per app load: if 7+ days since last digest and enough snapshot
+  // data exists, computes a summary and saves to WEEKLY_DIGEST_KEY for Coach injection
+  useEffect(() => {
+    if (snapshots.length < 2 || !goalConfig) return;
+    window.storage.get(WEEKLY_DIGEST_KEY).then(r => {
+      try {
+        const stored   = r?.value ? JSON.parse(r.value) : null;
+        const lastTs   = stored?.ts || 0;
+        const daysSince = Math.floor((Date.now() - lastTs) / 86400000);
+        if (daysSince < 7) return;  // not time yet
+        const text = computeWeeklyDigest(user, goalConfig, snapshots, weightTrend);
+        if (!text) return;
+        const entry = { text, ts: Date.now(), read: false };
+        window.storage.set(WEEKLY_DIGEST_KEY, JSON.stringify(entry)).catch(() => {});
+      } catch {}
+    }).catch(() => {});
+  }, [snapshots.length, goalConfig?.id]);  // run when snapshots first load or goal changes
 
   // Recompute calTarget whenever dependencies stabilise
   useEffect(() => {
@@ -6946,13 +6981,34 @@ function DashboardScreen({ user, weightLog, onLogWeight, onDeleteWeight, onEditW
         const ratingCol    = s >= 75 ? "var(--green)" : s >= 50 ? "var(--accent)" : "var(--red)";
         const rateAlertCol = { too_fast:"var(--accent)", too_slow:"var(--red)", off_course:"var(--red)" };
 
+        // ── Goal completion state ──────────────────────────────────────────
+        const remaining   = goalConfig.isDualTarget ? null
+          : Math.abs(currentWeight - goalConfig.effectiveGoalWeight);
+        const overshoot   = !goalConfig.isDualTarget && goalDir !== 0
+          && goalDir * (currentWeight - goalConfig.effectiveGoalWeight) > 1.5;
+        const completionState = goalConfig.isDualTarget || !currentWeight ? "active"
+          : overshoot                  ? "exceeded"
+          : remaining !== null && remaining <= 1.5 ? "reached"
+          : remaining !== null && remaining <= 4   ? "approaching"
+          : "active";
+        const completionBorderCol = completionState === "reached"  ? "var(--green)"
+          : completionState === "approaching" ? "#FBBF24"
+          : completionState === "exceeded"    ? "var(--accent)"
+          : "var(--border)";
+
         return (
-          <div style={{margin:"0 24px 20px",background:"var(--surface)",border:"1px solid var(--border)",borderRadius:16,overflow:"hidden"}}>
+          <div style={{margin:"0 24px 20px",background:"var(--surface)",border:`1px solid ${completionBorderCol}`,borderRadius:16,overflow:"hidden",transition:"border-color .4s"}}>
 
             {/* Header: goal weight + sustainability badge */}
             <div style={{padding:"14px 16px 10px",borderBottom:"1px solid var(--border)",display:"flex",alignItems:"center",justifyContent:"space-between"}}>
               <div>
-                <div style={{fontSize:9,letterSpacing:2,textTransform:"uppercase",color:"var(--accent)",marginBottom:2}}>● Physique Target</div>
+                <div style={{fontSize:9,letterSpacing:2,textTransform:"uppercase",marginBottom:2,display:"flex",alignItems:"center",gap:6}}>
+                  <span style={{color: completionState==="reached" ? "var(--green)" : completionState==="approaching" ? "#FBBF24" : "var(--accent)"}}>●</span>
+                  <span style={{color:"var(--accent)"}}>Physique Target</span>
+                  {completionState === "approaching" && <span style={{color:"#FBBF24",fontSize:8}}>APPROACHING</span>}
+                  {completionState === "reached"     && <span style={{color:"var(--green)",fontSize:8}}>GOAL REACHED</span>}
+                  {completionState === "exceeded"    && <span style={{color:"var(--accent)",fontSize:8}}>OVERSHOT</span>}
+                </div>
                 {showOverrideInput ? (
                   <div style={{display:"flex",alignItems:"center",gap:8,marginTop:4}}>
                     <input type="number" step="0.5" autoFocus
@@ -7021,7 +7077,7 @@ function DashboardScreen({ user, weightLog, onLogWeight, onDeleteWeight, onEditW
               </div>
             </div>
 
-            {/* Progress bar + delta */}
+            {/* Progress bar + sparkline + delta */}
             {totalDelta > 0 && (
               <div style={{padding:"10px 16px 8px",borderBottom:"1px solid var(--border)"}}>
                 <div style={{display:"flex",justifyContent:"space-between",alignItems:"baseline",marginBottom:5}}>
@@ -7032,10 +7088,40 @@ function DashboardScreen({ user, weightLog, onLogWeight, onDeleteWeight, onEditW
                       : "at baseline"}
                   </div>
                 </div>
-                <div style={{height:6,background:"var(--up)",borderRadius:3,overflow:"hidden"}}>
-                  <div style={{height:"100%",width:`${progressPct}%`,background:"var(--accent)",borderRadius:3,transition:"width 1s cubic-bezier(.22,1,.36,1)"}}/>
+                <div style={{height:6,background:"var(--up)",borderRadius:3,overflow:"hidden",marginBottom:6}}>
+                  <div style={{height:"100%",width:`${progressPct}%`,
+                    background: completionState==="reached" ? "var(--green)" : completionState==="approaching" ? "#FBBF24" : "var(--accent)",
+                    borderRadius:3,transition:"width 1s cubic-bezier(.22,1,.36,1)"}}/>
                 </div>
-                <div style={{fontSize:9,color:"var(--faint)",marginTop:3,textAlign:"right"}}>{Math.round(progressPct)}% of the way there</div>
+                <div style={{fontSize:9,color:"var(--faint)",marginBottom:8,textAlign:"right"}}>{Math.round(progressPct)}% of the way there</div>
+
+                {/* Snapshot trajectory sparkline */}
+                {snapshots.length >= 2 && (() => {
+                  const pts    = snapshots.slice(-8);
+                  const gw     = goalConfig.effectiveGoalWeight;
+                  const wvals  = pts.map(s => s.weight);
+                  const allW   = [...wvals, gw];
+                  const minW   = Math.min(...allW) - 1;
+                  const maxW   = Math.max(...allW) + 1;
+                  const range  = maxW - minW || 1;
+                  const W = 200, H = 36;
+                  const tx = i => (i / Math.max(pts.length - 1, 1)) * (W - 6) + 3;
+                  const ty = w => H - 3 - ((w - minW) / range) * (H - 6);
+                  const goalY  = ty(gw);
+                  const lineD  = pts.map((s,i) => `${i===0?"M":"L"}${tx(i).toFixed(1)} ${ty(s.weight).toFixed(1)}`).join(" ");
+                  const lineCol = completionState==="reached" ? "var(--green)" : progressPct > 50 ? "var(--accent)" : "var(--faint)";
+                  return (
+                    <svg viewBox={`0 0 ${W} ${H}`} style={{width:"100%",height:36,display:"block",overflow:"visible"}}>
+                      <line x1="0" y1={goalY} x2={W} y2={goalY} stroke="var(--accent)" strokeWidth="1" strokeDasharray="3 3" opacity="0.35"/>
+                      <path d={lineD} fill="none" stroke={lineCol} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                      {pts.map((s,i) => (
+                        <circle key={i} cx={tx(i)} cy={ty(s.weight)} r={i===pts.length-1?3:2}
+                          fill={i===pts.length-1 ? lineCol : "var(--up)"}
+                          stroke={lineCol} strokeWidth="1"/>
+                      ))}
+                    </svg>
+                  );
+                })()}
               </div>
             )}
 
@@ -7160,6 +7246,40 @@ function DashboardScreen({ user, weightLog, onLogWeight, onDeleteWeight, onEditW
                 </div>
               </div>
             )}
+          {/* Goal completion banner + phase transition */}
+          {(completionState === "reached" || completionState === "exceeded") && !completionDismissed && (
+            <div style={{padding:"12px 16px",background:`color-mix(in srgb,${completionState==="reached"?"var(--green)":"var(--accent)"} 10%,transparent)`,borderTop:"1px solid var(--border)"}}>
+              <div style={{display:"flex",alignItems:"flex-start",justifyContent:"space-between",marginBottom:8}}>
+                <div>
+                  <div style={{fontSize:9,letterSpacing:2,textTransform:"uppercase",color:completionState==="reached"?"var(--green)":"var(--accent)",marginBottom:3}}>
+                    {completionState==="reached" ? "🎯 GOAL REACHED" : "⚡ GOAL EXCEEDED"}
+                  </div>
+                  <div style={{fontSize:12,color:"var(--faint)",lineHeight:1.5}}>
+                    {completionState==="reached"
+                      ? "You've hit your target. Time to decide what's next."
+                      : `You've gone ${Math.abs(remaining).toFixed(1)} lbs past your target. Plan your next phase.`}
+                  </div>
+                </div>
+                <button onClick={()=>setCompletionDismissed(true)}
+                  style={{background:"none",border:"none",color:"var(--muted)",fontSize:14,cursor:"pointer",padding:"0 2px",flexShrink:0}}>✕</button>
+              </div>
+              <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
+                <button onClick={()=>{ onGoalTransition?.("maintain"); setCompletionDismissed(true); }}
+                  style={{padding:"7px 14px",background:"var(--green)",color:"#080A0C",border:"none",borderRadius:8,fontFamily:"'Bebas Neue',sans-serif",fontSize:12,letterSpacing:1.2,cursor:"pointer"}}>
+                  MAINTAIN
+                </button>
+                <button onClick={()=>{ onEditProfile?.(); setCompletionDismissed(true); }}
+                  style={{padding:"7px 14px",background:"var(--up)",color:"var(--text)",border:"1px solid var(--border)",borderRadius:8,fontFamily:"'Bebas Neue',sans-serif",fontSize:12,letterSpacing:1.2,cursor:"pointer"}}>
+                  NEW PHASE
+                </button>
+                <button onClick={()=>setCompletionDismissed(true)}
+                  style={{padding:"7px 14px",background:"none",color:"var(--faint)",border:"none",fontFamily:"'DM Sans',sans-serif",fontSize:12,cursor:"pointer",textDecoration:"underline",textUnderlineOffset:2}}>
+                  Keep going
+                </button>
+              </div>
+            </div>
+          )}
+
           {/* Phase history footer */}
           {goalHistory.length > 0 && (() => {
             const completed = goalHistory.filter(p => p.outcome !== "ongoing");
@@ -7632,6 +7752,52 @@ function NavIcon({ id }) {
   );
 }
 
+// ── WEEKLY DIGEST ENGINE ─────────────────────────────────────────────────────
+// Deterministic weekly summary — no AI call required. Uses snapshot + trend data.
+
+function computeWeeklyDigest(user, goalConfig, snapshots, weightTrend) {
+  if (!goalConfig || snapshots.length < 2) return null;
+
+  const latest     = snapshots[snapshots.length - 1];
+  const prev       = snapshots[snapshots.length - 2];
+  const goal       = user.goal || "bulk";
+  const info       = getGoalRateInfo(goal);
+  const weekNum    = Math.max(1, Math.round((Date.now() - goalConfig.createdAt) / (7 * 86400000)));
+  const wtChange   = Math.round((latest.weight - prev.weight) * 10) / 10;
+  const remaining  = goalConfig.effectiveGoalWeight !== undefined
+    ? Math.round((goalConfig.effectiveGoalWeight - latest.weight) * 10) / 10 : null;
+  const totalDelta = Math.abs(goalConfig.effectiveGoalWeight - goalConfig.startWeight);
+  const doneDelta  = Math.abs(latest.deltaFromStart || 0);
+  const pct        = totalDelta > 0 ? Math.min(100, Math.round((doneDelta / totalDelta) * 100)) : null;
+  const status     = info ? classifyRate(weightTrend.rate, info) : null;
+
+  const lines = [`Week ${weekNum} check-in — ${new Date().toLocaleDateString("en-US",{month:"short",day:"numeric"})}:`,""];
+  lines.push(`Weight: ${latest.weight} lbs  (${wtChange >= 0 ? "+" : ""}${wtChange} this week)`);
+  if (remaining !== null) lines.push(`To goal: ${Math.abs(remaining).toFixed(1)} lbs${pct !== null ? `  ·  ${pct}% complete` : ""}`);
+  if (latest.etaWeeks)    lines.push(`ETA: ~${latest.etaWeeks} weeks at current pace`);
+  if (latest.adherenceScore !== null) lines.push(`Adherence: ${latest.adherenceScore}/100`);
+  if (status?.label)      lines.push(`Pacing: ${status.label}`);
+  lines.push("");
+
+  // Actionable line based on snapshot state
+  if (latest.plateauDetected) {
+    const lever = goal === "bulk" ? "caloric surplus" : "caloric deficit";
+    lines.push(`⚠ Progress stalled this week. Audit your ${lever} — unlogged extras are usually the culprit.`);
+  } else if (latest.rateAlert === "too_fast" && (goal === "cut" || goal === "contest")) {
+    lines.push(`⚠ Losing faster than optimal. Add 100–150 kcal to protect lean mass.`);
+  } else if (latest.rateAlert === "too_slow") {
+    lines.push(`↓ Rate below target. Tighten tracking — small daily gaps add up.`);
+  } else if (latest.rateAlert === "off_course") {
+    lines.push(`⚠ Moving against your goal direction. Check nutrition targets and adherence.`);
+  } else if (status?.label === "On track" || status?.label === "Stable") {
+    lines.push(`✓ On pace. Consistent week — keep the protocol.`);
+  } else {
+    lines.push(`Log daily weigh-ins to improve trend accuracy.`);
+  }
+
+  return lines.join("\n");
+}
+
 // ─── PROFILE EDIT MODAL ───────────────────────────────────────────────────────
 
 function ProfileEditModal({ user, onSave, onClose }) {
@@ -7945,6 +8111,34 @@ function AppInner() {
     setUser(newUser);
   };
 
+  const handleGoalTransition = async (newGoalType) => {
+    if (!user) return;
+    const newUser = { ...user, goal: newGoalType };
+    window.storage.set(USER_KEY, JSON.stringify(newUser)).catch(() => {});
+    const gc = computeGoalConfig(newUser);
+    window.storage.set(GOAL_CONFIG_KEY, JSON.stringify(gc)).catch(() => {});
+    // Close current phase as "completed", open new one
+    try {
+      const r    = await window.storage.get(GOAL_HISTORY_KEY);
+      const hist = r?.value ? (JSON.parse(r.value) || []) : [];
+      const now  = Date.now();
+      const closed = hist.map((p, i) =>
+        i === hist.length - 1 && p.outcome === "ongoing"
+          ? { ...p, endTs: now, endWeight: currentWeight, outcome: "completed" }
+          : p
+      );
+      closed.push({
+        phase: newGoalType, startTs: now, endTs: null,
+        startWeight: currentWeight, endWeight: null,
+        startBfPct: gc.startBfPct, endBfPct: null,
+        goalWeight: gc.effectiveGoalWeight, outcome: "ongoing",
+      });
+      window.storage.set(GOAL_HISTORY_KEY, JSON.stringify(closed)).catch(() => {});
+    } catch {}
+    generateGoalRationale(newUser, gc);
+    setUser(newUser);
+  };
+
   const handleMiniEnd = () => {
     if (endConfirm) { endSession(); setEndConfirm(false); }
     else { setEndConfirm(true); setTimeout(() => setEndConfirm(false), 3000); }
@@ -8038,7 +8232,7 @@ function AppInner() {
                 onLogNow={() => setTab("home")}
               />
             )}
-            {tab==="home"&&<DashboardScreen user={enrichedUser} weightLog={weightLog} onLogWeight={handleLogWeight} onDeleteWeight={handleDeleteWeight} onEditWeight={handleEditWeight} onNavigate={setTab} onEditProfile={()=>setShowProfileEdit(true)}/>}
+            {tab==="home"&&<DashboardScreen user={enrichedUser} weightLog={weightLog} onLogWeight={handleLogWeight} onDeleteWeight={handleDeleteWeight} onEditWeight={handleEditWeight} onNavigate={setTab} onEditProfile={()=>setShowProfileEdit(true)} onGoalTransition={handleGoalTransition}/>}
             {tab==="training"&&<TrainingScreen user={enrichedUser} onNavigate={setTab}/>}
             {tab==="nutrition"&&<NutritionScreen user={enrichedUser}/>}
             {tab==="postprep"&&user?.goal==="contest"&&<PostPrepScreen user={enrichedUser}/>}
