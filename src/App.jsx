@@ -845,6 +845,7 @@ const GOALS = [
 const USER_KEY        = "apex_user_v1";
 const NOTIF_KEY       = "apex_notif_v1";
 const GOAL_CONFIG_KEY = "apex_goal_config_v1";
+const SNAPSHOTS_KEY   = "apex_snapshots_v1";
 const NUTRITION_KEY   = "apex_nutrition_v1";
 const CHECKIN_KEY     = "apex_checkins_v1";
 const PROTOCOL_KEY    = "apex_protocol_v1";
@@ -1593,6 +1594,174 @@ function computeGoalConfig(user) {
     overrideTs:           null,
     effectiveGoalWeight:  goalWeightLbs,
   };
+}
+
+// ── PHASE 2: SNAPSHOT ENGINE ─────────────────────────────────────────────────
+
+// Returns true when enough new data has accumulated to justify a new snapshot
+function shouldTakeSnapshot(weightLog, allSnapshots) {
+  if (!weightLog || weightLog.length < 3) return false;
+  if (!allSnapshots.length) return true;                         // first snapshot ever
+
+  const last       = allSnapshots[allSnapshots.length - 1];
+  const daysSince  = Math.floor((Date.now() - last.ts) / 86400000);
+  if (daysSince >= 7) return true;                               // weekly cadence
+
+  const newLogs = weightLog.filter(e => e.ts > last.ts);
+  return newLogs.length >= 4;                                    // 4+ new data points
+}
+
+// Captures a full physiological + progress state at a point in time
+function computeProgressSnapshot(user, sortedLog, goalConfig, nutLogs, trainingHistory) {
+  const bodyComp        = computeBodyComp(user);
+  const { lbmLbs, bfPct, ffmi, weightKg } = bodyComp;  // lbmLbs available via bodyComp
+  const currentWeightLbs = Math.round(weightKg * 2.20462 * 10) / 10;
+  const lbmLbsVal        = Math.round(bodyComp.lbmLbs * 10) / 10;
+
+  const trend    = analyzeWeightTrend(sortedLog);
+  const info     = getGoalRateInfo(user.goal || "bulk");
+
+  // Plateau: meaningful goal, enough data, near-zero movement
+  const goalDir  = info?.dir ?? 0;
+  const moving   = Math.abs(trend.rate) > 0.15;
+  const plateauDetected = !!(
+    info && trend.dataPoints >= 10 && !moving && goalDir !== 0
+  );
+
+  // Rate alert
+  let rateAlert = null;
+  if (info && trend.dataPoints >= 5) {
+    const st = classifyRate(trend.rate, info);
+    if      (st.label === "Too fast")                        rateAlert = "too_fast";
+    else if (st.label === "Too slow")                        rateAlert = "too_slow";
+    else if (goalDir ===  1 && trend.rate < -0.1)           rateAlert = "off_course";
+    else if (goalDir === -1 && trend.rate >  0.1)           rateAlert = "off_course";
+  }
+
+  // Progress toward goal
+  const effective    = goalConfig?.effectiveGoalWeight ?? null;
+  const weightToGoal = effective !== null
+    ? Math.round((currentWeightLbs - effective) * 10) / 10 : null;
+  const bfToGoal     = goalConfig?.goalBfPct !== undefined
+    ? Math.round((bfPct - goalConfig.goalBfPct) * 10) / 10 : null;
+  const deltaFromStart = goalConfig?.startWeight !== undefined
+    ? Math.round((currentWeightLbs - goalConfig.startWeight) * 10) / 10 : null;
+
+  // Recalculated ETA from current rate
+  const etaWeeks = (effective !== null && Math.abs(trend.rate) > 0.05)
+    ? Math.ceil(Math.abs(weightToGoal) / Math.abs(trend.rate))
+    : goalConfig?.etaWeeks ?? null;
+
+  // Adherence (training + nutrition)
+  const sessWk         = { beginner:3, intermediate:4, advanced:5, competitor:6 }[user.level||"intermediate"] || 4;
+  const adherenceScore = computeAdherenceScore(nutLogs, trainingHistory, sessWk);
+
+  return {
+    ts:               Date.now(),
+    weight:           currentWeightLbs,
+    estimatedBfPct:   Math.round(bfPct  * 10) / 10,
+    estimatedLbmLbs:  lbmLbsVal,
+    ffmi:             Math.round(ffmi   * 10) / 10,
+    weeklyRate:       trend.rate,
+    rateConfidence:   trend.confidence,
+    dataPoints:       trend.dataPoints,
+    weightToGoal,
+    bfToGoal,
+    deltaFromStart,
+    etaWeeks,
+    adherenceScore,
+    plateauDetected,
+    rateAlert,
+    goalRevisionSuggested: false,   // set by evaluateGoalRevision
+    revisionReason:        null,
+    revisionTrigger:       null,
+  };
+}
+
+// Analyses a new snapshot against history and goalConfig;
+// returns a structured revision suggestion or null
+function evaluateGoalRevision(snap, goalConfig, allSnapshots) {
+  if (!snap || !goalConfig) return null;
+
+  const goal    = goalConfig.goalType;
+  const recent  = allSnapshots.slice(-4);   // ~4 weeks lookback
+
+  // ── Trigger 1: LBM erosion on cut ─────────────────────────────────────────
+  if ((goal === "cut" || goal === "contest") && goalConfig.startLbmLbs) {
+    const lbmLoss = goalConfig.startLbmLbs - snap.estimatedLbmLbs;
+    if (lbmLoss > 4) {
+      const revised = Math.round(snap.estimatedLbmLbs / (1 - goalConfig.goalBfPct / 100) * 10) / 10;
+      return {
+        suggested:          true,
+        trigger:            "lbm_loss",
+        confidence:         "high",
+        revisedGoalWeight:  revised,
+        reason: `You've lost ~${lbmLoss.toFixed(1)} lbs of lean mass since starting. A revised goal of ${revised} lbs still hits ${goalConfig.goalBfPct}% BF while protecting what you've built.`,
+      };
+    }
+  }
+
+  // ── Trigger 2: Persistent plateau ─────────────────────────────────────────
+  const plateauStreak = recent.filter(s => s.plateauDetected).length;
+  if (snap.plateauDetected && plateauStreak >= 2) {
+    const lever = (goal === "cut" || goal === "contest") ? "calorie deficit" : "surplus";
+    return {
+      suggested:         true,
+      trigger:           "plateau",
+      confidence:        "medium",
+      revisedGoalWeight: null,
+      reason: `Trend stalled (< 0.15 lbs/wk) for ${plateauStreak + 1} consecutive snapshots. Your ${lever} may need recalibration, or this weight is a natural set-point worth reassessing.`,
+    };
+  }
+
+  // ── Trigger 3: Timeline slippage ≥ 1.6× original ──────────────────────────
+  if (snap.etaWeeks && goalConfig.etaWeeks && snap.rateConfidence >= 0.5) {
+    if (snap.etaWeeks > goalConfig.etaWeeks * 1.6) {
+      return {
+        suggested:         true,
+        trigger:           "timeline_extended",
+        confidence:        "medium",
+        revisedGoalWeight: null,
+        reason: `Original ETA was ${goalConfig.etaWeeks} weeks; at your current pace it's now ${snap.etaWeeks}. Tighten your protocol or reset the timeline.`,
+      };
+    }
+  }
+
+  // ── Trigger 4: Running leaner than projected (cut ahead of pace) ───────────
+  if ((goal === "cut" || goal === "contest") && goalConfig.startBfPct && goalConfig.etaWeeks > 0) {
+    const weeksElapsed    = Math.max(1, Math.round((Date.now() - goalConfig.createdAt) / (7 * 86400000)));
+    const expectedDrop    = (goalConfig.startBfPct - goalConfig.goalBfPct) * (weeksElapsed / goalConfig.etaWeeks);
+    const actualDrop      = goalConfig.startBfPct - snap.estimatedBfPct;
+    if (actualDrop > expectedDrop * 1.4 && actualDrop > 3 && weeksElapsed >= 4) {
+      const projected = Math.round(snap.estimatedLbmLbs / (1 - goalConfig.goalBfPct / 100) * 10) / 10;
+      return {
+        suggested:          true,
+        trigger:            "ahead_of_pace",
+        confidence:         "medium",
+        revisedGoalWeight:  projected,
+        reason: `You're leaning out ahead of schedule. At this rate you'll hit ${goalConfig.goalBfPct}% BF at ~${projected} lbs — ${(goalConfig.effectiveGoalWeight - projected).toFixed(1)} lbs above your original target. Stopping here protects performance and hormones.`,
+      };
+    }
+  }
+
+  // ── Trigger 5: Fat-dominant bulk (FFMI ceiling approaching) ───────────────
+  if (goal === "bulk" && snap.ffmi >= 22.5 && recent.length >= 2) {
+    const first   = recent[0];
+    const wtGain  = snap.weight - first.weight;
+    const lbmGain = snap.estimatedLbmLbs - first.estimatedLbmLbs;
+    const efficiency = wtGain > 0.5 ? lbmGain / wtGain : 1;
+    if (efficiency < 0.35 && wtGain > 2) {
+      return {
+        suggested:         true,
+        trigger:           "ffmi_ceiling",
+        confidence:        "medium",
+        revisedGoalWeight: null,
+        reason: `At FFMI ${snap.ffmi.toFixed(1)}, recent gains are ~${Math.round(efficiency * 100)}% lean mass. Fat-dominant gains near your ceiling suggest a cut phase would sharpen your physique before your next bulk.`,
+      };
+    }
+  }
+
+  return null;
 }
 
 // ── SECTION 5: E1RM & STRENGTH TREND ─────────────────────────────────────────
@@ -6189,6 +6358,9 @@ function DashboardScreen({ user, weightLog, onLogWeight, onDeleteWeight, onEditW
   const [protocolData, setProtocolData] = useState(null);
   const [showProtocol, setShowProtocol] = useState(false);
   const [storedGoalConfig, setStoredGoalConfig] = useState(null);
+  const [snapshots, setSnapshots] = useState([]);
+  const [goalRevision, setGoalRevision] = useState(null);
+  const snapshotTriggerRef = useRef(-1);   // tracks sortedLog.length at last trigger
   const [bfOverride, setBfOverride] = useState(null);
   const [showBfEditor, setShowBfEditor] = useState(false);
   const [bfTab, setBfTab] = useState("manual");
@@ -6237,6 +6409,9 @@ function DashboardScreen({ user, weightLog, onLogWeight, onDeleteWeight, onEditW
     }).catch(() => {});
     window.storage.get(GOAL_CONFIG_KEY).then(r => {
       if (r?.value) try { setStoredGoalConfig(JSON.parse(r.value)); } catch {}
+    }).catch(() => {});
+    window.storage.get(SNAPSHOTS_KEY).then(r => {
+      if (r?.value) try { setSnapshots(JSON.parse(r.value) || []); } catch {}
     }).catch(() => {});
   }, []);
 
@@ -6362,6 +6537,36 @@ function DashboardScreen({ user, weightLog, onLogWeight, onDeleteWeight, onEditW
     if (storedGoalConfig && storedGoalConfig.goalType === user.goal) return storedGoalConfig;
     return computeGoalConfig(user);
   }, [storedGoalConfig, user]);
+  // Latest snapshot for live ETA and delta display
+  const latestSnapshot = snapshots.length ? snapshots[snapshots.length - 1] : null;
+
+  // ── SNAPSHOT TRIGGER ──────────────────────────────────────────────────────
+  // Fires whenever a new weight entry is added; checks throttle + saves snapshot
+  useEffect(() => {
+    if (sortedLog.length < 3 || !goalConfig) return;
+    if (sortedLog.length === snapshotTriggerRef.current) return;   // already processed
+
+    window.storage.get(SNAPSHOTS_KEY).then(r => {
+      const existing = r?.value ? (JSON.parse(r.value) || []) : [];
+      snapshotTriggerRef.current = sortedLog.length;               // mark as processed
+
+      if (!shouldTakeSnapshot(sortedLog, existing)) return;
+
+      const snap     = computeProgressSnapshot(user, sortedLog, goalConfig, nutLogs, history);
+      const revision = evaluateGoalRevision(snap, goalConfig, [...existing, snap]);
+
+      if (revision?.suggested) {
+        snap.goalRevisionSuggested = true;
+        snap.revisionReason  = revision.reason;
+        snap.revisionTrigger = revision.trigger;
+        setGoalRevision(revision);
+      }
+
+      const updated = [...existing, snap].slice(-52);  // keep ~1 year of weekly snaps
+      setSnapshots(updated);
+      window.storage.set(SNAPSHOTS_KEY, JSON.stringify(updated)).catch(() => {});
+    }).catch(() => {});
+  }, [sortedLog.length]);   // eslint-disable-line react-hooks/exhaustive-deps
   const confidenceScore = computeConfidenceScore(sortedLog, history, nutLogs);
 
   // Override body comp display if user has set a manual BF%
@@ -6690,60 +6895,131 @@ function DashboardScreen({ user, weightLog, onLogWeight, onDeleteWeight, onEditW
         )}
       </div>
 
-      {/* GOAL CONFIG CARD */}
-      {goalConfig && (
-        <div style={{margin:"0 24px 20px",background:`var(--surface)`,border:`1px solid var(--border)`,borderRadius:16,overflow:"hidden"}}>
-          {/* Header */}
-          <div style={{padding:"14px 16px 10px",borderBottom:`1px solid var(--border)`,display:"flex",alignItems:"center",justifyContent:"space-between"}}>
-            <div>
-              <div style={{fontSize:9,letterSpacing:2,textTransform:"uppercase",color:`var(--accent)`,marginBottom:2}}>● Physique Target</div>
-              <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:18,letterSpacing:1,color:`var(--text)`}}>
-                {goalConfig.isDualTarget ? "COMPOSITION SHIFT" : `${goalConfig.effectiveGoalWeight} LBS`}
+      {/* GOAL CONFIG CARD — Phase 2: live delta, progress bar, revision banner */}
+      {goalConfig && (() => {
+        const totalDelta   = Math.abs(goalConfig.effectiveGoalWeight - goalConfig.startWeight);
+        const rawDelta     = latestSnapshot?.deltaFromStart ?? (currentWeight ? currentWeight - goalConfig.startWeight : 0);
+        const goalDir      = goalConfig.isDualTarget ? 0 : Math.sign(goalConfig.effectiveGoalWeight - goalConfig.startWeight);
+        // Progress: how far along toward the goal (0-100)
+        const progressPct  = totalDelta > 0
+          ? Math.min(100, Math.max(0, (goalDir * rawDelta / totalDelta) * 100))
+          : 0;
+        const liveEta      = latestSnapshot?.etaWeeks ?? goalConfig.etaWeeks;
+        const liveEtaChanged = latestSnapshot?.etaWeeks && latestSnapshot.etaWeeks !== goalConfig.etaWeeks;
+        const s            = goalConfig.sustainabilityScore;
+        const ratingCol    = s >= 75 ? "var(--green)" : s >= 50 ? "var(--accent)" : "var(--red)";
+        const rateAlertCol = { too_fast:"var(--accent)", too_slow:"var(--red)", off_course:"var(--red)" };
+
+        return (
+          <div style={{margin:"0 24px 20px",background:"var(--surface)",border:"1px solid var(--border)",borderRadius:16,overflow:"hidden"}}>
+
+            {/* Header: goal weight + sustainability badge */}
+            <div style={{padding:"14px 16px 10px",borderBottom:"1px solid var(--border)",display:"flex",alignItems:"center",justifyContent:"space-between"}}>
+              <div>
+                <div style={{fontSize:9,letterSpacing:2,textTransform:"uppercase",color:"var(--accent)",marginBottom:2}}>● Physique Target</div>
+                <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:20,letterSpacing:1,color:"var(--text)"}}>
+                  {goalConfig.isDualTarget ? "COMPOSITION SHIFT" : `${goalConfig.effectiveGoalWeight} LBS`}
+                </div>
+              </div>
+              <div style={{display:"flex",flexDirection:"column",alignItems:"flex-end",gap:4}}>
+                <div style={{display:"inline-flex",alignItems:"center",gap:5,padding:"4px 10px",borderRadius:20,background:`color-mix(in srgb,${ratingCol} 12%,transparent)`,border:`1px solid color-mix(in srgb,${ratingCol} 30%,transparent)`}}>
+                  <div style={{width:5,height:5,borderRadius:"50%",background:ratingCol}}/>
+                  <span style={{fontSize:9,fontFamily:"'Bebas Neue',sans-serif",letterSpacing:1.5,color:ratingCol}}>{goalConfig.realisticRating.toUpperCase()}</span>
+                </div>
+                <div style={{fontSize:10,color:"var(--muted)"}}>{goalConfig.goalBfPct}% BF target</div>
               </div>
             </div>
-            <div style={{textAlign:"right"}}>
-              {/* Sustainability badge */}
-              {(() => {
-                const s = goalConfig.sustainabilityScore;
-                const col = s >= 75 ? "var(--green)" : s >= 50 ? "var(--accent)" : "var(--red)";
-                return (
-                  <div style={{display:"inline-flex",alignItems:"center",gap:5,padding:"4px 10px",borderRadius:20,background:`color-mix(in srgb,${col} 12%,transparent)`,border:`1px solid color-mix(in srgb,${col} 30%,transparent)`}}>
-                    <div style={{width:5,height:5,borderRadius:"50%",background:col}}/>
-                    <span style={{fontSize:9,fontFamily:"'Bebas Neue',sans-serif",letterSpacing:1.5,color:col}}>{goalConfig.realisticRating.toUpperCase()}</span>
+
+            {/* Progress bar + delta */}
+            {totalDelta > 0 && (
+              <div style={{padding:"10px 16px 8px",borderBottom:"1px solid var(--border)"}}>
+                <div style={{display:"flex",justifyContent:"space-between",alignItems:"baseline",marginBottom:5}}>
+                  <div style={{fontSize:9,letterSpacing:1.5,textTransform:"uppercase",color:"var(--muted)"}}>Progress</div>
+                  <div style={{fontSize:10,color:"var(--faint)"}}>
+                    {rawDelta !== 0
+                      ? `${rawDelta > 0 ? "+" : ""}${rawDelta.toFixed(1)} lbs from start`
+                      : "at baseline"}
                   </div>
-                );
-              })()}
-              <div style={{fontSize:10,color:`var(--muted)`,marginTop:4}}>{goalConfig.goalBfPct}% BF target</div>
-            </div>
-          </div>
-
-          {/* Key metrics row */}
-          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",borderBottom:`1px solid var(--border)`}}>
-            {[
-              { label:"ETA",      val: goalConfig.etaWeeks > 0 ? `${goalConfig.etaWeeks}w` : "—", sub: goalConfig.etaDate },
-              { label:"LBM",      val: `${goalConfig.goalLbmLbs}`, sub:"lbs lean mass" },
-              { label:"Sustain",  val: `${goalConfig.sustainabilityScore}`, sub:"/ 100" },
-            ].map((m, i) => (
-              <div key={m.label} style={{padding:"10px 12px",borderRight: i < 2 ? `1px solid var(--border)` : "none"}}>
-                <div style={{fontSize:9,letterSpacing:1.5,textTransform:"uppercase",color:`var(--muted)`,marginBottom:3}}>{m.label}</div>
-                <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:20,letterSpacing:.5,color:`var(--text)`,lineHeight:1}}>{m.val}</div>
-                <div style={{fontSize:9,color:`var(--faint)`,marginTop:2}}>{m.sub}</div>
+                </div>
+                <div style={{height:6,background:"var(--up)",borderRadius:3,overflow:"hidden"}}>
+                  <div style={{height:"100%",width:`${progressPct}%`,background:"var(--accent)",borderRadius:3,transition:"width 1s cubic-bezier(.22,1,.36,1)"}}/>
+                </div>
+                <div style={{fontSize:9,color:"var(--faint)",marginTop:3,textAlign:"right"}}>{Math.round(progressPct)}% of the way there</div>
               </div>
-            ))}
-          </div>
+            )}
 
-          {/* Visual outcome */}
-          <div style={{padding:"10px 16px 12px"}}>
-            <div style={{fontSize:10,fontWeight:600,color:`var(--muted)`,letterSpacing:.5,marginBottom:4}}>Projected outcome</div>
-            <div style={{fontSize:12,color:`var(--faint)`,lineHeight:1.55,fontStyle:"italic"}}>"{goalConfig.projectedVisualOutcome}"</div>
-            {goalConfig.currentVisualOutcome !== goalConfig.projectedVisualOutcome && (
-              <div style={{fontSize:10,color:`var(--muted)`,marginTop:5}}>
-                Currently: {goalConfig.currentVisualOutcome}
+            {/* Key metrics row */}
+            <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",borderBottom:"1px solid var(--border)"}}>
+              {[
+                {
+                  label: "ETA",
+                  val:   liveEta > 0 ? `${liveEta}w` : "—",
+                  sub:   liveEtaChanged ? `updated from ${goalConfig.etaWeeks}w` : goalConfig.etaDate,
+                  color: liveEtaChanged && latestSnapshot.etaWeeks > goalConfig.etaWeeks * 1.2 ? "var(--accent)" : "var(--text)",
+                },
+                {
+                  label: "LBM Goal",
+                  val:   `${goalConfig.goalLbmLbs}`,
+                  sub:   latestSnapshot?.estimatedLbmLbs ? `now ${latestSnapshot.estimatedLbmLbs} lbs` : "lbs lean mass",
+                  color: "var(--text)",
+                },
+                {
+                  label: "Sustain",
+                  val:   `${goalConfig.sustainabilityScore}`,
+                  sub:   "/ 100",
+                  color: ratingCol,
+                },
+              ].map((m, i) => (
+                <div key={m.label} style={{padding:"10px 12px",borderRight: i < 2 ? "1px solid var(--border)" : "none"}}>
+                  <div style={{fontSize:9,letterSpacing:1.5,textTransform:"uppercase",color:"var(--muted)",marginBottom:3}}>{m.label}</div>
+                  <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:20,letterSpacing:.5,color:m.color,lineHeight:1}}>{m.val}</div>
+                  <div style={{fontSize:9,color:"var(--faint)",marginTop:2}}>{m.sub}</div>
+                </div>
+              ))}
+            </div>
+
+            {/* Rate alert from latest snapshot */}
+            {latestSnapshot?.rateAlert && (
+              <div style={{padding:"8px 16px",borderBottom:"1px solid var(--border)",display:"flex",alignItems:"center",gap:8,background:`color-mix(in srgb,${rateAlertCol[latestSnapshot.rateAlert]} 8%,transparent)`}}>
+                <div style={{width:5,height:5,borderRadius:"50%",flexShrink:0,background:rateAlertCol[latestSnapshot.rateAlert]}}/>
+                <div style={{fontSize:11,color:rateAlertCol[latestSnapshot.rateAlert]}}>
+                  {latestSnapshot.rateAlert === "too_fast" && "Rate faster than target — watch muscle retention and recovery"}
+                  {latestSnapshot.rateAlert === "too_slow" && "Rate slower than target — review calorie targets and adherence"}
+                  {latestSnapshot.rateAlert === "off_course" && "Moving in the wrong direction — check nutrition tracking"}
+                </div>
+              </div>
+            )}
+
+            {/* Visual outcome */}
+            <div style={{padding:"10px 16px",borderBottom: goalRevision ? "1px solid var(--border)" : "none"}}>
+              <div style={{fontSize:10,fontWeight:600,color:"var(--muted)",letterSpacing:.5,marginBottom:3}}>Projected outcome</div>
+              <div style={{fontSize:12,color:"var(--faint)",lineHeight:1.55,fontStyle:"italic"}}>"{goalConfig.projectedVisualOutcome}"</div>
+              {goalConfig.currentVisualOutcome !== goalConfig.projectedVisualOutcome && (
+                <div style={{fontSize:10,color:"var(--muted)",marginTop:4}}>Currently: {goalConfig.currentVisualOutcome}</div>
+              )}
+            </div>
+
+            {/* Goal revision suggestion */}
+            {goalRevision?.suggested && (
+              <div style={{padding:"12px 16px",background:`color-mix(in srgb,var(--accent) 8%,transparent)`}}>
+                <div style={{display:"flex",alignItems:"flex-start",justifyContent:"space-between",gap:8}}>
+                  <div style={{flex:1}}>
+                    <div style={{fontSize:9,letterSpacing:2,textTransform:"uppercase",color:"var(--accent)",marginBottom:4}}>⚡ APEX SUGGESTS</div>
+                    <div style={{fontSize:12,color:"var(--faint)",lineHeight:1.6}}>{goalRevision.reason}</div>
+                    {goalRevision.revisedGoalWeight && (
+                      <div style={{marginTop:6,fontSize:11,fontFamily:"'Bebas Neue',sans-serif",letterSpacing:1,color:"var(--accent)"}}>
+                        Revised target: {goalRevision.revisedGoalWeight} lbs
+                      </div>
+                    )}
+                  </div>
+                  <button onClick={() => setGoalRevision(null)}
+                    style={{background:"none",border:"none",color:"var(--muted)",fontSize:14,cursor:"pointer",padding:"0 2px",flexShrink:0,lineHeight:1}}>✕</button>
+                </div>
               </div>
             )}
           </div>
-        </div>
-      )}
+        );
+      })()}
 
       {/* SECONDARY STAT STRIP — Sessions / Train / Rest / Weekly Avg */}
       <div className="stat-strip" style={{gridTemplateColumns: calTarget?.cyclingActive ? "1fr 1fr 1fr 1fr" : "1fr 1fr 1fr"}}>
