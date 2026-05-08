@@ -6437,6 +6437,8 @@ function DashboardScreen({ user, weightLog, onLogWeight, onDeleteWeight, onEditW
   const [showOverrideInput, setShowOverrideInput] = useState(false);
   const [overrideVal, setOverrideVal] = useState("");
   const [completionDismissed, setCompletionDismissed] = useState(false);
+  const [showReport, setShowReport] = useState(false);
+  const [reportData, setReportData] = useState({ text: null, ts: null, loading: false });
   const snapshotTriggerRef = useRef(-1);   // tracks sortedLog.length at last trigger
   const [bfOverride, setBfOverride] = useState(null);
   const [showBfEditor, setShowBfEditor] = useState(false);
@@ -6639,6 +6641,18 @@ function DashboardScreen({ user, weightLog, onLogWeight, onDeleteWeight, onEditW
   // Latest snapshot for live ETA and delta display
   const latestSnapshot = snapshots.length ? snapshots[snapshots.length - 1] : null;
 
+  const handleGenerateReport = async () => {
+    if (!goalConfig) return;
+    setReportData({ text: null, ts: null, loading: true });
+    setShowReport(true);
+    try {
+      const text = await generateIntelligenceReport(user, goalConfig, snapshots, weightTrend, goalPacing);
+      setReportData({ text, ts: Date.now(), loading: false });
+    } catch {
+      setReportData({ text: null, ts: Date.now(), loading: false });
+    }
+  };
+
   // ── SNAPSHOT TRIGGER ──────────────────────────────────────────────────────
   // Fires whenever a new weight entry is added; checks throttle + saves snapshot
   useEffect(() => {
@@ -6776,6 +6790,14 @@ function DashboardScreen({ user, weightLog, onLogWeight, onDeleteWeight, onEditW
   return (
     <div className="screen">
       {/* HEADER */}
+      {showReport && (
+        <IntelligenceReportModal
+          text={reportData.text} loading={reportData.loading} ts={reportData.ts}
+          onClose={()=>setShowReport(false)}
+          onOpenCoach={()=>{ setShowReport(false); onNavigate("coach"); }}
+        />
+      )}
+
       <div className="sh">
         <div>
           <div className="sh-label">{(()=>{const h=new Date().getHours();return h<11?"Good morning,":h<17?"Good afternoon,":h<21?"Good evening,":"Hey,"})()}</div>
@@ -7203,13 +7225,24 @@ function DashboardScreen({ user, weightLog, onLogWeight, onDeleteWeight, onEditW
               </div>
             )}
 
-            {/* Visual outcome */}
-            <div style={{padding:"10px 16px",borderBottom: goalRevision ? "1px solid var(--border)" : "none"}}>
-              <div style={{fontSize:10,fontWeight:600,color:"var(--muted)",letterSpacing:.5,marginBottom:3}}>Projected outcome</div>
-              <div style={{fontSize:12,color:"var(--faint)",lineHeight:1.55,fontStyle:"italic"}}>"{goalConfig.projectedVisualOutcome}"</div>
-              {goalConfig.currentVisualOutcome !== goalConfig.projectedVisualOutcome && (
-                <div style={{fontSize:10,color:"var(--muted)",marginTop:4}}>Currently: {goalConfig.currentVisualOutcome}</div>
-              )}
+            {/* Visual outcome + Full Analysis CTA */}
+            <div style={{padding:"10px 16px",borderBottom:"1px solid var(--border)"}}>
+              <div style={{display:"flex",alignItems:"flex-start",justifyContent:"space-between",gap:12}}>
+                <div style={{flex:1}}>
+                  <div style={{fontSize:10,fontWeight:600,color:"var(--muted)",letterSpacing:.5,marginBottom:3}}>Projected outcome</div>
+                  <div style={{fontSize:12,color:"var(--faint)",lineHeight:1.55,fontStyle:"italic"}}>"{goalConfig.projectedVisualOutcome}"</div>
+                  {goalConfig.currentVisualOutcome !== goalConfig.projectedVisualOutcome && (
+                    <div style={{fontSize:10,color:"var(--muted)",marginTop:4}}>Currently: {goalConfig.currentVisualOutcome}</div>
+                  )}
+                </div>
+                <button onClick={handleGenerateReport}
+                  style={{flexShrink:0,padding:"7px 12px",background:"color-mix(in srgb,var(--accent) 14%,transparent)",
+                    border:"1px solid color-mix(in srgb,var(--accent) 35%,transparent)",
+                    borderRadius:8,fontFamily:"'Bebas Neue',sans-serif",fontSize:10,letterSpacing:1.5,
+                    color:"var(--accent)",cursor:"pointer",whiteSpace:"nowrap",alignSelf:"flex-start",marginTop:2}}>
+                  ⚡ FULL ANALYSIS
+                </button>
+              </div>
             </div>
 
             {/* Goal revision suggestion — Accept / Defer 7d / Dismiss */}
@@ -7419,6 +7452,65 @@ function DashboardScreen({ user, weightLog, onLogWeight, onDeleteWeight, onEditW
                 <div style={{fontSize:9,color:"var(--faint)",marginTop:3}}>Goal: {goalConfig.goalLbmLbs} lbs</div>
               </div>
             </div>
+            {/* FFMI progress meter */}
+            {latSnap.ffmi && (() => {
+              const ceiling = user.sex === "female" ? 21 : 25.5;
+              const floor   = 14;
+              const pct     = Math.min(100, Math.max(0, ((latSnap.ffmi - floor) / (ceiling - floor)) * 100));
+              const ffmiCol = pct < 55 ? "var(--green)" : pct < 78 ? "var(--accent)" : "var(--red)";
+              return (
+                <div style={{padding:"10px 14px",borderTop:"1px solid var(--border)"}}>
+                  <div style={{display:"flex",justifyContent:"space-between",alignItems:"baseline",marginBottom:4}}>
+                    <div style={{fontSize:9,letterSpacing:1.5,textTransform:"uppercase",color:"var(--muted)"}}>FFMI — Muscle Index</div>
+                    <div style={{display:"flex",alignItems:"baseline",gap:4}}>
+                      <span style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:16,color:ffmiCol}}>{latSnap.ffmi.toFixed(1)}</span>
+                      <span style={{fontSize:9,color:"var(--muted)"}}>&nbsp;/ {ceiling}</span>
+                    </div>
+                  </div>
+                  <div style={{height:4,background:"var(--up)",borderRadius:2,overflow:"hidden",marginBottom:3}}>
+                    <div style={{height:"100%",width:`${pct}%`,background:ffmiCol,borderRadius:2,transition:"width .8s cubic-bezier(.22,1,.36,1)"}}/>
+                  </div>
+                  <div style={{fontSize:9,color:"var(--faint)"}}>
+                    {pct < 40 ? "Significant growth potential — beginner/early development"
+                    : pct < 65 ? "Intermediate range — strong growth potential remains"
+                    : pct < 82 ? "Advanced — approaching natural ceiling"
+                    : "Near natural limit — gains increasingly fat-dominant"}
+                  </div>
+                </div>
+              );
+            })()}
+
+            {/* Adherence trend sparkline */}
+            {(() => {
+              const adhPts = snapshots.slice(-8).map(s => s.adherenceScore).filter(v => v != null);
+              if (adhPts.length < 2) return null;
+              const latAdh = adhPts[adhPts.length - 1];
+              const avgAdh = Math.round(adhPts.reduce((s,v) => s+v, 0) / adhPts.length);
+              const W = 200, H = 24;
+              const mn = Math.max(0, Math.min(...adhPts) - 5);
+              const mx = Math.min(100, Math.max(...adhPts) + 5);
+              const rng = mx - mn || 1;
+              const tx = i => (i / (adhPts.length-1)) * (W-4) + 2;
+              const ty = v => H - 2 - ((v - mn) / rng) * (H-4);
+              const d = adhPts.map((v,i) => `${i===0?"M":"L"}${tx(i).toFixed(1)} ${ty(v).toFixed(1)}`).join(" ");
+              const col = latAdh >= 70 ? "var(--green)" : latAdh >= 45 ? "var(--accent)" : "var(--red)";
+              return (
+                <div style={{padding:"10px 14px",borderTop:"1px solid var(--border)"}}>
+                  <div style={{display:"flex",justifyContent:"space-between",alignItems:"baseline",marginBottom:4}}>
+                    <div style={{fontSize:9,letterSpacing:1.5,textTransform:"uppercase",color:"var(--muted)"}}>Adherence</div>
+                    <div style={{display:"flex",alignItems:"baseline",gap:5}}>
+                      <span style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:16,color:col}}>{latAdh}</span>
+                      <span style={{fontSize:9,color:"var(--muted)"}}>/ 100&nbsp;·&nbsp;avg {avgAdh}</span>
+                    </div>
+                  </div>
+                  <svg viewBox={`0 0 ${W} ${H}`} style={{width:"100%",height:24,display:"block"}}>
+                    <path d={d} fill="none" stroke={col} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                    <circle cx={tx(adhPts.length-1)} cy={ty(adhPts[adhPts.length-1])} r={2.5} fill={col}/>
+                  </svg>
+                </div>
+              );
+            })()}
+
             {/* Bridge status */}
             {goalCalAdj !== 0 && (
               <div style={{padding:"7px 14px",borderTop:"1px solid var(--border)",background:"color-mix(in srgb,var(--accent) 6%,transparent)",display:"flex",alignItems:"center",gap:8}}>
@@ -7914,6 +8006,59 @@ function computeWeeklyDigest(user, goalConfig, snapshots, weightTrend) {
   return lines.join("\n");
 }
 
+// ── INTELLIGENCE REPORT ──────────────────────────────────────────────────────
+// Flagship AI analysis synthesising all system data into a structured report.
+// Uses claude-sonnet-4-6 for richer language and deeper physiological insight.
+
+async function generateIntelligenceReport(user, goalConfig, snapshots, weightTrend, goalPacing) {
+  const latest    = snapshots.length ? snapshots[snapshots.length - 1] : null;
+  const bodyComp  = computeBodyComp(user);
+  const weightLbs = Math.round(bodyComp.weightKg * 2.20462 * 10) / 10;
+
+  const lines = [
+    `APEX Intelligence Report — ${user.name}, ${user.sex || "male"}, ${user.age}yo`,
+    `Goal: ${user.goal || "bulk"} · ${user.level || "intermediate"} · ${user.activity || "moderately_active"}`,
+    ``,
+    `CURRENT BODY COMPOSITION`,
+    `  Weight: ${weightLbs} lbs | BF: ~${bodyComp.bfPct.toFixed(1)}% | LBM: ${(bodyComp.lbmKg * 2.20462).toFixed(1)} lbs | FFMI: ${bodyComp.ffmi.toFixed(1)}`,
+    ``,
+    `GOAL CONFIG`,
+    `  Target: ${goalConfig.effectiveGoalWeight} lbs at ${goalConfig.goalBfPct}% BF (${goalConfig.projectedVisualOutcome})`,
+    `  Sustainability: ${goalConfig.sustainabilityScore}/100 · ${goalConfig.realisticRating}`,
+    `  Original ETA: ${goalConfig.etaWeeks}w · Live ETA: ${latest?.etaWeeks ?? goalConfig.etaWeeks}w`,
+    goalPacing?.totalChange !== 0 ? `  Progress: ${goalPacing.totalChange > 0 ? "+" : ""}${goalPacing.totalChange} lbs from baseline (${Math.round(goalPacing.paceBarPct)}% of target)` : `  Progress: at baseline`,
+    ``,
+    `TREND ANALYSIS (${weightTrend.dataPoints} data points, R²=${weightTrend.confidence})`,
+    `  Actual rate: ${weightTrend.rate > 0 ? "+" : ""}${weightTrend.rate} lbs/wk | Ideal rate: ${goalConfig.idealWeeklyRate > 0 ? "+" : ""}${goalConfig.idealWeeklyRate} lbs/wk`,
+    `  Pacing: ${goalPacing?.statusLabel || "insufficient data"}`,
+    latest?.adherenceScore != null ? `  Adherence: ${latest.adherenceScore}/100` : "",
+    latest?.plateauDetected ? `  ⚠ PLATEAU DETECTED` : "",
+    latest?.rateAlert ? `  ⚠ RATE ALERT: ${latest.rateAlert}` : "",
+    ``,
+    `Provide a full coaching analysis in exactly these 4 sections. Use the athlete's actual numbers throughout — no generic advice:`,
+    ``,
+    `CURRENT STATE`,
+    `PROGRESS ASSESSMENT`,
+    `CRITICAL FACTOR`,
+    `THIS WEEK'S PRIORITY`,
+    ``,
+    `Max 450 words total. Direct. Specific. Real bodybuilding/physiology terminology.`,
+  ].filter(Boolean).join("\n");
+
+  const res = await fetch("/api/chat", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      model: "claude-sonnet-4-6",
+      max_tokens: 650,
+      system: `You are APEX, an elite AI performance coach. Generate a precise, data-driven physique analysis. Reference the athlete's specific numbers in every section. No fluff, no hedging.`,
+      messages: [{ role: "user", content: lines }],
+    }),
+  });
+  const data = await res.json();
+  return data.content?.find(b => b.type === "text")?.text || null;
+}
+
 // ─── PROFILE EDIT MODAL ───────────────────────────────────────────────────────
 
 function ProfileEditModal({ user, onSave, onClose }) {
@@ -8020,6 +8165,74 @@ function ProfileEditModal({ user, onSave, onClose }) {
           style={{width:"100%",background:"none",border:"none",color:"var(--muted)",fontSize:13,cursor:"pointer",padding:8,fontFamily:"'DM Sans',sans-serif"}}>
           Cancel
         </button>
+      </div>
+    </div>
+  );
+}
+
+// ─── INTELLIGENCE REPORT MODAL ───────────────────────────────────────────────
+
+function IntelligenceReportModal({ text, loading, ts, onClose, onOpenCoach }) {
+  const C = useThemeColors();
+  return (
+    <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,.65)",zIndex:500,display:"flex",alignItems:"flex-end",justifyContent:"center"}}
+      onClick={e=>{if(e.target===e.currentTarget)onClose();}}>
+      <div style={{width:"100%",maxWidth:430,background:"var(--surface)",borderRadius:"20px 20px 0 0",
+        animation:"slideUp .3s cubic-bezier(.22,1,.36,1)",maxHeight:"88vh",display:"flex",flexDirection:"column"}}>
+
+        {/* Header */}
+        <div style={{padding:"20px 24px 14px",borderBottom:"1px solid var(--border)",flexShrink:0,display:"flex",alignItems:"flex-start",justifyContent:"space-between"}}>
+          <div>
+            <div style={{fontSize:9,letterSpacing:2,textTransform:"uppercase",color:"var(--accent)",marginBottom:3}}>⚡ APEX INTELLIGENCE</div>
+            <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:24,letterSpacing:1.5,lineHeight:1}}>FULL ANALYSIS</div>
+          </div>
+          <div style={{display:"flex",flexDirection:"column",alignItems:"flex-end",gap:6}}>
+            {ts && <div style={{fontSize:9,color:"var(--muted)"}}>{new Date(ts).toLocaleDateString("en-US",{month:"short",day:"numeric"})}</div>}
+            <button onClick={onClose} style={{background:"none",border:"none",color:"var(--muted)",fontSize:18,cursor:"pointer",padding:0,lineHeight:1}}>✕</button>
+          </div>
+        </div>
+
+        {/* Content */}
+        <div style={{padding:"20px 24px",overflowY:"auto",flex:1}}>
+          {loading ? (
+            <div style={{display:"flex",flexDirection:"column",alignItems:"center",gap:16,paddingTop:40}}>
+              <div style={{display:"flex",gap:7}}>
+                {[0,1,2].map(i=>(
+                  <div key={i} style={{width:9,height:9,borderRadius:"50%",background:"var(--accent)",
+                    opacity:.7,animation:`pulse ${.9+i*.15}s infinite`}}/>
+                ))}
+              </div>
+              <div style={{fontSize:12,color:"var(--muted)",letterSpacing:1}}>Analyzing your data...</div>
+              <div style={{fontSize:10,color:"var(--faint)",marginTop:-8}}>Using all tracked metrics</div>
+            </div>
+          ) : text ? (
+            <div style={{fontSize:13,color:"var(--faint)",lineHeight:1.8,whiteSpace:"pre-wrap"}}>{text}</div>
+          ) : (
+            <div style={{textAlign:"center",paddingTop:40}}>
+              <div style={{fontSize:13,color:"var(--muted)",lineHeight:1.6}}>
+                Analysis unavailable.<br/>Check your API connection or try again.
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Footer */}
+        {!loading && (
+          <div style={{padding:"14px 24px 36px",borderTop:"1px solid var(--border)",flexShrink:0,display:"flex",gap:10}}>
+            {text && (
+              <button onClick={onOpenCoach}
+                style={{flex:1,padding:"12px 0",background:"var(--accent)",color:"#080A0C",border:"none",
+                  borderRadius:10,fontFamily:"'Bebas Neue',sans-serif",fontSize:15,letterSpacing:2,cursor:"pointer"}}>
+                CONTINUE IN COACH →
+              </button>
+            )}
+            <button onClick={onClose}
+              style={{padding:"12px 20px",background:"var(--up)",color:"var(--muted)",border:"1px solid var(--border)",
+                borderRadius:10,fontFamily:"'Bebas Neue',sans-serif",fontSize:14,letterSpacing:1.5,cursor:"pointer"}}>
+              CLOSE
+            </button>
+          </div>
+        )}
       </div>
     </div>
   );
