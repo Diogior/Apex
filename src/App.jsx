@@ -606,7 +606,7 @@ body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;-we
 .pthumb-rm{position:absolute;top:-5px;right:-5px;width:16px;height:16px;border-radius:50%;background:var(--red);border:none;color:#fff;font-size:9px;cursor:pointer;display:flex;align-items:center;justify-content:center;}
 
 /* CHAT INPUT */
-.ci-area{position:fixed;left:50%;transform:translateX(-50%);width:100%;max-width:430px;padding:10px 14px;background:var(--surface);border-top:1px solid var(--border);display:flex;gap:8px;align-items:flex-end;z-index:50;transition:bottom .2s;}
+.ci-area{position:fixed;left:50%;transform:translateX(-50%);width:100%;max-width:430px;padding:10px 14px;background:var(--surface);border-top:1px solid var(--border);display:flex;gap:8px;align-items:flex-end;z-index:110;transition:bottom .2s;}
 .ci{flex:1;background:var(--up);border:2px solid var(--brutal);border-radius:10px;padding:11px 14px;color:var(--text);font-size:14px;font-family:'DM Sans',sans-serif;outline:none;resize:none;max-height:100px;line-height:1.4;transition:border-color .2s,box-shadow .2s;}
 .ci:focus{border-color:var(--accent);box-shadow:3px 3px 0 var(--accent);}
 .ci-send{width:40px;height:40px;border-radius:12px;background:var(--accent);border:none;display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0;transition:all .2s;color:#FFF;}
@@ -3841,7 +3841,7 @@ function WorkoutSession({ dayKey, dayPlan, adaptation, history = [], onComplete,
       </div>
 
       {/* COMPLETE BUTTON */}
-      <div style={{ margin: "8px 24px 0" }}>
+      <div style={{ margin: "20px 24px 12px" }}>
         <button
           onClick={handleComplete}
           disabled={completing || totalSets === 0}
@@ -3853,7 +3853,7 @@ function WorkoutSession({ dayKey, dayPlan, adaptation, history = [], onComplete,
       {/* UNDO TOAST */}
       {toastResult && (
         <div style={{
-          position: "fixed", bottom: 80, left: 16, right: 16,
+          position: "fixed", bottom: 96, left: 16, right: 16,
           background: C.surface, border: `1px solid ${C.border}`,
           borderRadius: 14, padding: "14px 18px",
           display: "flex", alignItems: "center", justifyContent: "space-between",
@@ -6113,10 +6113,10 @@ Keep all responses conversational, specific, and actionable. Max 4 short paragra
     scrollBottom();
   };
 
-  // Dynamic bottom offset: nav(68) + input(62) + strip(76) if photos
+  // Dynamic bottom offset: nav pill top ≈ 90px from screen bottom
   const stripHeight=pending.length>0?78:0;
-  const inputBottom=68;
-  const msgsHeight=`calc(100vh - ${pending.length>0?420:340}px)`;
+  const inputBottom=90;
+  const msgsHeight=`calc(100vh - ${pending.length>0?450:360}px)`;
 
   return (
     <div className="screen" style={{paddingBottom:0}}>
