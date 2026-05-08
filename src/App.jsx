@@ -6371,12 +6371,22 @@ function WeightGraph3D({ logs, ceilingWeight, stageWeight }) {
 function AvatarMenu({ initial, onEditProfile }) {
   const { signOut } = useAuth();
   const [open, setOpen] = useState(false);
+  const [syncState, setSyncState] = useState(null); // null | "syncing" | "ok" | "fail"
   useEffect(() => {
     if (!open) return;
     const close = () => setOpen(false);
     setTimeout(() => window.addEventListener("click", close), 0);
     return () => window.removeEventListener("click", close);
   }, [open]);
+
+  const handleForceSync = async (e) => {
+    e.stopPropagation();
+    setSyncState("syncing");
+    const result = await window.storage.forceSync?.() ?? { ok: false, reason: "not available" };
+    setSyncState(result.ok ? "ok" : "fail");
+    setTimeout(() => setSyncState(null), 3000);
+  };
+
   const itemStyle = {
     width:"100%", padding:"12px 16px", background:"none", border:"none",
     cursor:"pointer", fontFamily:"'Bebas Neue',sans-serif", fontSize:14,
@@ -6388,12 +6398,19 @@ function AvatarMenu({ initial, onEditProfile }) {
         {initial}
       </div>
       {open && (
-        <div style={{position:"absolute",top:"calc(100% + 8px)",right:0,background:"var(--card)",border:"2px solid var(--brutal)",borderRadius:6,boxShadow:"4px 4px 0 var(--brutal)",overflow:"hidden",zIndex:200,minWidth:152}}>
+        <div style={{position:"absolute",top:"calc(100% + 8px)",right:0,background:"var(--card)",border:"2px solid var(--brutal)",borderRadius:6,boxShadow:"4px 4px 0 var(--brutal)",overflow:"hidden",zIndex:200,minWidth:168}}>
           <button onClick={()=>{setOpen(false);onEditProfile?.();}}
             style={itemStyle}
             onMouseOver={e=>e.currentTarget.style.background="var(--up)"}
             onMouseOut={e=>e.currentTarget.style.background="none"}>
             EDIT PROFILE
+          </button>
+          <div style={{height:1,background:"var(--border)"}}/>
+          <button onClick={handleForceSync}
+            style={{...itemStyle, color: syncState==="ok" ? "var(--green)" : syncState==="fail" ? "var(--red)" : "var(--muted)", fontSize:13}}
+            onMouseOver={e=>e.currentTarget.style.background="var(--up)"}
+            onMouseOut={e=>e.currentTarget.style.background="none"}>
+            {syncState==="syncing" ? "SYNCING..." : syncState==="ok" ? "✓ SYNCED" : syncState==="fail" ? "✕ SYNC FAILED" : "FORCE SYNC"}
           </button>
           <div style={{height:1,background:"var(--border)"}}/>
           <button onClick={signOut}

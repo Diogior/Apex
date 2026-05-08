@@ -29,12 +29,15 @@ async function pushLocalToFirestore(uid) {
   const writes = APEX_KEYS
     .map(key => ({ key, value: localStorage.getItem(key) }))
     .filter(({ value }) => value != null);
-  if (!writes.length) return;
-  await Promise.allSettled(
+  if (!writes.length) return 0;
+  const results = await Promise.allSettled(
     writes.map(({ key, value }) =>
       setDoc(doc(db, "users", uid, "storage", key), { value })
     )
   );
+  const failed = results.filter(r => r.status === "rejected");
+  if (failed.length) console.error(`[Apex sync] ${failed.length}/${writes.length} Firestore writes failed:`, failed[0].reason?.code);
+  return writes.length - failed.length;
 }
 
 async function pullFirestoreToLocal(uid) {
@@ -49,8 +52,9 @@ window.storage = {
     _uid = uid;
 
     if (prevUid === uid) {
-      // Same device — push any local data to keep cloud in sync
-      pushLocalToFirestore(uid);
+      // Same device — await push so failures surface in console
+      const n = await pushLocalToFirestore(uid);
+      console.log(`[Apex sync] pushed ${n} keys to Firestore`);
       return;
     }
 
@@ -74,6 +78,17 @@ window.storage = {
       return count > 0;
     } catch {
       return false;
+    }
+  },
+
+  // Force push all local data to Firestore (callable from UI)
+  async forceSync() {
+    if (!_uid) return { ok: false, reason: "not signed in" };
+    try {
+      const pushed = await pushLocalToFirestore(_uid);
+      return { ok: true, pushed };
+    } catch (e) {
+      return { ok: false, reason: e?.message || "unknown error" };
     }
   },
 
