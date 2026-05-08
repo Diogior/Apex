@@ -6514,7 +6514,7 @@ function DashboardScreen({ user, weightLog, onLogWeight, onDeleteWeight, onEditW
         window.storage.set(WEEKLY_DIGEST_KEY, JSON.stringify(entry)).catch(() => {});
       } catch {}
     }).catch(() => {});
-  }, [snapshots.length, goalConfig?.id]);  // run when snapshots first load or goal changes
+  }, [snapshots.length]);  // goalConfig?.id removed — caused TDZ in esbuild output (see commit)
 
   // Recompute calTarget whenever dependencies stabilise
   useEffect(() => {
