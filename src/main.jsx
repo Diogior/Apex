@@ -5,10 +5,18 @@ import { doc, setDoc, getDocs, collection } from "firebase/firestore";
 import App from "./App.jsx";
 
 const APEX_KEYS = [
-  "apex_user_v1", "apex_weight_log_v1", "apex_training_v2",
-  "apex_nutrition_v1", "apex_rebound_v3",
-  "apex_session_feedback_v1", "apex_checkins_v1", "apex_protocol_v1",
+  // Core profile + weight
+  "apex_user_v1", "apex_weight_log_v1",
+  // Training + nutrition
+  "apex_training_v2", "apex_nutrition_v1", "apex_rebound_v3",
+  "apex_checkins_v1", "apex_protocol_v1",
   "apex_bf_override_v1", "apex_custom_exercises_v1",
+  // Feedback + coaching
+  "apex_session_feedback_v2",   // v2 — was v1 in legacy installs
+  // Adaptive physique system (Phases 1-7)
+  "apex_goal_config_v1", "apex_snapshots_v1",
+  "apex_goal_analysis_v1", "apex_goal_history_v1",
+  "apex_weekly_digest_v1", "apex_notif_v1",
 ];
 // Session key is intentionally excluded — it is device-local only.
 // An active workout on your phone must never sync to or be wiped by another device.

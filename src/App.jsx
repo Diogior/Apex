@@ -8464,25 +8464,25 @@ function AppInner() {
       });
       window.storage.set(GOAL_HISTORY_KEY, JSON.stringify(closed)).catch(() => {});
     } catch {}
-    // Phase completion summary → saved to feedback archive (shows in Archive + Coach)
+    // Phase completion summary — use the `closed` array we already computed above,
+    // not a second storage read (avoids the null.slice bug and stale-data race)
     try {
-      const fr = await window.storage.get(FEEDBACK_KEY);
-      const farr = fr?.value ? (JSON.parse(fr.value) || []) : [];
-      const existing2 = Array.isArray(farr) ? farr : Object.values(farr).filter(v => v?.text);
-      const closedPhase2 = (await window.storage.get(GOAL_HISTORY_KEY).catch(()=>null))
-        ?.value ? JSON.parse((await window.storage.get(GOAL_HISTORY_KEY)).value).slice(-2)[0] : null;
-      if (closedPhase2 && closedPhase2.outcome === "completed") {
-        const weeks   = Math.max(1, Math.round((Date.now() - closedPhase2.startTs) / (7 * 86400000)));
-        const wtChg   = closedPhase2.endWeight && closedPhase2.startWeight
-          ? (closedPhase2.endWeight - closedPhase2.startWeight).toFixed(1) : null;
-        const lines   = [
-          `Phase complete: ${closedPhase2.phase.toUpperCase()} — ${weeks} week${weeks!==1?"s":""}`,
-          wtChg !== null ? `Weight: ${parseFloat(wtChg) > 0 ? "+" : ""}${wtChg} lbs  (${closedPhase2.startWeight} → ${closedPhase2.endWeight} lbs)` : "",
-          closedPhase2.startBfPct ? `Started at ~${closedPhase2.startBfPct}% BF` : "",
+      const completedPhase = closed.slice(-2)[0]; // second-to-last = the one just closed
+      if (completedPhase?.outcome === "completed") {
+        const fr = await window.storage.get(FEEDBACK_KEY);
+        const farr = fr?.value ? (JSON.parse(fr.value) || []) : [];
+        const existing2 = Array.isArray(farr) ? farr : Object.values(farr).filter(v => v?.text);
+        const weeks = Math.max(1, Math.round((Date.now() - completedPhase.startTs) / (7 * 86400000)));
+        const wtChg = completedPhase.endWeight != null && completedPhase.startWeight != null
+          ? (completedPhase.endWeight - completedPhase.startWeight).toFixed(1) : null;
+        const lines = [
+          `Phase complete: ${completedPhase.phase.toUpperCase()} — ${weeks} week${weeks !== 1 ? "s" : ""}`,
+          wtChg !== null ? `Weight: ${parseFloat(wtChg) > 0 ? "+" : ""}${wtChg} lbs  (${completedPhase.startWeight} → ${completedPhase.endWeight} lbs)` : "",
+          completedPhase.startBfPct ? `Started at ~${completedPhase.startBfPct}% BF` : "",
         ].filter(Boolean).join("\n");
         const entry2 = { id: String(Date.now()), text: lines, ts: Date.now(),
-          dayKey: `phase_${closedPhase2.phase}_complete`, muscles:[], read:false };
-        window.storage.set(FEEDBACK_KEY, JSON.stringify([entry2, ...existing2].slice(-52))).catch(()=>{});
+          dayKey: `phase_${completedPhase.phase}_complete`, muscles: [], read: false };
+        window.storage.set(FEEDBACK_KEY, JSON.stringify([entry2, ...existing2].slice(-52))).catch(() => {});
       }
     } catch {}
     generateGoalRationale(newUser, gc);
