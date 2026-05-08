@@ -69,7 +69,7 @@ body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;-we
 
 /* Material tokens — light mode */
 :root{
-  --depth-shadow:0 16px 32px rgba(0,0,0,.10),0 4px 8px rgba(0,0,0,.06);
+  --depth-shadow:0 8px 20px rgba(0,0,0,.09),0 3px 6px rgba(0,0,0,.05);
   --inner-light:inset 0 1px 0 rgba(255,255,255,.55);
   --glass-tint:rgba(255,255,255,.50);
   --glass-border:rgba(255,255,255,.35);
@@ -80,7 +80,7 @@ body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;-we
 /* Material tokens — dark mode */
 @media(prefers-color-scheme:dark){
   :root{
-    --depth-shadow:0 24px 48px rgba(0,0,0,.55),0 8px 16px rgba(0,0,0,.35);
+    --depth-shadow:0 10px 24px rgba(0,0,0,.40),0 4px 8px rgba(0,0,0,.22);
     --inner-light:inset 0 1px 0 rgba(255,255,255,.07);
     --glass-tint:rgba(255,255,255,.04);
     --glass-border:rgba(255,255,255,.08);
@@ -91,8 +91,10 @@ body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;-we
 }
 
 /* Global ambient lighting layer — warm top-right light source */
-.app::before{content:'';position:fixed;inset:0;background:var(--ambient-warm);pointer-events:none;z-index:0;}
-.app>*{position:relative;z-index:1;}
+/* ::before uses z-index:-1 so it sits behind all in-flow children without
+   requiring .app>* stacking-context tricks that break dropdowns/tooltips */
+.app{isolation:isolate;}
+.app::before{content:'';position:fixed;inset:0;background:var(--ambient-warm);pointer-events:none;z-index:-1;}
 
 /* Surface material helpers */
 .surface-glass{background:var(--glass-tint);backdrop-filter:blur(20px) saturate(1.6);-webkit-backdrop-filter:blur(20px) saturate(1.6);border:1px solid var(--glass-border);}
@@ -434,7 +436,7 @@ body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;-we
 @keyframes fadeIn{from{opacity:0}to{opacity:1}}
 @keyframes pulse{0%,100%{opacity:1}50%{opacity:.45}}
 @keyframes musclePulse{0%,100%{opacity:.82}50%{opacity:1;filter:drop-shadow(0 0 6px rgba(220,60,60,.75))}}
-.sh{padding:54px 24px 20px;display:flex;align-items:center;justify-content:space-between;}
+.sh{padding:54px 24px 20px;display:flex;align-items:center;justify-content:space-between;position:relative;z-index:20;}
 .sh-label{font-size:12px;color:var(--muted);font-weight:500;}
 .sh-title{font-family:'Bebas Neue',sans-serif;font-size:28px;letter-spacing:1.5px;color:var(--text);}
 .sh-avatar{width:40px;height:40px;border-radius:50%;background:var(--accent);display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:700;color:#FFF;flex-shrink:0;}
@@ -6491,7 +6493,7 @@ function AvatarMenu({ initial, onEditProfile }) {
         {initial}
       </div>
       {open && (
-        <div style={{position:"absolute",top:"calc(100% + 8px)",right:0,background:"var(--card)",border:"2px solid var(--brutal)",borderRadius:6,boxShadow:"4px 4px 0 var(--brutal)",overflow:"hidden",zIndex:200,minWidth:168}}>
+        <div style={{position:"absolute",top:"calc(100% + 8px)",right:0,background:"var(--card)",border:"2px solid var(--brutal)",borderRadius:6,boxShadow:"4px 4px 0 var(--brutal)",overflow:"hidden",zIndex:500,minWidth:168}}>
           <button onClick={()=>{setOpen(false);onEditProfile?.();}}
             style={itemStyle}
             onMouseOver={e=>e.currentTarget.style.background="var(--up)"}
