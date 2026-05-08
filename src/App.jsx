@@ -41,7 +41,7 @@ function useThemeColors() {
 // ─── STYLES ──────────────────────────────────────────────────────────────────
 
 const styles = `
-@import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=DM+Mono:wght@400;500&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=DM+Mono:wght@400;500&family=Fraunces:ital,opsz,wght@1,9..144,300;1,9..144,400&display=swap');
 
 :root{
   --bg:#F5F3EF;--surface:#FFFFFF;--up:#EDEAE4;--border:#DDD9D0;
@@ -64,6 +64,64 @@ const styles = `
 *{box-sizing:border-box;margin:0;padding:0;}
 body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;-webkit-font-smoothing:antialiased;overflow-x:hidden;}
 .app{max-width:430px;min-height:100vh;margin:0 auto;background:var(--bg);position:relative;}
+
+/* ═══ CINEMATIC MATERIAL SYSTEM ════════════════════════════════════════════ */
+
+/* Material tokens — light mode */
+:root{
+  --depth-shadow:0 16px 32px rgba(0,0,0,.10),0 4px 8px rgba(0,0,0,.06);
+  --inner-light:inset 0 1px 0 rgba(255,255,255,.55);
+  --glass-tint:rgba(255,255,255,.50);
+  --glass-border:rgba(255,255,255,.35);
+  --charge-glow:0 0 0 1px var(--accent),0 0 18px color-mix(in srgb,var(--accent) 20%,transparent);
+  --ambient-warm:radial-gradient(ellipse 75% 35% at 82% -8%,color-mix(in srgb,var(--accent) 7%,transparent) 0%,transparent 60%);
+}
+
+/* Material tokens — dark mode */
+@media(prefers-color-scheme:dark){
+  :root{
+    --depth-shadow:0 24px 48px rgba(0,0,0,.55),0 8px 16px rgba(0,0,0,.35);
+    --inner-light:inset 0 1px 0 rgba(255,255,255,.07);
+    --glass-tint:rgba(255,255,255,.04);
+    --glass-border:rgba(255,255,255,.08);
+    --charge-glow:0 0 0 1px var(--accent),0 0 24px rgba(245,166,35,.22);
+    --ambient-warm:radial-gradient(ellipse 75% 38% at 82% -8%,rgba(245,166,35,.07) 0%,transparent 60%),
+                   radial-gradient(ellipse 40% 22% at 12% 108%,rgba(91,143,249,.04) 0%,transparent 50%);
+  }
+}
+
+/* Global ambient lighting layer — warm top-right light source */
+.app::before{content:'';position:fixed;inset:0;background:var(--ambient-warm);pointer-events:none;z-index:0;}
+.app>*{position:relative;z-index:1;}
+
+/* Surface material helpers */
+.surface-glass{background:var(--glass-tint);backdrop-filter:blur(20px) saturate(1.6);-webkit-backdrop-filter:blur(20px) saturate(1.6);border:1px solid var(--glass-border);}
+.surface-charged{box-shadow:var(--charge-glow),var(--inner-light) !important;}
+
+/* Two-voice typography — Fraunces italic for warmth, Bebas for authority */
+.sh-greeting{font-family:'Fraunces',Georgia,serif;font-style:italic;font-size:14px;font-weight:300;color:var(--muted);letter-spacing:0;line-height:1;margin-bottom:3px;}
+
+/* Staggered screen entrance */
+.screen>*:nth-child(1){animation:screenIn .44s cubic-bezier(.16,1,.3,1) .04s both;}
+.screen>*:nth-child(2){animation:screenIn .44s cubic-bezier(.16,1,.3,1) .08s both;}
+.screen>*:nth-child(3){animation:screenIn .44s cubic-bezier(.16,1,.3,1) .12s both;}
+.screen>*:nth-child(4){animation:screenIn .44s cubic-bezier(.16,1,.3,1) .16s both;}
+.screen>*:nth-child(n+5){animation:screenIn .44s cubic-bezier(.16,1,.3,1) .20s both;}
+
+/* Cinematic keyframes */
+@keyframes chargePulse{
+  0%,100%{box-shadow:0 0 0 1px var(--accent),0 0 8px color-mix(in srgb,var(--accent) 15%,transparent);}
+  50%{box-shadow:0 0 0 1px var(--accent),0 0 22px color-mix(in srgb,var(--accent) 35%,transparent);}
+}
+@keyframes greenPulse{
+  0%,100%{box-shadow:0 0 0 1px rgba(61,220,132,.3),0 0 8px rgba(61,220,132,.1);}
+  50%{box-shadow:0 0 0 1px rgba(61,220,132,.5),0 0 16px rgba(61,220,132,.25);}
+}
+@keyframes waveflow{from{stroke-dashoffset:0;}to{stroke-dashoffset:-56;}}
+@keyframes shimmer{
+  0%{background-position:-200% 0;}
+  100%{background-position:200% 0;}
+}
 
 /* ─── AUTH ──────────────────────────────────────────────────────────────────── */
 .auth-screen{min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;background:var(--bg);padding:24px;overflow:hidden;}
@@ -366,8 +424,8 @@ body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;-we
 .ni.on{color:var(--card);}
 
 /* SCREENS */
-.screen{padding:0 0 96px;min-height:100vh;animation:screenIn .28s cubic-bezier(.22,1,.36,1);}
-@keyframes screenIn{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+.screen{padding:0 0 96px;min-height:100vh;}
+@keyframes screenIn{from{opacity:0;transform:translateY(18px) scale(.987)}to{opacity:1;transform:translateY(0) scale(1)}}
 @keyframes fadeIn{from{opacity:0}to{opacity:1}}
 @keyframes pulse{0%,100%{opacity:1}50%{opacity:.45}}
 @keyframes musclePulse{0%,100%{opacity:.82}50%{opacity:1;filter:drop-shadow(0 0 6px rgba(220,60,60,.75))}}
@@ -380,7 +438,7 @@ body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;-we
 
 /* DASHBOARD */
 /* Weight hero — dominant full-width block */
-.wt-hero{margin:0 24px 16px;background:var(--card);border:2px solid var(--brutal);border-radius:14px;padding:22px 22px 18px;box-shadow:4px 4px 0 var(--brutal);transition:border-color .2s,box-shadow .2s;}
+.wt-hero{margin:0 24px 16px;background:var(--card);border:2px solid var(--brutal);border-radius:14px;padding:22px 22px 18px;box-shadow:var(--depth-shadow),var(--inner-light),4px 4px 0 var(--brutal);transition:border-color .2s,box-shadow .2s;}
 .wt-hero.focused{border-color:var(--accent);box-shadow:4px 4px 0 var(--accent);}
 .wt-hero.logged{border-color:var(--green);box-shadow:4px 4px 0 var(--green);}
 .wt-hero-top{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:18px;}
@@ -400,7 +458,7 @@ body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;-we
 .goal-rate-target{font-size:10px;color:var(--faint);margin-top:3px;}
 /* Weigh-in streak pill */
 .streak-pill{display:inline-flex;align-items:center;gap:5px;padding:4px 10px;border-radius:20px;font-size:9px;font-family:'Bebas Neue',sans-serif;letter-spacing:1.5px;}
-.streak-pill.ok{background:rgba(26,158,88,.12);color:var(--green);border:1px solid rgba(26,158,88,.25);}
+.streak-pill.ok{background:rgba(26,158,88,.12);color:var(--green);border:1px solid rgba(26,158,88,.25);animation:greenPulse 3s ease-in-out infinite;}
 .streak-pill.nudge{background:rgba(251,191,36,.12);color:#FBBF24;border:1px solid rgba(251,191,36,.25);}
 .streak-pill.warn{background:rgba(var(--accent-rgb),.12);color:var(--accent);border:1px solid rgba(var(--accent-rgb),.25);}
 .streak-pill.danger{background:rgba(var(--red-rgb),.12);color:var(--red);border:1px solid rgba(var(--red-rgb),.25);}
@@ -451,7 +509,7 @@ body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;-we
 .cube-btn.saved:not(:disabled):hover{box-shadow:4px 4px 0 var(--green);}
 .cube-btn.saved:not(:disabled):active{box-shadow:1px 1px 0 var(--green);}
 /* Secondary stat strip */
-.stat-strip{display:grid;grid-template-columns:1fr 1fr 1fr;gap:1px;margin:0 24px 20px;background:var(--brutal);border-radius:10px;overflow:hidden;border:2px solid var(--brutal);box-shadow:4px 4px 0 var(--brutal);}
+.stat-strip{display:grid;grid-template-columns:1fr 1fr 1fr;gap:1px;margin:0 24px 20px;background:var(--brutal);border-radius:10px;overflow:hidden;border:2px solid var(--brutal);box-shadow:var(--depth-shadow),var(--inner-light),4px 4px 0 var(--brutal);}
 .stat-cell{background:var(--card);padding:14px 14px 12px;}
 .stat-cell:first-child{border-radius:13px 0 0 13px;}
 .stat-cell:last-child{border-radius:0 13px 13px 0;}
@@ -459,7 +517,7 @@ body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;-we
 .stat-val{font-family:'Bebas Neue',sans-serif;font-size:24px;letter-spacing:1px;line-height:1;color:var(--text);}
 .stat-sub{font-size:10px;color:var(--muted);margin-top:3px;line-height:1.3;}
 /* Training block */
-.dash-banner{margin:0 24px 20px;background:var(--card);border:2px solid var(--brutal);border-radius:12px;padding:20px;box-shadow:4px 4px 0 var(--brutal);}
+.dash-banner{margin:0 24px 20px;background:var(--card);border:2px solid var(--brutal);border-radius:12px;padding:20px;box-shadow:var(--depth-shadow),var(--inner-light),4px 4px 0 var(--brutal);}
 .db-tag{font-size:11px;font-weight:600;letter-spacing:.3px;color:var(--accent);margin-bottom:5px;}
 .db-title{font-family:'Bebas Neue',sans-serif;font-size:22px;letter-spacing:1px;color:var(--text);}
 .db-sub{font-size:13px;color:var(--muted);margin-top:3px;}
@@ -478,7 +536,7 @@ body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;-we
 .dchip.on .dchip-l{color:#FFF;}
 .mbadge{display:inline-block;font-size:10px;font-weight:500;padding:3px 10px;border-radius:20px;margin:2px 3px;background:var(--up);color:var(--muted);border:1px solid var(--border);}
 .mbadge.pri{color:var(--accent);}
-.ecard{background:var(--card);border:2px solid var(--brutal);border-radius:10px;padding:16px 18px;margin:0 24px 12px;box-shadow:4px 4px 0 var(--brutal);transition:border-color .15s,box-shadow .15s,transform .15s;}
+.ecard{background:var(--card);border:2px solid var(--brutal);border-radius:10px;padding:16px 18px;margin:0 24px 12px;box-shadow:var(--depth-shadow),var(--inner-light),4px 4px 0 var(--brutal);transition:border-color .15s,box-shadow .15s,transform .15s;}
 .ecard:hover{border-color:var(--accent);box-shadow:4px 4px 0 var(--accent);}
 .ec-head{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:4px;}
 .ec-name{font-size:15px;font-weight:600;color:var(--text);}
@@ -599,7 +657,7 @@ body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;-we
 .knum-mini{background:var(--card);border-radius:8px;padding:12px 10px;text-align:center;border:2px solid;box-shadow:3px 3px 0 var(--brutal);}
 /* ── PROTOCOL INTELLIGENCE REDESIGN ─────────────────────────────────────────── */
 .pi-wrap{margin:0 24px 20px;display:flex;flex-direction:column;gap:10px;}
-.pi-card{background:var(--card);border:2px solid var(--brutal);border-radius:10px;padding:16px 18px;box-shadow:4px 4px 0 var(--brutal);}
+.pi-card{background:var(--card);border:2px solid var(--brutal);border-radius:10px;padding:16px 18px;box-shadow:var(--depth-shadow),var(--inner-light),4px 4px 0 var(--brutal);}
 .pi-group{font-size:9px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--muted);margin-bottom:12px;}
 .pi-body-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:0;text-align:center;}
 .pi-body-divider{width:1px;background:var(--border);}
@@ -6658,6 +6716,16 @@ function DashboardScreen({ user, weightLog, onLogWeight, onDeleteWeight, onEditW
   // Latest snapshot for live ETA and delta display
   const latestSnapshot = snapshots.length ? snapshots[snapshots.length - 1] : null;
 
+  // Hero arc — pre-compute outside goal card IIFE so it's available in the weight hero
+  const heroGoalDir = goalConfig && !goalConfig.isDualTarget
+    ? Math.sign(goalConfig.effectiveGoalWeight - goalConfig.startWeight) : 0;
+  const heroPct = goalConfig && heroGoalDir !== 0 && goalConfig.startWeight !== goalConfig.effectiveGoalWeight
+    ? Math.min(100, Math.max(0,
+        heroGoalDir * (currentWeight - goalConfig.startWeight) /
+        Math.abs(goalConfig.effectiveGoalWeight - goalConfig.startWeight) * 100
+      ))
+    : 0;
+
   const handleGenerateReport = async () => {
     if (!goalConfig) return;
     setReportData({ text: null, ts: null, loading: true });
@@ -6817,7 +6885,7 @@ function DashboardScreen({ user, weightLog, onLogWeight, onDeleteWeight, onEditW
 
       <div className="sh">
         <div>
-          <div className="sh-label">{(()=>{const h=new Date().getHours();return h<11?"Good morning,":h<17?"Good afternoon,":h<21?"Good evening,":"Hey,"})()}</div>
+          <div className="sh-greeting">{(()=>{const h=new Date().getHours();return h<11?"Good morning,":h<17?"Good afternoon,":h<21?"Good evening,":"Hey,"})()}</div>
           <div className="sh-title">{user.name.toUpperCase()}</div>
         </div>
         <AvatarMenu initial={user.name[0].toUpperCase()} onEditProfile={onEditProfile}/>
@@ -6911,18 +6979,60 @@ function DashboardScreen({ user, weightLog, onLogWeight, onDeleteWeight, onEditW
             })()}
           </div>
 
-          {/* Sparkline bars — goal-tinted */}
-          {recentWeights.length >= 2 && (
+          {/* Goal Arc — instrument panel replacing flat sparkline bars */}
+          {goalConfig && !goalConfig.isDualTarget ? (() => {
+            // Half-circle arc: M 8 62 A 50 50 0 0 1 108 62  arcLen ≈ π×50 = 157
+            const arcLen = 157;
+            const fill   = (heroPct / 100) * arcLen;
+            const accentCol = goalPacing.colorKey === "green" ? "var(--green)"
+                            : goalPacing.colorKey === "red"   ? "var(--red)"
+                            : "var(--accent)";
+            // Waveform path: sine wave from x=8..108, y=46+6sin(x)
+            let wavePath = `M 8 50`;
+            for (let x = 8; x <= 108; x += 3) {
+              const y = 50 + 5 * Math.sin(((x - 8) / 16) * Math.PI * 2);
+              wavePath += ` L ${x} ${y.toFixed(1)}`;
+            }
+            return (
+              <svg viewBox="0 0 116 70" width={108} height={65}
+                style={{flexShrink:0, alignSelf:"flex-start", marginTop:8, overflow:"visible"}}>
+                <defs>
+                  <clipPath id="heroArcClip">
+                    <rect x="0" y="0" width="116" height="62"/>
+                  </clipPath>
+                </defs>
+                {/* Track */}
+                <path d="M 8 62 A 50 50 0 0 1 108 62" fill="none" stroke="var(--up)" strokeWidth="7" strokeLinecap="round"/>
+                {/* Animated waveform (clipped to arc zone) */}
+                <g clipPath="url(#heroArcClip)" opacity="0.22">
+                  <path d={wavePath} fill="none" stroke={accentCol} strokeWidth="1.8" strokeLinecap="round"
+                    style={{strokeDasharray:"4 2", animation:"waveflow 2s linear infinite"}}/>
+                </g>
+                {/* Progress fill */}
+                <path d="M 8 62 A 50 50 0 0 1 108 62" fill="none" stroke={accentCol} strokeWidth="7"
+                  strokeLinecap="round"
+                  strokeDasharray={`${fill.toFixed(1)} ${arcLen}`}
+                  style={{filter:`drop-shadow(0 0 5px ${accentCol})`, transition:"stroke-dasharray 1.2s cubic-bezier(.16,1,.3,1)"}}
+                />
+                {/* Percent label */}
+                <text x="58" y="44" textAnchor="middle" fontSize="15" fontFamily="Bebas Neue,sans-serif" letterSpacing="1"
+                  fill={accentCol} style={{filter:`drop-shadow(0 0 4px ${accentCol})`}}>
+                  {Math.round(heroPct)}%
+                </text>
+                <text x="58" y="54" textAnchor="middle" fontSize="7" fontFamily="DM Sans,sans-serif" fill="var(--muted)">to goal</text>
+                {/* Start / goal labels */}
+                <text x="4" y="70" textAnchor="start" fontSize="7" fontFamily="DM Mono,monospace" fill="var(--faint)">{Math.round(goalConfig.startWeight)}</text>
+                <text x="112" y="70" textAnchor="end" fontSize="7" fontFamily="DM Mono,monospace" fill="var(--faint)">{Math.round(goalConfig.effectiveGoalWeight)}</text>
+              </svg>
+            );
+          })() : recentWeights.length >= 2 && (
             <div className="wt-history" style={{alignSelf:"flex-start",marginTop:28}}>
               {recentWeights.map((e, i) => {
                 const h = Math.max(6, Math.round(((e.weight - minW) / wRange) * 32) + 4);
                 const isLatest = i === recentWeights.length - 1;
-                const barColor = isLatest
-                  ? `var(--${goalPacing.colorKey || "accent"})`
-                  : "var(--faint)";
                 return (
                   <div key={e.ts} className="wt-bar-wrap">
-                    <div className="wt-bar" style={{height: h, background: barColor, opacity: isLatest ? 1 : 0.45}}/>
+                    <div className="wt-bar" style={{height:h, background:isLatest?"var(--accent)":"var(--faint)", opacity:isLatest?1:0.45}}/>
                   </div>
                 );
               })}
@@ -7072,7 +7182,7 @@ function DashboardScreen({ user, weightLog, onLogWeight, onDeleteWeight, onEditW
           : "var(--border)";
 
         return (
-          <div style={{margin:"0 24px 20px",background:"var(--surface)",border:`1px solid ${completionBorderCol}`,borderRadius:16,overflow:"hidden",transition:"border-color .4s"}}>
+          <div style={{margin:"0 24px 20px",background:"var(--surface)",border:`1px solid ${completionBorderCol}`,borderRadius:16,overflow:"hidden",transition:"border-color .4s",boxShadow:"var(--depth-shadow), var(--inner-light)"}}>
 
             {/* Header: goal weight + sustainability badge */}
             <div style={{padding:"14px 16px 10px",borderBottom:"1px solid var(--border)",display:"flex",alignItems:"center",justifyContent:"space-between"}}>
