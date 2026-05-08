@@ -1768,6 +1768,34 @@ function evaluateGoalRevision(snap, goalConfig, allSnapshots) {
   return null;
 }
 
+// ── GOAL-NUTRITION BRIDGE ────────────────────────────────────────────────────
+// Derives a daily calorie adjustment needed to hit goalConfig.idealWeeklyRate.
+// More precise than the classification-based runProtocolDecision because it
+// anchors directly to the user's specific goal rate, not generic thresholds.
+//
+// Formula: deviation (lbs/wk) × 3500 kcal/lb ÷ 7 days = kcal/day to adjust
+// Positive result → add calories (rate too slow toward bulk / recovering from fast cut)
+// Negative result → remove calories (rate too slow on cut / over-eating on bulk)
+
+function computeNutritionAdjustment(goalConfig, weightTrend) {
+  if (!goalConfig || !weightTrend) return 0;
+  if (!goalConfig.idealWeeklyRate || goalConfig.idealWeeklyRate === 0) return 0;
+  if (goalConfig.isDualTarget) return 0;               // recomp — weight not the signal
+  if (weightTrend.dataPoints < 7)                      return 0;  // need enough data
+  if (weightTrend.confidence < 0.5)                    return 0;  // low-quality trend
+
+  const ideal    = goalConfig.idealWeeklyRate;          // e.g. -0.75 lbs/wk for cut
+  const actual   = weightTrend.rate;                    // e.g. -0.30 lbs/wk
+  const deviation = ideal - actual;                     // -0.45 → need bigger deficit
+
+  // Only adjust when deviation is meaningful (> 20% of the target rate)
+  if (Math.abs(deviation) < Math.abs(ideal) * 0.20) return 0;
+
+  const rawAdj = Math.round((deviation * 3500) / 7);
+  const MAX    = 300;  // never suggest more than 300 kcal/day change at once
+  return Math.max(-MAX, Math.min(MAX, rawAdj));
+}
+
 // ── SECTION 5: E1RM & STRENGTH TREND ─────────────────────────────────────────
 
 function computeE1RM(weight, reps) {
@@ -6660,12 +6688,20 @@ function DashboardScreen({ user, weightLog, onLogWeight, onDeleteWeight, onEditW
     .sort((a, b) => Math.abs(b[1].slope) - Math.abs(a[1].slope))
     .slice(0, 3);
 
-  // Save protocol decision to storage so getTargets() can read calAdjustment
+  // Goal-nutrition bridge: goal-anchored adjustment when data quality is sufficient,
+  // otherwise fall back to runProtocolDecision's classification-based value.
+  const goalCalAdj = computeNutritionAdjustment(goalConfig, weightTrend);
+  const activeCalAdj = goalCalAdj !== 0 ? goalCalAdj : protocolDecision.calAdjustment;
+
   useEffect(() => {
-    if (protocolDecision.calAdjustment !== 0) {
-      window.storage.set(PROTOCOL_KEY, JSON.stringify({ calAdjustment: protocolDecision.calAdjustment, ts: Date.now() })).catch(() => {});
+    if (activeCalAdj !== 0) {
+      window.storage.set(PROTOCOL_KEY, JSON.stringify({
+        calAdjustment: activeCalAdj,
+        goalAnchored:  goalCalAdj !== 0,
+        ts:            Date.now(),
+      })).catch(() => {});
     }
-  }, [protocolDecision.calAdjustment]);
+  }, [activeCalAdj]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const saveCheckIn = () => {
     const ci = { ts: Date.now(), sleep: parseFloat(ciSleep) || 7, stress: parseFloat(ciStress) || 5, energy: parseFloat(ciEnergy) || 7 };
@@ -7312,6 +7348,86 @@ function DashboardScreen({ user, weightLog, onLogWeight, onDeleteWeight, onEditW
               </div>
             );
           })()}
+          </div>
+        );
+      })()}
+
+      {/* BODY COMPOSITION TREND CARD — visible once 2+ snapshots exist */}
+      {snapshots.length >= 2 && goalConfig && (() => {
+        const bfPts  = snapshots.slice(-8).map(s => s.estimatedBfPct).filter(Boolean);
+        const lbmPts = snapshots.slice(-8).map(s => s.estimatedLbmLbs).filter(Boolean);
+        const latSnap = snapshots[snapshots.length - 1];
+        const bfDelta  = goalConfig.startBfPct  != null && latSnap.estimatedBfPct  != null
+          ? Math.round((latSnap.estimatedBfPct  - goalConfig.startBfPct)  * 10) / 10 : null;
+        const lbmDelta = goalConfig.startLbmLbs != null && latSnap.estimatedLbmLbs != null
+          ? Math.round((latSnap.estimatedLbmLbs - goalConfig.startLbmLbs) * 10) / 10 : null;
+
+        const Spark = ({ pts, col, goal: gval, invert }) => {
+          if (pts.length < 2) return null;
+          const W = 100, H = 28;
+          const mn = Math.min(...pts, gval ?? Infinity) - .5;
+          const mx = Math.max(...pts, gval ?? -Infinity) + .5;
+          const rng = mx - mn || 1;
+          const tx = i => (i / (pts.length - 1)) * (W - 4) + 2;
+          const ty = v => H - 2 - ((v - mn) / rng) * (H - 4);
+          const d  = pts.map((v, i) => `${i===0?"M":"L"}${tx(i).toFixed(1)} ${ty(v).toFixed(1)}`).join(" ");
+          const goalY = gval != null ? ty(gval) : null;
+          const improving = invert ? pts[pts.length-1] < pts[0] : pts[pts.length-1] > pts[0];
+          const lineCol = improving ? "var(--green)" : col;
+          return (
+            <svg viewBox={`0 0 ${W} ${H}`} style={{width:"100%",height:28,display:"block"}}>
+              {goalY != null && <line x1="0" y1={goalY} x2={W} y2={goalY} stroke="var(--accent)" strokeWidth="1" strokeDasharray="2 2" opacity="0.3"/>}
+              <path d={d} fill="none" stroke={lineCol} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+              <circle cx={tx(pts.length-1)} cy={ty(pts[pts.length-1])} r={2.5} fill={lineCol}/>
+            </svg>
+          );
+        };
+
+        return (
+          <div style={{margin:"0 24px 20px",background:"var(--surface)",border:"1px solid var(--border)",borderRadius:14,overflow:"hidden"}}>
+            <div style={{padding:"10px 14px 8px",borderBottom:"1px solid var(--border)",display:"flex",alignItems:"center",justifyContent:"space-between"}}>
+              <div style={{fontSize:9,letterSpacing:2,textTransform:"uppercase",color:"var(--accent)"}}>● Body Composition Trend</div>
+              <div style={{fontSize:9,color:"var(--muted)"}}>{snapshots.length} data points</div>
+            </div>
+            <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:0}}>
+              {/* BF% */}
+              <div style={{padding:"10px 14px",borderRight:"1px solid var(--border)"}}>
+                <div style={{fontSize:9,letterSpacing:1.5,textTransform:"uppercase",color:"var(--muted)",marginBottom:2}}>Body Fat %</div>
+                <div style={{display:"flex",alignItems:"baseline",gap:6,marginBottom:4}}>
+                  <span style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:20,letterSpacing:.5,color:"var(--text)"}}>{latSnap.estimatedBfPct ?? "—"}</span>
+                  {bfDelta !== null && (
+                    <span style={{fontSize:10,color: bfDelta < 0 ? "var(--green)" : "var(--accent)"}}>
+                      {bfDelta > 0 ? "+" : ""}{bfDelta}%
+                    </span>
+                  )}
+                </div>
+                <Spark pts={bfPts} col="var(--accent)" goal={goalConfig.goalBfPct} invert={true}/>
+                <div style={{fontSize:9,color:"var(--faint)",marginTop:3}}>Goal: {goalConfig.goalBfPct}%</div>
+              </div>
+              {/* LBM */}
+              <div style={{padding:"10px 14px"}}>
+                <div style={{fontSize:9,letterSpacing:1.5,textTransform:"uppercase",color:"var(--muted)",marginBottom:2}}>Lean Mass (lbs)</div>
+                <div style={{display:"flex",alignItems:"baseline",gap:6,marginBottom:4}}>
+                  <span style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:20,letterSpacing:.5,color:"var(--text)"}}>{latSnap.estimatedLbmLbs ?? "—"}</span>
+                  {lbmDelta !== null && (
+                    <span style={{fontSize:10,color: lbmDelta >= 0 ? "var(--green)" : "var(--red)"}}>
+                      {lbmDelta > 0 ? "+" : ""}{lbmDelta}
+                    </span>
+                  )}
+                </div>
+                <Spark pts={lbmPts} col="var(--blue)" goal={goalConfig.goalLbmLbs} invert={false}/>
+                <div style={{fontSize:9,color:"var(--faint)",marginTop:3}}>Goal: {goalConfig.goalLbmLbs} lbs</div>
+              </div>
+            </div>
+            {/* Bridge status */}
+            {goalCalAdj !== 0 && (
+              <div style={{padding:"7px 14px",borderTop:"1px solid var(--border)",background:"color-mix(in srgb,var(--accent) 6%,transparent)",display:"flex",alignItems:"center",gap:8}}>
+                <div style={{width:5,height:5,borderRadius:"50%",flexShrink:0,background:"var(--accent)"}}/>
+                <div style={{fontSize:10,color:"var(--accent)"}}>
+                  Calorie target adjusted {goalCalAdj > 0 ? "+" : ""}{goalCalAdj} kcal/day to hit pace
+                </div>
+              </div>
+            )}
           </div>
         );
       })()}
@@ -8134,6 +8250,27 @@ function AppInner() {
         goalWeight: gc.effectiveGoalWeight, outcome: "ongoing",
       });
       window.storage.set(GOAL_HISTORY_KEY, JSON.stringify(closed)).catch(() => {});
+    } catch {}
+    // Phase completion summary → saved to feedback archive (shows in Archive + Coach)
+    try {
+      const fr = await window.storage.get(FEEDBACK_KEY);
+      const farr = fr?.value ? (JSON.parse(fr.value) || []) : [];
+      const existing2 = Array.isArray(farr) ? farr : Object.values(farr).filter(v => v?.text);
+      const closedPhase2 = (await window.storage.get(GOAL_HISTORY_KEY).catch(()=>null))
+        ?.value ? JSON.parse((await window.storage.get(GOAL_HISTORY_KEY)).value).slice(-2)[0] : null;
+      if (closedPhase2 && closedPhase2.outcome === "completed") {
+        const weeks   = Math.max(1, Math.round((Date.now() - closedPhase2.startTs) / (7 * 86400000)));
+        const wtChg   = closedPhase2.endWeight && closedPhase2.startWeight
+          ? (closedPhase2.endWeight - closedPhase2.startWeight).toFixed(1) : null;
+        const lines   = [
+          `Phase complete: ${closedPhase2.phase.toUpperCase()} — ${weeks} week${weeks!==1?"s":""}`,
+          wtChg !== null ? `Weight: ${parseFloat(wtChg) > 0 ? "+" : ""}${wtChg} lbs  (${closedPhase2.startWeight} → ${closedPhase2.endWeight} lbs)` : "",
+          closedPhase2.startBfPct ? `Started at ~${closedPhase2.startBfPct}% BF` : "",
+        ].filter(Boolean).join("\n");
+        const entry2 = { id: String(Date.now()), text: lines, ts: Date.now(),
+          dayKey: `phase_${closedPhase2.phase}_complete`, muscles:[], read:false };
+        window.storage.set(FEEDBACK_KEY, JSON.stringify([entry2, ...existing2].slice(-52))).catch(()=>{});
+      }
     } catch {}
     generateGoalRationale(newUser, gc);
     setUser(newUser);
