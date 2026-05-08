@@ -118,6 +118,11 @@ body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;-we
   50%{box-shadow:0 0 0 1px rgba(61,220,132,.5),0 0 16px rgba(61,220,132,.25);}
 }
 @keyframes waveflow{from{stroke-dashoffset:0;}to{stroke-dashoffset:-56;}}
+@keyframes progressSettle{
+  0%{transform:scaleX(0);}
+  78%{transform:scaleX(1.026);}
+  100%{transform:scaleX(1);}
+}
 @keyframes shimmer{
   0%{background-position:-200% 0;}
   100%{background-position:200% 0;}
@@ -468,7 +473,7 @@ body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;-we
 .pace-badge{font-size:9px;font-family:'Bebas Neue',sans-serif;letter-spacing:1.5px;padding:3px 9px;border-radius:4px;font-weight:700;}
 .pace-rate-num{font-family:'Bebas Neue',sans-serif;font-size:22px;letter-spacing:.5px;}
 .pace-bar-track{height:4px;background:var(--up);border-radius:2px;overflow:hidden;margin-bottom:6px;}
-.pace-bar-fill{height:100%;border-radius:2px;transition:width .9s cubic-bezier(.22,1,.36,1);}
+.pace-bar-fill{height:100%;border-radius:2px;transition:width .9s cubic-bezier(.16,1,.3,1);transform-origin:left center;animation:progressSettle .95s cubic-bezier(.16,1,.3,1) both;}
 .pace-foot{display:flex;justify-content:space-between;align-items:center;}
 .pace-milestone{margin-top:8px;padding:7px 11px;background:var(--up);border-radius:7px;display:flex;align-items:center;justify-content:space-between;}
 /* Post-log reaction */
@@ -537,7 +542,7 @@ body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;-we
 .mbadge{display:inline-block;font-size:10px;font-weight:500;padding:3px 10px;border-radius:20px;margin:2px 3px;background:var(--up);color:var(--muted);border:1px solid var(--border);}
 .mbadge.pri{color:var(--accent);}
 .ecard{background:var(--card);border:2px solid var(--brutal);border-radius:10px;padding:16px 18px;margin:0 24px 12px;box-shadow:var(--depth-shadow),var(--inner-light),4px 4px 0 var(--brutal);transition:border-color .15s,box-shadow .15s,transform .15s;}
-.ecard:hover{border-color:var(--accent);box-shadow:4px 4px 0 var(--accent);}
+.ecard:hover{border-color:var(--accent);box-shadow:var(--depth-shadow),var(--inner-light),6px 6px 0 var(--accent);transform:translate(-2px,-3px);}
 .ec-head{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:4px;}
 .ec-name{font-size:15px;font-weight:600;color:var(--text);}
 .ec-num{font-family:'Bebas Neue',sans-serif;font-size:28px;color:var(--accent);line-height:1;}
@@ -562,7 +567,7 @@ body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;-we
 .mc-kcal{font-size:13px;color:var(--muted);font-variant-numeric:tabular-nums;}
 .mc-items{font-size:13px;color:var(--muted);line-height:1.6;}
 .pbar{height:3px;background:var(--up);border-radius:2px;overflow:hidden;margin-top:10px;}
-.pfill{height:100%;border-radius:2px;transition:width .6s cubic-bezier(.22,1,.36,1);}
+.pfill{height:100%;border-radius:2px;transition:width .6s cubic-bezier(.16,1,.3,1);transform-origin:left center;animation:progressSettle .85s cubic-bezier(.16,1,.3,1) both;}
 @keyframes typingBounce{0%,100%{transform:translateY(0);opacity:.4}50%{transform:translateY(-5px);opacity:1}}
 
 /* COACH */
@@ -671,7 +676,7 @@ body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;-we
 .pi-bar-wrap{margin-top:6px;}
 .pi-bar-label{display:flex;justify-content:space-between;font-size:9px;color:var(--muted);margin-bottom:4px;}
 .pi-bar{height:5px;background:var(--up);border-radius:3px;overflow:hidden;border:1px solid var(--border);}
-.pi-bar-fill{height:100%;border-radius:3px;transition:width .8s cubic-bezier(.22,1,.36,1);}
+.pi-bar-fill{height:100%;border-radius:3px;transition:width .8s cubic-bezier(.16,1,.3,1);transform-origin:left center;animation:progressSettle .90s cubic-bezier(.16,1,.3,1) both;}
 .pi-ready-row{display:grid;grid-template-columns:80px 1fr 48px;gap:10px;align-items:center;padding:10px 0;}
 .pi-ready-row+.pi-ready-row{border-top:1px solid var(--border);}
 .pi-ready-name{font-size:9px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;line-height:1.3;}
@@ -2369,31 +2374,61 @@ function OnboardScreen({onComplete}) {
 
       {/* ── STEP 1: GOAL ── */}
       {step === 1 && (
-        <div className="ob2-step" key="s1">
-          <div className="ob2-step-bar">
+        <div className="ob2-step" key="s1" style={{display:"flex",flexDirection:"column",alignItems:"center"}}>
+          <div className="ob2-step-bar" style={{width:"100%"}}>
             <button className="ob2-back-btn" onClick={() => setStep(0)}>← Back</button>
             <span className="ob2-step-counter">01 / 03</span>
           </div>
-          <div className="ob2-step-h">What brings<br/>you to <em>APEX?</em></div>
-          <div className="ob2-list">
-            {GOALS.map((g, i) => (
-              <button key={g.id} className={`ob2-row ${goal === g.id ? "sel" : ""}`} onClick={() => setGoal(g.id)}>
-                <span className="ob2-row-num">0{i + 1}</span>
-                <div className="ob2-row-info">
-                  <div className="ob2-row-name">{g.label}</div>
-                  <div className="ob2-row-desc">{g.desc}</div>
-                </div>
-                <div className="ob2-row-check">
-                  {goal === g.id && (
-                    <svg viewBox="0 0 12 10" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" style={{width:10,height:10}}>
-                      <polyline points="1,5 4,8.5 11,1"/>
-                    </svg>
-                  )}
-                </div>
-              </button>
-            ))}
-          </div>
-          <CubeButton disabled={!canProceed()} onClick={() => setStep(2)} style={{width:"100%"}}>CONTINUE</CubeButton>
+          <div className="ob2-step-h" style={{textAlign:"center",marginBottom:8}}>What's the<br/><em>mission?</em></div>
+          <div style={{fontSize:11,color:"var(--muted)",marginBottom:28,textAlign:"center",letterSpacing:.5}}>Select your primary goal</div>
+
+          {/* ── ORBITAL GOAL RING ── */}
+          {(() => {
+            const R = 108;  // orbit radius px
+            const n = GOALS.length;
+            return (
+              <div style={{position:"relative",width:R*2+90,height:R*2+90,flexShrink:0,margin:"0 auto 28px"}}>
+                {/* Orbit track ring */}
+                <div style={{position:"absolute",inset:0,borderRadius:"50%",border:"1px solid var(--border)",opacity:.35}}/>
+                {/* Inner glow dot at center */}
+                <div style={{position:"absolute",top:"50%",left:"50%",transform:"translate(-50%,-50%)",width:6,height:6,borderRadius:"50%",background:"var(--accent)",boxShadow:"0 0 12px var(--accent)",opacity:.6}}/>
+                {GOALS.map((g, i) => {
+                  const angle = (i / n) * 2 * Math.PI - Math.PI / 2;
+                  const x = R * Math.cos(angle);
+                  const y = R * Math.sin(angle);
+                  const isActive = goal === g.id;
+                  return (
+                    <button key={g.id} onClick={() => setGoal(g.id)}
+                      style={{
+                        position:"absolute",
+                        top:"50%", left:"50%",
+                        width:80, height:76,
+                        transform:`translate(calc(-50% + ${x}px), calc(-50% + ${y}px)) scale(${isActive ? 1.1 : 0.92})`,
+                        transition:"transform .32s cubic-bezier(.16,1,.3,1), box-shadow .32s, border-color .2s, background .2s",
+                        background: isActive ? `color-mix(in srgb,var(--accent) 14%,var(--card))` : "var(--card)",
+                        border:`2px solid ${isActive ? "var(--accent)" : "var(--brutal)"}`,
+                        borderRadius:8,
+                        boxShadow: isActive ? "var(--charge-glow),var(--depth-shadow)" : "var(--depth-shadow),var(--inner-light),3px 3px 0 var(--brutal)",
+                        display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",
+                        gap:4, cursor:"pointer", padding:"8px 4px",
+                      }}>
+                      <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:11,letterSpacing:1.2,color:isActive?"var(--accent)":"var(--text)",lineHeight:1.1,textAlign:"center"}}>
+                        {g.label}
+                      </div>
+                      <div style={{fontSize:8,color:isActive?"var(--accent)":"var(--muted)",letterSpacing:.3,textAlign:"center",lineHeight:1.3,opacity:.8}}>
+                        {g.desc}
+                      </div>
+                      {isActive && (
+                        <div style={{position:"absolute",inset:-1,borderRadius:8,border:"1px solid var(--accent)",opacity:.4,pointerEvents:"none"}}/>
+                      )}
+                    </button>
+                  );
+                })}
+              </div>
+            );
+          })()}
+
+          <CubeButton disabled={!canProceed()} onClick={() => setStep(2)} style={{width:"100%",maxWidth:340}}>CONTINUE ▶</CubeButton>
         </div>
       )}
 
@@ -7182,7 +7217,7 @@ function DashboardScreen({ user, weightLog, onLogWeight, onDeleteWeight, onEditW
           : "var(--border)";
 
         return (
-          <div style={{margin:"0 24px 20px",background:"var(--surface)",border:`1px solid ${completionBorderCol}`,borderRadius:16,overflow:"hidden",transition:"border-color .4s",boxShadow:"var(--depth-shadow), var(--inner-light)"}}>
+          <div style={{margin:"0 24px 20px",background:"var(--surface)",border:`1px solid ${completionBorderCol}`,borderRadius:16,overflow:"hidden",transition:"border-color .4s",boxShadow:"var(--depth-shadow), var(--inner-light)",animation: completionState==="reached" ? "greenPulse 3s ease-in-out infinite" : completionState==="approaching" ? "chargePulse 4s ease-in-out infinite" : "none"}}>
 
             {/* Header: goal weight + sustainability badge */}
             <div style={{padding:"14px 16px 10px",borderBottom:"1px solid var(--border)",display:"flex",alignItems:"center",justifyContent:"space-between"}}>
@@ -7662,14 +7697,14 @@ function DashboardScreen({ user, weightLog, onLogWeight, onDeleteWeight, onEditW
         </div>
         {calTarget?.cyclingActive ? (
           <>
-            <div className="stat-cell">
+            <div className="stat-cell" style={calTarget.isTrainDay ? {animation:"chargePulse 3s ease-in-out infinite"} : {}}>
               <div className="stat-label" style={{color:"var(--accent)"}}>Train Day</div>
               <div className="stat-val" style={{color: calTarget.isTrainDay ? "var(--accent)" : "var(--text)"}}>
                 {calTarget.trainCal?.toLocaleString() ?? "—"}
               </div>
               <div className="stat-sub">{calTarget.trainP ?? calTarget.p}g protein</div>
             </div>
-            <div className="stat-cell">
+            <div className="stat-cell" style={!calTarget.isTrainDay ? {animation:"chargePulse 3s ease-in-out infinite"} : {}}>
               <div className="stat-label">Rest Day</div>
               <div className="stat-val" style={{color: !calTarget.isTrainDay ? "var(--text)" : "var(--muted)"}}>
                 {calTarget.restCal?.toLocaleString() ?? "—"}
@@ -7921,9 +7956,9 @@ function DashboardScreen({ user, weightLog, onLogWeight, onDeleteWeight, onEditW
 
       {/* ── BF% EDITOR ──────────────────────────────────────────────────────────── */}
       {showBfEditor && (
-        <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,.6)",zIndex:300,display:"flex",alignItems:"flex-end",justifyContent:"center"}}
+        <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,.42)",zIndex:300,display:"flex",alignItems:"flex-end",justifyContent:"center"}}
           onClick={e=>{if(e.target===e.currentTarget)setShowBfEditor(false);}}>
-          <div style={{width:"100%",maxWidth:430,background:C.surface,borderRadius:"20px 20px 0 0",padding:"24px 24px 40px",animation:"slideUp .3s cubic-bezier(.22,1,.36,1)"}}>
+          <div style={{width:"100%",maxWidth:430,background:"color-mix(in srgb,var(--card) 88%,transparent)",backdropFilter:"blur(24px) saturate(1.4)",WebkitBackdropFilter:"blur(24px) saturate(1.4)",borderTop:"1px solid var(--glass-border)",boxShadow:"var(--depth-shadow),var(--inner-light)",borderRadius:"20px 20px 0 0",padding:"24px 24px 40px",animation:"slideUp .3s cubic-bezier(.22,1,.36,1)"}}>
             <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:24,letterSpacing:1.5,color:C.text,marginBottom:4}}>SET BODY FAT %</div>
             <div style={{fontSize:12,color:C.muted,marginBottom:20,lineHeight:1.5}}>The formula estimated <strong style={{color:C.text}}>{userState.bodyComp.bfPct}%</strong>. Override it with your own estimate or upload a photo for AI analysis.</div>
 
@@ -7992,8 +8027,8 @@ function DashboardScreen({ user, weightLog, onLogWeight, onDeleteWeight, onEditW
 
       {/* ── WEEKLY CHECK-IN MODAL ─────────────────────────────────────────────── */}
       {showCheckIn && (
-        <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,.55)",zIndex:300,display:"flex",alignItems:"flex-end",justifyContent:"center"}} onClick={e=>{if(e.target===e.currentTarget)setShowCheckIn(false);}}>
-          <div style={{width:"100%",maxWidth:430,background:C.surface,borderRadius:"20px 20px 0 0",padding:"28px 24px 40px",animation:"slideUp .3s cubic-bezier(.22,1,.36,1)"}}>
+        <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,.42)",zIndex:300,display:"flex",alignItems:"flex-end",justifyContent:"center"}} onClick={e=>{if(e.target===e.currentTarget)setShowCheckIn(false);}}>
+          <div style={{width:"100%",maxWidth:430,background:"color-mix(in srgb,var(--card) 88%,transparent)",backdropFilter:"blur(24px) saturate(1.4)",WebkitBackdropFilter:"blur(24px) saturate(1.4)",borderTop:"1px solid var(--glass-border)",boxShadow:"var(--depth-shadow),var(--inner-light)",borderRadius:"20px 20px 0 0",padding:"28px 24px 40px",animation:"slideUp .3s cubic-bezier(.22,1,.36,1)"}}>
             <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:26,letterSpacing:1.5,color:C.text,marginBottom:4}}>WEEKLY CHECK-IN</div>
             <div style={{fontSize:13,color:C.muted,marginBottom:24,lineHeight:1.5}}>Takes 10 seconds. Powers your recovery score and protocol adjustments.</div>
             {[
@@ -8213,9 +8248,9 @@ function ProfileEditModal({ user, onSave, onClose }) {
   };
 
   return (
-    <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,.55)",zIndex:400,display:"flex",alignItems:"flex-end",justifyContent:"center"}}
+    <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,.42)",zIndex:400,display:"flex",alignItems:"flex-end",justifyContent:"center"}}
       onClick={e=>{if(e.target===e.currentTarget)onClose();}}>
-      <div style={{width:"100%",maxWidth:430,background:"var(--surface)",borderRadius:"20px 20px 0 0",padding:"24px 24px 36px",animation:"slideUp .3s cubic-bezier(.22,1,.36,1)",maxHeight:"88vh",overflowY:"auto"}}>
+      <div style={{width:"100%",maxWidth:430,background:"color-mix(in srgb,var(--card) 88%,transparent)",backdropFilter:"blur(24px) saturate(1.4)",WebkitBackdropFilter:"blur(24px) saturate(1.4)",borderTop:"1px solid var(--glass-border)",boxShadow:"var(--depth-shadow),var(--inner-light)",borderRadius:"20px 20px 0 0",padding:"24px 24px 36px",animation:"slideUp .3s cubic-bezier(.22,1,.36,1)",maxHeight:"88vh",overflowY:"auto"}}>
 
         <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:24,letterSpacing:1.5,marginBottom:4}}>EDIT PROFILE</div>
         <div style={{fontSize:12,color:"var(--muted)",marginBottom:20}}>Changes recompute your physique target and open a new goal phase.</div>
@@ -8302,9 +8337,9 @@ function ProfileEditModal({ user, onSave, onClose }) {
 function IntelligenceReportModal({ text, loading, ts, onClose, onOpenCoach }) {
   const C = useThemeColors();
   return (
-    <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,.65)",zIndex:500,display:"flex",alignItems:"flex-end",justifyContent:"center"}}
+    <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,.45)",zIndex:500,display:"flex",alignItems:"flex-end",justifyContent:"center"}}
       onClick={e=>{if(e.target===e.currentTarget)onClose();}}>
-      <div style={{width:"100%",maxWidth:430,background:"var(--surface)",borderRadius:"20px 20px 0 0",
+      <div style={{width:"100%",maxWidth:430,background:"color-mix(in srgb,var(--card) 90%,transparent)",backdropFilter:"blur(28px) saturate(1.5)",WebkitBackdropFilter:"blur(28px) saturate(1.5)",borderTop:"1px solid var(--glass-border)",boxShadow:"var(--depth-shadow),var(--inner-light)",borderRadius:"20px 20px 0 0",
         animation:"slideUp .3s cubic-bezier(.22,1,.36,1)",maxHeight:"88vh",display:"flex",flexDirection:"column"}}>
 
         {/* Header */}
