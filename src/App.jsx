@@ -3389,7 +3389,7 @@ function CustomWorkoutLogger({onComplete,onBack,muscleVol,level}) {
           </div>
         );
       })}
-      <div style={{position:"fixed",bottom:68,left:"50%",transform:"translateX(-50%)",width:"100%",maxWidth:430,padding:"12px 24px",background:"rgba(8,10,12,0.97)",borderTop:`1px solid ${C.border}`,zIndex:50}}>
+      <div style={{position:"fixed",bottom:96,left:"50%",transform:"translateX(-50%)",width:"100%",maxWidth:430,padding:"12px 24px",background:"rgba(8,10,12,0.97)",borderTop:`1px solid ${C.border}`,zIndex:110}}>
         <button onClick={handleComplete} disabled={totalSets===0} style={{width:"100%",padding:15,background:C.blue,color:"#080A0C",border:"none",borderRadius:12,fontFamily:"'Bebas Neue',sans-serif",fontSize:17,letterSpacing:2,cursor:totalSets>0?"pointer":"not-allowed",opacity:totalSets>0?1:.4,transition:"all .3s"}}>
           COMPLETE SESSION ({totalSets} sets)
         </button>
@@ -6113,10 +6113,12 @@ Keep all responses conversational, specific, and actionable. Max 4 short paragra
     scrollBottom();
   };
 
-  // Dynamic bottom offset: nav pill top ≈ 90px from screen bottom
-  const stripHeight=pending.length>0?78:0;
-  const inputBottom=90;
-  const msgsHeight=`calc(100vh - ${pending.length>0?450:360}px)`;
+  // Dynamic bottom offset — lifts above MiniSessionView (≈62px) when a session is active
+  const { session: activeSession } = useSession();
+  const msvH = activeSession ? 62 : 0;          // MiniSessionView height when visible
+  const stripHeight = pending.length > 0 ? 78 : 0;
+  const inputBottom = 90 + msvH;                 // 90 = nav clearance, +62 when MSV showing
+  const msgsHeight = `calc(100vh - ${pending.length > 0 ? 452 + msvH : 364 + msvH}px)`;
 
   return (
     <div className="screen" style={{paddingBottom:0}}>
