@@ -434,7 +434,7 @@ body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;-we
 
 /* SCREENS */
 .screen{padding:0 0 96px;min-height:100vh;}
-@keyframes screenIn{from{opacity:0;transform:translateY(18px) scale(.987)}to{opacity:1;transform:translateY(0) scale(1)}}
+@keyframes screenIn{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}
 @keyframes fadeIn{from{opacity:0}to{opacity:1}}
 @keyframes pulse{0%,100%{opacity:1}50%{opacity:.45}}
 @keyframes musclePulse{0%,100%{opacity:.82}50%{opacity:1;filter:drop-shadow(0 0 6px rgba(220,60,60,.75))}}
@@ -781,7 +781,7 @@ body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;-we
   position:fixed;
   left:50%;transform:translateX(-50%);
   width:calc(100% - 24px);max-width:406px;
-  bottom:90px;
+  bottom:calc(90px + env(safe-area-inset-bottom,0px));
   z-index:95;
   border-radius:18px;
   overflow:hidden;
@@ -3391,7 +3391,7 @@ function CustomWorkoutLogger({onComplete,onBack,muscleVol,level}) {
           </div>
         );
       })}
-      <div style={{position:"fixed",bottom:96,left:"50%",transform:"translateX(-50%)",width:"100%",maxWidth:430,padding:"12px 24px",background:"rgba(8,10,12,0.97)",borderTop:`1px solid ${C.border}`,zIndex:110}}>
+      <div style={{position:"fixed",bottom:"calc(96px + env(safe-area-inset-bottom,0px))",left:"50%",transform:"translateX(-50%)",width:"100%",maxWidth:430,padding:"12px 24px",background:"rgba(8,10,12,0.97)",borderTop:`1px solid ${C.border}`,zIndex:110}}>
         <button onClick={handleComplete} disabled={totalSets===0} style={{width:"100%",padding:15,background:C.blue,color:"#080A0C",border:"none",borderRadius:12,fontFamily:"'Bebas Neue',sans-serif",fontSize:17,letterSpacing:2,cursor:totalSets>0?"pointer":"not-allowed",opacity:totalSets>0?1:.4,transition:"all .3s"}}>
           COMPLETE SESSION ({totalSets} sets)
         </button>
@@ -3855,7 +3855,7 @@ function WorkoutSession({ dayKey, dayPlan, adaptation, history = [], onComplete,
       {/* UNDO TOAST */}
       {toastResult && (
         <div style={{
-          position: "fixed", bottom: 96, left: 16, right: 16,
+          position: "fixed", bottom: "calc(96px + env(safe-area-inset-bottom,0px))", left: 16, right: 16,
           background: C.surface, border: `1px solid ${C.border}`,
           borderRadius: 14, padding: "14px 18px",
           display: "flex", alignItems: "center", justifyContent: "space-between",
@@ -6164,7 +6164,7 @@ Keep all responses conversational, specific, and actionable. Max 4 short paragra
 
       {/* PENDING PHOTO STRIP */}
       {pending.length>0&&(
-        <div className="photo-strip" style={{bottom:inputBottom+62}}>
+        <div className="photo-strip" style={{bottom:`calc(${inputBottom+62}px + env(safe-area-inset-bottom,0px))`}}>
           {pending.map(p=>(
             <div key={p.id} className="pthumb">
               <img src={p.dataUrl} alt="pending"/>
@@ -6177,8 +6177,8 @@ Keep all responses conversational, specific, and actionable. Max 4 short paragra
         </div>
       )}
 
-      {/* INPUT BAR */}
-      <div className="ci-area" style={{bottom:inputBottom+stripHeight}}>
+      {/* INPUT BAR — calc adds env(safe-area-inset-bottom) for iPhone notch devices */}
+      <div className="ci-area" style={{bottom:`calc(${inputBottom+stripHeight}px + env(safe-area-inset-bottom,0px))`}}>
         <input type="file" ref={fileRef} className="photo-input" accept="image/*" multiple onChange={handleFiles}/>
         <button className="ci-photo" onClick={()=>fileRef.current?.click()} title="Upload progress photo"
           style={{borderColor:pending.length>0?C.accent:undefined,color:pending.length>0?C.accent:undefined}}>
