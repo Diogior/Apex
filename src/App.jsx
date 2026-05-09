@@ -90,11 +90,13 @@ body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;-we
   }
 }
 
-/* Global ambient lighting layer — warm top-right light source */
-/* ::before uses z-index:-1 so it sits behind all in-flow children without
-   requiring .app>* stacking-context tricks that break dropdowns/tooltips */
-.app{isolation:isolate;}
-.app::before{content:'';position:fixed;inset:0;background:var(--ambient-warm);pointer-events:none;z-index:-1;}
+/* Ambient lighting — baked into .app background-image so no pseudo-element
+   or stacking-context tricks are needed (isolation:isolate breaks position:fixed
+   on iOS Safari by turning .app into a containing block for all fixed children) */
+.app{background-image:none;}
+@media(prefers-color-scheme:dark){
+  .app{background-image:radial-gradient(ellipse 70% 35% at 82% 0%,rgba(245,166,35,.06) 0%,transparent 55%),radial-gradient(ellipse 38% 20% at 12% 100%,rgba(91,143,249,.04) 0%,transparent 50%);}
+}
 
 /* Surface material helpers */
 .surface-glass{background:var(--glass-tint);backdrop-filter:blur(20px) saturate(1.6);-webkit-backdrop-filter:blur(20px) saturate(1.6);border:1px solid var(--glass-border);}
@@ -421,7 +423,7 @@ body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;-we
 .irow{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
 
 /* NAV */
-.nav{position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:430px;padding:10px 14px 26px;z-index:100;background:transparent;}
+.nav{position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:430px;padding:10px 14px max(26px,env(safe-area-inset-bottom,26px));z-index:100;background:transparent;}
 .nav-pill{position:relative;display:flex;background:var(--card);border-radius:8px;border:2px solid var(--brutal);box-shadow:4px 4px 0 var(--brutal);overflow:hidden;}
 .nav-glider{position:absolute;top:0;bottom:0;border-radius:6px;z-index:1;transition:transform .4s cubic-bezier(.22,1,.36,1);background:var(--brutal);}
 .ni{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;cursor:pointer;padding:10px 4px;border:none;background:transparent;color:var(--muted);position:relative;z-index:2;transition:color .2s ease;}
@@ -436,7 +438,7 @@ body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;-we
 @keyframes fadeIn{from{opacity:0}to{opacity:1}}
 @keyframes pulse{0%,100%{opacity:1}50%{opacity:.45}}
 @keyframes musclePulse{0%,100%{opacity:.82}50%{opacity:1;filter:drop-shadow(0 0 6px rgba(220,60,60,.75))}}
-.sh{padding:54px 24px 20px;display:flex;align-items:center;justify-content:space-between;position:relative;z-index:20;}
+.sh{padding:54px 24px 20px;display:flex;align-items:center;justify-content:space-between;position:relative;z-index:120;}
 .sh-label{font-size:12px;color:var(--muted);font-weight:500;}
 .sh-title{font-family:'Bebas Neue',sans-serif;font-size:28px;letter-spacing:1.5px;color:var(--text);}
 .sh-avatar{width:40px;height:40px;border-radius:50%;background:var(--accent);display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:700;color:#FFF;flex-shrink:0;}
