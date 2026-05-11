@@ -3396,7 +3396,7 @@ function CustomWorkoutLogger({onComplete,onBack,muscleVol,level}) {
           </div>
         );
       })}
-      <div style={{position:"fixed",bottom:"calc(96px + env(safe-area-inset-bottom,0px))",left:"50%",transform:"translateX(-50%)",width:"100%",maxWidth:430,padding:"12px 24px",background:"rgba(8,10,12,0.97)",borderTop:`1px solid ${C.border}`,zIndex:110}}>
+      <div style={{position:"fixed",bottom:"calc(96px + env(safe-area-inset-bottom,0px))",left:"50%",transform:"translateX(-50%)",width:"100%",maxWidth:430,padding:"12px 24px",background:"rgba(8,10,12,0.97)",borderTop:`1px solid ${C.border}`,zIndex:110,animation:"none"}}>
         <button onClick={handleComplete} disabled={totalSets===0} style={{width:"100%",padding:15,background:C.blue,color:"#080A0C",border:"none",borderRadius:12,fontFamily:"'Bebas Neue',sans-serif",fontSize:17,letterSpacing:2,cursor:totalSets>0?"pointer":"not-allowed",opacity:totalSets>0?1:.4,transition:"all .3s"}}>
           COMPLETE SESSION ({totalSets} sets)
         </button>
@@ -3860,7 +3860,7 @@ function WorkoutSession({ dayKey, dayPlan, adaptation, history = [], onComplete,
       {/* UNDO TOAST */}
       {toastResult && (
         <div style={{
-          position: "fixed", bottom: "calc(96px + env(safe-area-inset-bottom,0px))", left: 16, right: 16,
+          position: "fixed", bottom: "calc(96px + env(safe-area-inset-bottom,0px))", left: 16, right: 16, animation: "none",
           background: C.surface, border: `1px solid ${C.border}`,
           borderRadius: 14, padding: "14px 18px",
           display: "flex", alignItems: "center", justifyContent: "space-between",
