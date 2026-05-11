@@ -105,12 +105,17 @@ body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;-we
 /* Two-voice typography — Fraunces italic for warmth, Bebas for authority */
 .sh-greeting{font-family:'Fraunces',Georgia,serif;font-style:italic;font-size:14px;font-weight:300;color:var(--muted);letter-spacing:0;line-height:1;margin-bottom:3px;}
 
-/* Staggered screen entrance */
+/* Staggered screen entrance — in-flow elements only.
+   Fixed children excluded: any transform on a position:fixed element,
+   even briefly in the from-state, causes Safari to create a compositor
+   layer that permanently breaks safe-area-inset-bottom positioning. */
 .screen>*:nth-child(1){animation:screenIn .44s cubic-bezier(.16,1,.3,1) .04s both;}
 .screen>*:nth-child(2){animation:screenIn .44s cubic-bezier(.16,1,.3,1) .08s both;}
 .screen>*:nth-child(3){animation:screenIn .44s cubic-bezier(.16,1,.3,1) .12s both;}
 .screen>*:nth-child(4){animation:screenIn .44s cubic-bezier(.16,1,.3,1) .16s both;}
 .screen>*:nth-child(n+5){animation:screenIn .44s cubic-bezier(.16,1,.3,1) .20s both;}
+/* Hard override for any fixed element that happens to be a .screen child */
+.ci-area,.wt-notif-wrap,.photo-strip,.msv{animation:none!important;}
 
 /* Cinematic keyframes */
 @keyframes chargePulse{
