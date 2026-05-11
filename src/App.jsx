@@ -925,6 +925,7 @@ const NUTRITION_KEY   = "apex_nutrition_v1";
 const CHECKIN_KEY     = "apex_checkins_v1";
 const PROTOCOL_KEY    = "apex_protocol_v1";
 const BF_KEY          = "apex_bf_override_v1";
+const PHYSIQUE_KEY    = "apex_physique_v1";
 const CUSTOM_EX_KEY   = "apex_custom_exercises_v1";
 
 const FALLBACK = [
@@ -6555,6 +6556,8 @@ function DashboardScreen({ user, weightLog, onLogWeight, onDeleteWeight, onEditW
   const [snapshots, setSnapshots] = useState([]);
   const [goalRevision, setGoalRevision] = useState(null);
   const [goalHistory, setGoalHistory] = useState([]);
+  const [physiqueHistory, setPhysiqueHistory] = useState([]);
+  const [showPhysiqueScan, setShowPhysiqueScan] = useState(false);
   const [showOverrideInput, setShowOverrideInput] = useState(false);
   const [overrideVal, setOverrideVal] = useState("");
   const [completionDismissed, setCompletionDismissed] = useState(false);
@@ -6615,6 +6618,9 @@ function DashboardScreen({ user, weightLog, onLogWeight, onDeleteWeight, onEditW
     }).catch(() => {});
     window.storage.get(GOAL_HISTORY_KEY).then(r => {
       if (r?.value) try { setGoalHistory(JSON.parse(r.value) || []); } catch {}
+    }).catch(() => {});
+    window.storage.get(PHYSIQUE_KEY).then(r => {
+      if (r?.value) try { setPhysiqueHistory(JSON.parse(r.value) || []); } catch {}
     }).catch(() => {});
   }, []);
 
@@ -6772,6 +6778,28 @@ function DashboardScreen({ user, weightLog, onLogWeight, onDeleteWeight, onEditW
       ))
     : 0;
 
+  // Save physique scan result → update bfOverride + append to history
+  const handlePhysiqueSave = (result) => {
+    if (!result?.estimatedBfPct) return;
+    // Update BF% override
+    setBfOverride(result.estimatedBfPct);
+    window.storage.set(BF_KEY, String(result.estimatedBfPct)).catch(() => {});
+    // Append to physique history (photos not stored — analysis only)
+    const entry = {
+      id: String(Date.now()), ts: Date.now(),
+      weight: currentWeight,
+      ...result,
+    };
+    const updated = [entry, ...physiqueHistory].slice(0, 24); // keep 2 years max
+    setPhysiqueHistory(updated);
+    window.storage.set(PHYSIQUE_KEY, JSON.stringify(updated)).catch(() => {});
+    // Recompute goal config with new BF% if user allows
+    const updatedUser = { ...user };
+    const newGc = computeGoalConfig(updatedUser);
+    window.storage.set(GOAL_CONFIG_KEY, JSON.stringify(newGc)).catch(() => {});
+    setStoredGoalConfig(newGc);
+  };
+
   const handleGenerateReport = async () => {
     if (!goalConfig) return;
     setReportData({ text: null, ts: null, loading: true });
@@ -6921,6 +6949,13 @@ function DashboardScreen({ user, weightLog, onLogWeight, onDeleteWeight, onEditW
   return (
     <div className="screen">
       {/* HEADER */}
+      {showPhysiqueScan && (
+        <PhysiqueCheckInModal
+          user={user} currentWeight={currentWeight}
+          onSave={handlePhysiqueSave}
+          onClose={() => setShowPhysiqueScan(false)}
+        />
+      )}
       {showReport && (
         <IntelligenceReportModal
           text={reportData.text} loading={reportData.loading} ts={reportData.ts}
@@ -7592,8 +7627,16 @@ function DashboardScreen({ user, weightLog, onLogWeight, onDeleteWeight, onEditW
         return (
           <div style={{margin:"0 24px 20px",background:"var(--surface)",border:"1px solid var(--border)",borderRadius:14,overflow:"hidden"}}>
             <div style={{padding:"10px 14px 8px",borderBottom:"1px solid var(--border)",display:"flex",alignItems:"center",justifyContent:"space-between"}}>
-              <div style={{fontSize:9,letterSpacing:2,textTransform:"uppercase",color:"var(--accent)"}}>● Body Composition Trend</div>
-              <div style={{fontSize:9,color:"var(--muted)"}}>{snapshots.length} data points</div>
+              <div style={{fontSize:9,letterSpacing:2,textTransform:"uppercase",color:"var(--accent)"}}>● Body Composition</div>
+              <div style={{display:"flex",alignItems:"center",gap:8}}>
+                {physiqueHistory.length > 0 && (
+                  <div style={{fontSize:9,color:"var(--muted)"}}>{physiqueHistory.length} scan{physiqueHistory.length!==1?"s":""}</div>
+                )}
+                <button onClick={()=>setShowPhysiqueScan(true)}
+                  style={{padding:"4px 10px",background:"color-mix(in srgb,var(--accent) 14%,transparent)",border:"1px solid color-mix(in srgb,var(--accent) 35%,transparent)",borderRadius:6,fontFamily:"'Bebas Neue',sans-serif",fontSize:9,letterSpacing:1.5,color:"var(--accent)",cursor:"pointer"}}>
+                  PHYSIQUE SCAN
+                </button>
+              </div>
             </div>
             <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:0}}>
               {/* BF% */}
@@ -7822,7 +7865,13 @@ function DashboardScreen({ user, weightLog, onLogWeight, onDeleteWeight, onEditW
 
         {/* ── CARD 1: BODY COMPOSITION ── */}
         <div className="pi-card">
-          <div className="pi-group">Body Composition</div>
+          <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:10}}>
+            <div className="pi-group" style={{margin:0}}>Body Composition</div>
+            <button onClick={()=>setShowPhysiqueScan(true)}
+              style={{padding:"4px 10px",background:"color-mix(in srgb,var(--accent) 12%,transparent)",border:"1px solid color-mix(in srgb,var(--accent) 30%,transparent)",borderRadius:6,fontFamily:"'Bebas Neue',sans-serif",fontSize:9,letterSpacing:1.5,color:"var(--accent)",cursor:"pointer"}}>
+              {physiqueHistory.length > 0 ? "RE-SCAN" : "PHYSIQUE SCAN"}
+            </button>
+          </div>
           <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:0,textAlign:"center"}}>
             {/* Body Fat — tappable to edit */}
             <div onClick={()=>{setBfInput(String(displayComp.bfPct));setBfTab("manual");setShowBfEditor(true);}}
@@ -8230,6 +8279,379 @@ async function generateIntelligenceReport(user, goalConfig, snapshots, weightTre
   });
   const data = await res.json();
   return data.content?.find(b => b.type === "text")?.text || null;
+}
+
+// ─── PHYSIQUE CHECK-IN MODAL ─────────────────────────────────────────────────
+
+// SVG pose silhouettes — stroke-only guides for alignment consistency
+const POSE_SVG = {
+  front: (
+    <svg viewBox="0 0 100 248" style={{width:"100%",height:"100%"}}>
+      <g fill="none" stroke="rgba(245,166,35,.55)" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round">
+        <ellipse cx="50" cy="18" rx="13" ry="16"/>
+        <path d="M44 33 L44 45 L56 45 L56 33"/>
+        <path d="M10 57 Q22 45 44 45 L56 45 Q78 45 90 57"/>
+        <path d="M10 57 L2 118 Q4 123 9 121 L18 68"/>
+        <path d="M90 57 L98 118 Q96 123 91 121 L82 68"/>
+        <path d="M18 68 L22 132 Q36 142 50 142 Q64 142 78 132 L82 68"/>
+        <path d="M22 132 Q16 150 26 163 L34 242 L48 242 L50 205 L52 242 L66 242 L74 163 Q84 150 78 132"/>
+      </g>
+      <line x1="4" y1="57" x2="96" y2="57" stroke="rgba(245,166,35,.2)" strokeWidth=".6" strokeDasharray="3,3"/>
+      <line x1="4" y1="132" x2="96" y2="132" stroke="rgba(245,166,35,.2)" strokeWidth=".6" strokeDasharray="3,3"/>
+      <line x1="50" y1="2" x2="50" y2="246" stroke="rgba(245,166,35,.15)" strokeWidth=".6" strokeDasharray="3,3"/>
+    </svg>
+  ),
+  side: (
+    <svg viewBox="0 0 100 248" style={{width:"100%",height:"100%"}}>
+      <g fill="none" stroke="rgba(245,166,35,.55)" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round">
+        <ellipse cx="52" cy="18" rx="12" ry="16"/>
+        <path d="M48 33 L48 45 L58 45 L56 33"/>
+        <path d="M48 45 Q36 50 34 60 Q30 72 34 84 Q38 98 36 112 Q34 128 38 142 Q42 154 44 166 L42 242 L54 242 L55 206 L60 242 L68 242 L68 166 Q72 152 70 138 Q74 120 72 106 Q70 90 72 78 Q74 64 68 54 Q62 45 56 45"/>
+        <path d="M34 60 L24 116 Q26 121 30 119 L36 84"/>
+      </g>
+      <line x1="4" y1="142" x2="96" y2="142" stroke="rgba(245,166,35,.2)" strokeWidth=".6" strokeDasharray="3,3"/>
+    </svg>
+  ),
+  back: (
+    <svg viewBox="0 0 100 248" style={{width:"100%",height:"100%"}}>
+      <g fill="none" stroke="rgba(245,166,35,.55)" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round">
+        <ellipse cx="50" cy="18" rx="13" ry="16"/>
+        <path d="M44 33 L44 45 L56 45 L56 33"/>
+        <path d="M10 56 Q22 45 44 45 L56 45 Q78 45 90 56"/>
+        <path d="M10 56 L2 116 Q4 121 9 119 L18 66"/>
+        <path d="M90 56 L98 116 Q96 121 91 119 L82 66"/>
+        <path d="M18 66 L24 130 Q38 140 50 140 Q62 140 76 130 L82 66"/>
+        <path d="M24 130 Q16 150 24 164 L34 242 L48 242 L50 205 L52 242 L66 242 L76 164 Q84 150 76 130"/>
+      </g>
+      <line x1="4" y1="56" x2="96" y2="56" stroke="rgba(245,166,35,.2)" strokeWidth=".6" strokeDasharray="3,3"/>
+      <line x1="4" y1="130" x2="96" y2="130" stroke="rgba(245,166,35,.2)" strokeWidth=".6" strokeDasharray="3,3"/>
+      <line x1="50" y1="2" x2="50" y2="246" stroke="rgba(245,166,35,.15)" strokeWidth=".6" strokeDasharray="3,3"/>
+    </svg>
+  ),
+};
+
+const POSE_CONFIG = [
+  { key:"front", label:"FRONT VIEW", tip:"Stand facing camera, arms slightly out, feet shoulder-width apart." },
+  { key:"side",  label:"SIDE VIEW",  tip:"Stand in profile, arms at sides, natural posture." },
+  { key:"back",  label:"BACK VIEW",  tip:"Stand with back to camera, same stance as front." },
+];
+
+const CATEGORY_LABELS = {
+  beginner:"Beginner", recreational:"Recreational", intermediate:"Intermediate",
+  athletic:"Athletic", advanced:"Advanced", competitor:"Competitor",
+};
+const ALIGNMENT_COLOR = { well_positioned:"var(--green)", on_track:"var(--accent)", needs_work:"var(--red)" };
+const ALIGNMENT_LABEL = { well_positioned:"Well Positioned", on_track:"On Track", needs_work:"Needs Work" };
+
+function PhysiqueCheckInModal({ user, currentWeight, onSave, onClose }) {
+  const C = useThemeColors();
+  const [step, setStep] = useState(0); // 0=intro 1-3=poses 4=analyzing 5=results
+  const [photos, setPhotos] = useState({ front:null, side:null, back:null });
+  const [previews, setPreviews] = useState({ front:null, side:null, back:null });
+  const [result, setResult] = useState(null);
+  const [error, setError] = useState(null);
+  const fileRefs = { front:useRef(), side:useRef(), back:useRef() };
+
+  const poseStep = POSE_CONFIG[step - 1]; // null for steps 0,4,5
+  const photosDone = step >= 1 && step <= 3
+    ? ['front','side','back'].slice(0, step).every(p => photos[p])
+    : false;
+  const allDone = photos.front && photos.side && photos.back;
+
+  const handleFile = (pose, e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = ev => {
+      setPhotos(p => ({ ...p, [pose]: ev.target.result }));
+      setPreviews(p => ({ ...p, [pose]: ev.target.result }));
+    };
+    reader.readAsDataURL(file);
+    e.target.value = "";
+  };
+
+  const handleAnalyze = async () => {
+    setStep(4);
+    setError(null);
+    try {
+      const res = await analyzePhysique(photos, user, currentWeight);
+      if (res?.estimatedBfPct) {
+        setResult(res);
+        setStep(5);
+      } else {
+        setError("Analysis failed — try again with clearer photos in good lighting.");
+        setStep(3);
+      }
+    } catch {
+      setError("Analysis failed — check your connection.");
+      setStep(3);
+    }
+  };
+
+  const handleSave = () => {
+    if (!result) return;
+    onSave(result);
+    onClose();
+  };
+
+  const panelStyle = {
+    width:"100%", maxWidth:430,
+    background:"color-mix(in srgb,var(--card) 92%,transparent)",
+    backdropFilter:"blur(24px) saturate(1.4)",
+    WebkitBackdropFilter:"blur(24px) saturate(1.4)",
+    borderTop:"1px solid var(--glass-border)",
+    boxShadow:"var(--depth-shadow),var(--inner-light)",
+    borderRadius:"20px 20px 0 0",
+    maxHeight:"90vh", overflowY:"auto",
+    animation:"slideUp .3s cubic-bezier(.22,1,.36,1)",
+  };
+
+  return (
+    <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,.55)",zIndex:500,display:"flex",alignItems:"flex-end",justifyContent:"center",animation:"none"}}
+      onClick={e=>{if(e.target===e.currentTarget)onClose();}}>
+      <div style={panelStyle}>
+
+        {/* Progress dots */}
+        <div style={{display:"flex",justifyContent:"center",gap:6,padding:"16px 0 0"}}>
+          {[1,2,3].map(i => (
+            <div key={i} style={{width:6,height:6,borderRadius:"50%",
+              background: step > i ? "var(--green)" : step === i ? "var(--accent)" : "var(--border)",
+              transition:"background .2s"}}/>
+          ))}
+        </div>
+
+        {/* ── STEP 0: INTRO ── */}
+        {step === 0 && (
+          <div style={{padding:"16px 24px 32px"}}>
+            <div style={{fontSize:9,letterSpacing:2,textTransform:"uppercase",color:"var(--accent)",marginBottom:4}}>● Enhanced Analysis</div>
+            <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:26,letterSpacing:1.5,marginBottom:6}}>PHYSIQUE SCAN</div>
+            <div style={{fontSize:13,color:"var(--muted)",lineHeight:1.65,marginBottom:20}}>
+              Upload 3 photos for a precise body composition assessment — front, side, and back. APEX will estimate your BF%, lean mass, and calibrate your goal targets.
+            </div>
+            <div style={{background:"var(--up)",borderRadius:10,padding:"14px 16px",marginBottom:24}}>
+              <div style={{fontSize:10,fontWeight:700,letterSpacing:1,color:"var(--text)",marginBottom:8}}>FOR BEST RESULTS</div>
+              {["Good, even lighting — avoid harsh shadows","Minimal clothing for visibility","Natural standing posture, no flexing","Full body in frame, head to toe"].map((t,i) => (
+                <div key={i} style={{display:"flex",gap:8,alignItems:"flex-start",marginBottom:i<3?6:0}}>
+                  <div style={{width:5,height:5,borderRadius:"50%",background:"var(--accent)",flexShrink:0,marginTop:5}}/>
+                  <div style={{fontSize:12,color:"var(--faint)",lineHeight:1.5}}>{t}</div>
+                </div>
+              ))}
+            </div>
+            <button onClick={()=>setStep(1)}
+              style={{width:"100%",padding:14,background:"var(--accent)",color:"#080A0C",border:"none",borderRadius:10,fontFamily:"'Bebas Neue',sans-serif",fontSize:17,letterSpacing:2,cursor:"pointer"}}>
+              START SCAN ▶
+            </button>
+            <button onClick={onClose}
+              style={{width:"100%",marginTop:10,background:"none",border:"none",color:"var(--muted)",fontSize:13,cursor:"pointer",padding:8,fontFamily:"'DM Sans',sans-serif"}}>
+              Cancel
+            </button>
+          </div>
+        )}
+
+        {/* ── STEPS 1–3: PHOTO CAPTURE ── */}
+        {step >= 1 && step <= 3 && poseStep && (
+          <div style={{padding:"12px 24px 32px"}}>
+            <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:4}}>
+              <button onClick={()=>setStep(s=>s-1)} style={{background:"none",border:"none",color:"var(--muted)",cursor:"pointer",fontSize:13,fontFamily:"'DM Sans'"}}>← Back</button>
+              <div style={{fontSize:9,letterSpacing:2,textTransform:"uppercase",color:"var(--muted)"}}>{step} / 3</div>
+            </div>
+            <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:22,letterSpacing:1.5,marginBottom:3}}>{poseStep.label}</div>
+            <div style={{fontSize:12,color:"var(--muted)",marginBottom:16,lineHeight:1.5}}>{poseStep.tip}</div>
+
+            {/* Viewfinder with silhouette overlay */}
+            <div style={{position:"relative",width:"100%",aspectRatio:"3/4",background:"#0a0a0a",borderRadius:12,overflow:"hidden",marginBottom:16,border:`1px solid ${previews[poseStep.key] ? "var(--accent)" : "var(--border)"}`}}>
+              {previews[poseStep.key] ? (
+                <img src={previews[poseStep.key]} alt={poseStep.key}
+                  style={{width:"100%",height:"100%",objectFit:"cover",objectPosition:"center"}}/>
+              ) : (
+                <div style={{display:"flex",alignItems:"center",justifyContent:"center",height:"100%",color:"var(--faint)",fontSize:12}}>
+                  Align with guide, then upload
+                </div>
+              )}
+              {/* Silhouette overlay — always shown for alignment */}
+              <div style={{position:"absolute",inset:0,display:"flex",alignItems:"center",justifyContent:"center",pointerEvents:"none"}}>
+                <div style={{width:"55%",height:"90%"}}>{POSE_SVG[poseStep.key]}</div>
+              </div>
+              {previews[poseStep.key] && (
+                <div style={{position:"absolute",top:8,right:8,background:"rgba(61,220,132,.9)",borderRadius:6,padding:"3px 8px",fontSize:10,fontWeight:700,color:"#000"}}>✓ READY</div>
+              )}
+            </div>
+
+            <input ref={fileRefs[poseStep.key]} type="file" accept="image/*" style={{display:"none"}}
+              onChange={e=>handleFile(poseStep.key, e)}/>
+
+            <button onClick={()=>fileRefs[poseStep.key].current?.click()}
+              style={{width:"100%",padding:13,background:previews[poseStep.key]?"var(--up)":"var(--accent)",color:previews[poseStep.key]?"var(--text)":"#080A0C",border:`2px solid ${previews[poseStep.key]?"var(--border)":"var(--accent)"}`,borderRadius:10,fontFamily:"'Bebas Neue',sans-serif",fontSize:15,letterSpacing:1.5,cursor:"pointer",marginBottom:10}}>
+              {previews[poseStep.key] ? "RETAKE PHOTO" : `UPLOAD ${poseStep.label}`}
+            </button>
+
+            {error && <div style={{fontSize:11,color:"var(--red)",marginBottom:10,textAlign:"center"}}>{error}</div>}
+
+            {step < 3 ? (
+              <button onClick={()=>setStep(s=>s+1)} disabled={!previews[poseStep.key]}
+                style={{width:"100%",padding:13,background:"var(--brutal)",color:"var(--card)",border:"none",borderRadius:10,fontFamily:"'Bebas Neue',sans-serif",fontSize:15,letterSpacing:1.5,cursor:previews[poseStep.key]?"pointer":"not-allowed",opacity:previews[poseStep.key]?1:.4}}>
+                NEXT →
+              </button>
+            ) : (
+              <button onClick={handleAnalyze} disabled={!allDone}
+                style={{width:"100%",padding:13,background:"var(--accent)",color:"#080A0C",border:"none",borderRadius:10,fontFamily:"'Bebas Neue',sans-serif",fontSize:15,letterSpacing:1.5,cursor:allDone?"pointer":"not-allowed",opacity:allDone?1:.4}}>
+                ⚡ ANALYZE PHYSIQUE
+              </button>
+            )}
+          </div>
+        )}
+
+        {/* ── STEP 4: ANALYZING ── */}
+        {step === 4 && (
+          <div style={{padding:"40px 24px 48px",textAlign:"center"}}>
+            <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:22,letterSpacing:2,marginBottom:8}}>ANALYZING</div>
+            <div style={{fontSize:12,color:"var(--muted)",marginBottom:32,lineHeight:1.6}}>
+              Reading muscle development, body fat distribution,<br/>and comparing to your {user.goal||"bulk"} goal...
+            </div>
+            <div style={{display:"flex",gap:8,justifyContent:"center"}}>
+              {[0,1,2].map(i=>(
+                <div key={i} style={{width:10,height:10,borderRadius:"50%",background:"var(--accent)",opacity:.7,animation:`pulse ${.9+i*.15}s infinite`}}/>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* ── STEP 5: RESULTS ── */}
+        {step === 5 && result && (
+          <div style={{padding:"16px 24px 32px"}}>
+            <div style={{fontSize:9,letterSpacing:2,textTransform:"uppercase",color:"var(--accent)",marginBottom:4}}>● Physique Analysis</div>
+            <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:24,letterSpacing:1.5,marginBottom:16}}>YOUR PHYSIQUE</div>
+
+            {/* Key metrics */}
+            <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:1,background:"var(--border)",borderRadius:10,overflow:"hidden",marginBottom:16}}>
+              {[
+                { label:"Body Fat", val:`${result.estimatedBfPct}%`, sub:"estimated" },
+                { label:"Lean Mass", val:result.estimatedLbmLbs ? `${Math.round(result.estimatedLbmLbs)}lbs` : "—", sub:"lean body mass" },
+                { label:"Category", val:CATEGORY_LABELS[result.physiqueCategory] || result.physiqueCategory, sub:"level" },
+              ].map((m,i) => (
+                <div key={i} style={{background:"var(--surface)",padding:"12px 10px",textAlign:"center"}}>
+                  <div style={{fontSize:9,letterSpacing:1,textTransform:"uppercase",color:"var(--muted)",marginBottom:4}}>{m.label}</div>
+                  <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:m.label==="Category"?13:20,color:"var(--accent)",lineHeight:1}}>{m.val}</div>
+                  <div style={{fontSize:8,color:"var(--faint)",marginTop:3}}>{m.sub}</div>
+                </div>
+              ))}
+            </div>
+
+            {/* Goal alignment */}
+            {result.goalAlignment && (
+              <div style={{display:"flex",alignItems:"center",gap:8,padding:"10px 14px",background:"var(--up)",borderRadius:8,marginBottom:14}}>
+                <div style={{width:6,height:6,borderRadius:"50%",background:ALIGNMENT_COLOR[result.goalAlignment]||"var(--accent)"}}/>
+                <div style={{fontSize:11,color:ALIGNMENT_COLOR[result.goalAlignment]||"var(--accent)",fontWeight:700,letterSpacing:.5}}>
+                  {ALIGNMENT_LABEL[result.goalAlignment]||result.goalAlignment} for your {user.goal||"bulk"} goal
+                </div>
+                {result.recommendedBfTarget && (
+                  <div style={{marginLeft:"auto",fontSize:10,color:"var(--muted)"}}>Target: {result.recommendedBfTarget}% BF</div>
+                )}
+              </div>
+            )}
+
+            {/* Strengths & weaknesses */}
+            <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10,marginBottom:14}}>
+              {[
+                { label:"Strengths", items:result.primaryStrengths||[], color:"var(--green)" },
+                { label:"Lagging",   items:result.primaryWeaknesses||[], color:"var(--accent)" },
+              ].map(col => (
+                <div key={col.label} style={{background:"var(--up)",borderRadius:8,padding:"10px 12px"}}>
+                  <div style={{fontSize:9,letterSpacing:1.5,textTransform:"uppercase",color:col.color,marginBottom:6,fontWeight:700}}>{col.label}</div>
+                  {(col.items||[]).map((item,i) => (
+                    <div key={i} style={{display:"flex",alignItems:"center",gap:6,marginBottom:4}}>
+                      <div style={{width:4,height:4,borderRadius:"50%",background:col.color,flexShrink:0}}/>
+                      <div style={{fontSize:11,color:"var(--faint)",textTransform:"capitalize"}}>{item}</div>
+                    </div>
+                  ))}
+                </div>
+              ))}
+            </div>
+
+            {/* Projected outcome */}
+            {result.projectedOutcome && (
+              <div style={{padding:"10px 14px",background:"var(--up)",borderRadius:8,marginBottom:14}}>
+                <div style={{fontSize:9,letterSpacing:1.5,textTransform:"uppercase",color:"var(--muted)",marginBottom:4}}>Projected outcome at target BF%</div>
+                <div style={{fontSize:12,color:"var(--faint)",fontStyle:"italic",lineHeight:1.5}}>"{result.projectedOutcome}"</div>
+              </div>
+            )}
+
+            {/* Coach assessment */}
+            {result.coachAssessment && (
+              <div style={{marginBottom:20}}>
+                <div style={{fontSize:9,letterSpacing:2,textTransform:"uppercase",color:"var(--accent)",marginBottom:8}}>● COACH ASSESSMENT</div>
+                <div style={{fontSize:13,color:"var(--faint)",lineHeight:1.75,whiteSpace:"pre-wrap"}}>{result.coachAssessment}</div>
+              </div>
+            )}
+
+            <button onClick={handleSave}
+              style={{width:"100%",padding:14,background:"var(--accent)",color:"#080A0C",border:"none",borderRadius:10,fontFamily:"'Bebas Neue',sans-serif",fontSize:16,letterSpacing:2,cursor:"pointer",marginBottom:10}}>
+              UPDATE MY PROFILE →
+            </button>
+            <button onClick={onClose}
+              style={{width:"100%",background:"none",border:"none",color:"var(--muted)",fontSize:13,cursor:"pointer",padding:8,fontFamily:"'DM Sans',sans-serif"}}>
+              Dismiss (don't save)
+            </button>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ── PHYSIQUE ANALYSIS ENGINE ─────────────────────────────────────────────────
+// Sends front + side + back photos to Sonnet for a comprehensive body
+// composition assessment. Returns structured JSON with BF%, category,
+// strengths, weaknesses, goal alignment, and coaching feedback.
+
+async function analyzePhysique(photos, user, currentWeight) {
+  const content = [];
+  const poseLabels = { front: "FRONT VIEW", side: "SIDE VIEW", back: "BACK VIEW" };
+
+  for (const pose of ["front", "side", "back"]) {
+    const src = photos[pose];
+    if (!src) continue;
+    const b64 = src.includes(",") ? src.split(",")[1] : src;
+    const mime = src.startsWith("data:") ? src.split(";")[0].split(":")[1] : "image/jpeg";
+    content.push({ type: "image", source: { type: "base64", media_type: mime, data: b64 } });
+    content.push({ type: "text", text: `[${poseLabels[pose]}]` });
+  }
+
+  const heightCm = user.height ? Math.round(parseFloat(user.height) * 2.54) : null;
+  content.push({
+    type: "text",
+    text: `Athlete stats: ${user.sex||"male"}, ${user.age||"?"}yo, ${user.level||"intermediate"} level, ${currentWeight} lbs${heightCm ? `, ${heightCm}cm` : ""}. Goal: ${user.goal||"bulk"}.
+
+Analyze all three physique photos and respond ONLY with valid JSON — no other text:
+{
+  "estimatedBfPct": <integer 4–45>,
+  "estimatedLbmLbs": <number>,
+  "physiqueCategory": "<beginner|recreational|intermediate|athletic|advanced|competitor>",
+  "primaryStrengths": ["<muscle group>", "<muscle group>"],
+  "primaryWeaknesses": ["<muscle group>", "<muscle group>"],
+  "goalAlignment": "<well_positioned|on_track|needs_work>",
+  "recommendedBfTarget": <integer>,
+  "projectedOutcome": "<one sentence — visual result at recommended BF%>",
+  "coachAssessment": "<2–3 paragraphs: visible muscle development, body composition observations, specific recommendations for their ${user.goal||"bulk"} goal>"
+}`,
+  });
+
+  try {
+    const res = await fetch("/api/chat", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        model: "claude-sonnet-4-6",
+        max_tokens: 750,
+        system: "You are an elite physique analyst. Provide accurate, honest body composition assessments from photos. Respond with valid JSON only — no markdown, no explanation.",
+        messages: [{ role: "user", content }],
+      }),
+    });
+    const data = await res.json();
+    const text = data.content?.find(b => b.type === "text")?.text || "";
+    const match = text.match(/\{[\s\S]*\}/);
+    return match ? JSON.parse(match[0]) : null;
+  } catch { return null; }
 }
 
 // ─── PROFILE EDIT MODAL ───────────────────────────────────────────────────────

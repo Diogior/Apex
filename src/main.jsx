@@ -17,6 +17,8 @@ const APEX_KEYS = [
   "apex_goal_config_v1", "apex_snapshots_v1",
   "apex_goal_analysis_v1", "apex_goal_history_v1",
   "apex_weekly_digest_v1", "apex_notif_v1",
+  // Physique scan history (analysis results only — photos not stored)
+  "apex_physique_v1",
 ];
 // Session key is intentionally excluded — it is device-local only.
 // An active workout on your phone must never sync to or be wiped by another device.
