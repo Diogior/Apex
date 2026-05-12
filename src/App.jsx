@@ -3233,7 +3233,8 @@ function CustomWorkoutLogger({onComplete,onBack,muscleVol,level}) {
     onComplete({dayKey:`custom_${Date.now()}`,completedExercises:ce,duration:timer,ts:Date.now(),isCustom:true});
   };
   return (
-    <div className="screen" style={{paddingBottom:130}}>
+    <div className="screen" style={{paddingBottom:'calc(200px + env(safe-area-inset-bottom,0px))'}}>
+    {/* paddingBottom clears the fixed complete-button bar (87px) + nav (96px) + safe-area */}
       <div style={{padding:"52px 24px 0"}}>
         <button onClick={onBack} style={{background:"none",border:"none",color:C.muted,fontSize:13,cursor:"pointer",marginBottom:12}}>← Back</button>
         <div style={{display:"flex",alignItems:"flex-start",justifyContent:"space-between"}}>
