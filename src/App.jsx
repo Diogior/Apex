@@ -3257,7 +3257,7 @@ function CustomWorkoutLogger({onComplete,onBack,muscleVol,level}) {
       <div style={{margin:"16px 24px 0"}}>
         <div style={{fontSize:10,letterSpacing:2,textTransform:"uppercase",color:C.blue,marginBottom:10}}>● Add Exercise</div>
 
-        <div style={{position:"relative"}}>
+        <div style={{position:"relative",zIndex:400}}>
           <div style={{display:"flex",gap:8,alignItems:"stretch"}}>
             <input
               type="text"
