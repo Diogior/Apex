@@ -3265,7 +3265,7 @@ function CustomWorkoutLogger({onComplete,onBack,muscleVol,level}) {
               value={search}
               autoComplete="off"
               onFocus={()=>setShowSearch(true)}
-              onBlur={()=>setTimeout(()=>setShowSearch(false),220)}
+              onBlur={()=>setTimeout(()=>setShowSearch(false),400)}
               onChange={e=>{setSearch(e.target.value);setShowSearch(true);}}
               onKeyDown={e=>{
                 if(e.key==="Enter"&&search.trim()){
@@ -3312,7 +3312,7 @@ function CustomWorkoutLogger({onComplete,onBack,muscleVol,level}) {
             <div style={{
               position:"absolute",top:"52px",left:0,right:"88px",
               background:C.surface,border:`1px solid ${C.border}`,
-              borderRadius:12,zIndex:50,
+              borderRadius:12,zIndex:300,
               maxHeight:220,overflowY:"auto",
               boxShadow:"0 8px 32px rgba(0,0,0,.6)",
               marginTop:4,
@@ -3326,7 +3326,9 @@ function CustomWorkoutLogger({onComplete,onBack,muscleVol,level}) {
                 const tag=EX_DB[name]||customExDB[name];
                 const bench=MUSCLE_BENCHMARKS[tag?.primary];
                 return (
-                  <div key={name} onClick={()=>addExercise(name)}
+                  <div key={name}
+                    onMouseDown={e=>{e.preventDefault();addExercise(name);}}
+                    onTouchEnd={e=>{e.preventDefault();addExercise(name);}}
                     style={{padding:"10px 16px",cursor:"pointer",borderBottom:`1px solid ${C.border}`,display:"flex",alignItems:"center",justifyContent:"space-between",transition:"background .12s"}}
                     onMouseOver={e=>e.currentTarget.style.background=C.up}
                     onMouseOut={e=>e.currentTarget.style.background="transparent"}>
