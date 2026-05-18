@@ -3369,6 +3369,9 @@ function CustomWorkoutLogger({onComplete,onBack,muscleVol,level}) {
         </div>
       ):exercises.map((ex,ei)=>{
         const bench=MUSCLE_BENCHMARKS[ex.tag?.primary],done=ex.loggedSets.filter(s=>s.reps&&s.weight).length;
+        // Recognized = resolveExerciseTag found a real muscle (primary !== "custom")
+        const recognized = ex.tag?.primary && ex.tag.primary !== "custom";
+        const inDB = !!EX_DB[ex.name];
         return (
           <div key={ex.id} style={{margin:"14px 24px 0"}}>
             <div style={{background:C.card||C.surface,border:`2px solid ${C.brutal||C.border}`,borderRadius:10,padding:16,boxShadow:`4px 4px 0 ${C.brutal||C.border}`}}>
@@ -3376,13 +3379,20 @@ function CustomWorkoutLogger({onComplete,onBack,muscleVol,level}) {
                 <div>
                   <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:3}}>
                     {bench&&<div style={{width:8,height:8,borderRadius:"50%",background:bench.color,flexShrink:0}}/>}
-                    {ex.isCustom
-                      ? <span style={{fontSize:10,color:C.blue,letterSpacing:1,textTransform:"uppercase",background:`${C.blue}15`,padding:"1px 7px",borderRadius:4}}>Custom Exercise</span>
-                      : <span style={{fontSize:10,color:bench?.color||C.muted,letterSpacing:1,textTransform:"uppercase"}}>{bench?.label||ex.muscle} · {ex.tag?.movement?.replace(/_/g," ")||"exercise"}</span>
+                    {recognized
+                      ? <span style={{fontSize:10,color:bench?.color||C.accent,letterSpacing:1,textTransform:"uppercase"}}>{bench?.label||ex.tag.primary} · {ex.tag?.movement?.replace(/_/g," ")||"exercise"}</span>
+                      : <span style={{fontSize:10,color:C.blue,letterSpacing:1,textTransform:"uppercase",background:`${C.blue}15`,padding:"1px 7px",borderRadius:4}}>Custom Exercise</span>
                     }
                   </div>
                   <div style={{fontSize:15,fontWeight:600,color:C.text}}>{ex.name}</div>
-                  <div style={{fontSize:10,color:C.muted,marginTop:2}}>{ex.isCustom?"No database match — tracked as custom":(`Stim ${ex.tag?.stim||"?"}/10 · ${done}/${ex.loggedSets.length} sets done`)}</div>
+                  <div style={{fontSize:10,color:recognized?C.muted:"var(--muted)",marginTop:2}}>
+                    {!recognized
+                      ? "Not recognized — sets won't count toward muscle volume"
+                      : inDB
+                        ? `Stim ${ex.tag?.stim||"?"}/10 · ${done}/${ex.loggedSets.length} sets done`
+                        : `Detected: ${bench?.label||ex.tag.primary} · ${done}/${ex.loggedSets.length} sets done`
+                    }
+                  </div>
                 </div>
                 <button onClick={()=>removeEx(ei)} style={{background:"none",border:"none",color:C.muted,cursor:"pointer",fontSize:16,padding:4}}>✕</button>
               </div>
