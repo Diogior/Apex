@@ -2725,7 +2725,10 @@ function computeMuscleVolume(history, windowDays=7) {
   recent.forEach(sess => {
     (sess.completedExercises||[]).forEach(ex => {
       // Use stored tag first (custom sessions), then EX_DB exact, then fuzzy resolver
-      const tag = ex.tag || EX_DB[ex.name] || resolveExerciseTag(ex.name);
+      // If stored tag has primary:"custom" it was never properly resolved —
+      // fall through to EX_DB + keyword inference so sets count correctly.
+      const storedTag = ex.tag?.primary && ex.tag.primary !== "custom" ? ex.tag : null;
+      const tag = storedTag || EX_DB[ex.name] || resolveExerciseTag(ex.name);
       if (!tag || !tag.primary) return;
       const sets = (ex.loggedSets||[]).filter(s=>s.reps).length;
       if (vol[tag.primary]) { vol[tag.primary].sets+=sets; vol[tag.primary].freq+=1; vol[tag.primary].lastTs=Math.max(vol[tag.primary].lastTs,sess.ts); }
@@ -3204,7 +3207,10 @@ function CustomWorkoutLogger({onComplete,onBack,muscleVol,level}) {
   const filtered=search.length>=1?allNames.filter(n=>n.toLowerCase().includes(search.toLowerCase())).slice(0,10):[];
 
   const addExercise=name=>{
-    const tag=EX_DB[name]||customExDB[name]||{primary:"custom",secondary:[],movement:"custom",stim:5};
+    // resolveExerciseTag handles case-insensitive + keyword inference so
+    // "barbell curl" / "incline press" etc. get the correct muscle group
+    // even when the exact-case EX_DB key doesn't match.
+    const tag=EX_DB[name]||customExDB[name]||resolveExerciseTag(name)||{primary:"custom",secondary:[],movement:"custom",stim:5};
     setExercises(prev=>[...prev,{id:`cx_${Date.now()}_${Math.random().toString(36).slice(2)}`,name,muscle:tag.primary,category:tag.movement==="isolation"?"isolation":"compound",loggedSets:[{weight:"",reps:"",rpe:""}],tag,isCustom:!EX_DB[name]}]);
     setSearch(""); setShowSearch(false);
   };
