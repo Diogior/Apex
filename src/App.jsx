@@ -3998,6 +3998,7 @@ function TrainingScreen({ user, onNavigate }) {
   const [showChart, setShowChart] = useState(false);
   const [expandedSession, setExpandedSession] = useState(null);
   const [sessionFeedback, setSessionFeedback] = useState(null); // {text, ts, loading}
+  const [splitView, setSplitView] = useState(null); // null=cards, string=split detail
 
   useEffect(() => {
     window.storage.get(TRAINING_KEY).then(r => {
@@ -4100,7 +4101,28 @@ Give post-session feedback: what was solid, anything to flag, and one specific f
     }
   };
 
-  const handleChangeSplit = () => { setSetupMode(true); };
+  const handleChangeSplit = () => { setSplitView(null); setSetupMode(false); };
+
+  // Tap a split card — activate the split if needed, then enter detail view
+  const handleSplitCardPress = async (splitId) => {
+    if (splitId === "custom") {
+      startSession("custom", { exercises: [], loggedSets: {} });
+      return;
+    }
+    // Generate/switch program if needed
+    if (!tState || tState.split !== splitId) {
+      const program = generateProgram({ split: splitId, level: user.level || "intermediate", goal: user.goal || "bulk" });
+      await saveState({
+        split: splitId, program,
+        history: tState?.history || [],
+        weekVolume: {},
+        adaptation: { adjustments: {}, signal: "neutral", note: "" },
+        createdAt: new Date().toISOString(),
+      });
+    }
+    setActiveDay(0);
+    setSplitView(splitId);
+  };
 
   if (!loaded) return (
     <div className="loading"><div style={{ fontFamily: "'Bebas Neue',sans-serif", fontSize: 18, letterSpacing: 2, color: C.muted, animation: "pulse 2s infinite" }}>LOADING PROGRAM...</div></div>
@@ -4194,7 +4216,137 @@ Give post-session feedback: what was solid, anything to flag, and one specific f
     return <WorkoutSession dayKey={session.dayKey} dayPlan={tState.program[session.dayKey]} adaptation={tState.adaptation} history={tState.history||[]} onComplete={handleSessionComplete} onBack={()=>{endGlobalSession();setShowPath(false);}}/>;
   }
 
-  const splitDef = SPLITS[tState.split];
+  // ── SPLIT CARDS HOME VIEW ──────────────────────────────────────────────────
+  if (!splitView && !session) {
+    const CARD_CONFIG = [
+      { id:"ppl",    name:"PUSH · PULL · LEGS", abbr:"PPL",   freq:"6 DAYS / WEEK", color:C.accent,
+        desc:"Max frequency. Each muscle hit twice weekly. Built for intermediate to advanced athletes." },
+      { id:"ul",     name:"UPPER / LOWER",      abbr:"U/L",   freq:"4 DAYS / WEEK", color:C.blue,
+        desc:"High frequency, manageable volume. Ideal for all experience levels and busy schedules." },
+      { id:"pplup",  name:"ARNOLD SPLIT",       abbr:"PPL+U", freq:"5 DAYS / WEEK", color:C.green,
+        desc:"5-day hybrid with dedicated upper-body day for enhanced arm and shoulder development." },
+      { id:"custom", name:"CUSTOM SESSION",     abbr:"FREE",  freq:"ANYTIME",       color:C.purple,
+        desc:"Log any exercise, any combination. Perfect for one-off sessions and deload days." },
+    ];
+    return (
+      <div className="screen">
+        <div className="sh">
+          <div>
+            <div className="sh-greeting">Your training</div>
+            <div className="sh-title">TRAINING</div>
+          </div>
+          {tState && (
+            <div style={{display:"flex",gap:6}}>
+              <button onClick={()=>setShowChart(!showChart)}
+                style={{display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:3,padding:"6px 10px",borderRadius:10,background:showChart?`${C.purple}18`:C.surface,border:`1px solid ${showChart?C.purple:C.border}`,color:showChart?C.purple:C.muted,cursor:"pointer",transition:"all .2s",minWidth:48}}>
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" style={{width:14,height:14}}><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+                <span style={{fontSize:8,fontWeight:600,letterSpacing:.5,textTransform:"uppercase"}}>Balance</span>
+              </button>
+            </div>
+          )}
+        </div>
+
+        {/* Balance chart toggle — accessible from home */}
+        {showChart && tState && (() => {
+          const mv = computeMuscleVolume(tState.history || [], 7);
+          const al = generateMuscleAlerts(mv, user.level || "intermediate", C);
+          return (
+            <div style={{margin:"0 24px 20px",background:C.card||C.surface,border:`2px solid ${C.brutal||C.border}`,borderRadius:10,overflow:"hidden",boxShadow:`4px 4px 0 ${C.brutal||C.border}`,animation:"slideUp .3s ease"}}>
+              <div style={{padding:"14px 18px 8px",display:"flex",alignItems:"center",justifyContent:"space-between"}}>
+                <div style={{fontSize:10,letterSpacing:2,textTransform:"uppercase",color:C.purple}}>● Muscle Balance</div>
+                <div style={{fontSize:9,color:C.faint}}>7-day volume</div>
+              </div>
+              <HimboStatChart muscleVol={mv} level={user.level||"intermediate"}/>
+              {al.length > 0 && (
+                <div style={{padding:"0 18px 14px"}}>
+                  {al.slice(0,3).map(a=>(
+                    <div key={a.key} style={{display:"flex",gap:8,padding:"7px 10px",background:`${a.color}0D`,border:`1px solid ${a.color}30`,borderRadius:7,marginBottom:5,alignItems:"flex-start"}}>
+                      <span style={{width:7,height:7,borderRadius:"50%",background:a.severity==="critical"?C.red:C.accent,display:"inline-block",flexShrink:0,marginTop:3}}/>
+                      <span style={{fontSize:11,color:C.faint,lineHeight:1.4}}>{a.msg}</span>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          );
+        })()}
+
+        {/* THE 4 SPLIT CARDS */}
+        <div style={{padding:"0 24px 32px"}}>
+          {CARD_CONFIG.map((card, idx) => {
+            const isActive = tState?.split === card.id;
+            const splitSchedule = SPLITS[card.id]?.schedule || [];
+            return (
+              <div key={card.id}
+                onClick={() => handleSplitCardPress(card.id)}
+                style={{
+                  marginBottom: 14,
+                  borderRadius: 14,
+                  overflow: "hidden",
+                  border: `2px solid ${isActive ? card.color : "var(--brutal)"}`,
+                  boxShadow: isActive
+                    ? `var(--depth-shadow), var(--inner-light), 4px 4px 0 ${card.color}`
+                    : "var(--depth-shadow), var(--inner-light), 4px 4px 0 var(--brutal)",
+                  cursor: "pointer",
+                  transition: "transform .15s cubic-bezier(.16,1,.3,1), box-shadow .15s",
+                  animation: `screenIn .44s cubic-bezier(.16,1,.3,1) ${idx * 0.07 + 0.04}s both`,
+                }}
+                onMouseOver={e=>{e.currentTarget.style.transform="translate(-2px,-3px)";}}
+                onMouseOut={e=>{e.currentTarget.style.transform="";}}
+              >
+                <div style={{display:"flex"}}>
+                  {/* Left accent stripe */}
+                  <div style={{width:5,background:card.color,flexShrink:0}}/>
+                  <div style={{flex:1,padding:"18px 20px",background:"var(--card)"}}>
+                    {/* Top row: abbr + freq + active badge */}
+                    <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:10}}>
+                      <div style={{display:"flex",alignItems:"center",gap:8}}>
+                        <span style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:11,letterSpacing:2,color:card.color,background:`color-mix(in srgb,${card.color} 14%,transparent)`,padding:"3px 9px",borderRadius:5}}>
+                          {card.abbr}
+                        </span>
+                        <span style={{fontSize:10,color:"var(--muted)",letterSpacing:.5}}>{card.freq}</span>
+                      </div>
+                      {isActive && (
+                        <span style={{fontSize:8,letterSpacing:2,textTransform:"uppercase",color:"var(--green)",fontWeight:700,background:"rgba(61,220,132,.12)",padding:"2px 8px",borderRadius:4,border:"1px solid rgba(61,220,132,.3)"}}>ACTIVE</span>
+                      )}
+                    </div>
+                    {/* Name */}
+                    <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:28,letterSpacing:1.5,color:"var(--text)",lineHeight:1,marginBottom:8}}>
+                      {card.name}
+                    </div>
+                    {/* Description */}
+                    <div style={{fontSize:12,color:"var(--faint)",lineHeight:1.65,marginBottom:splitSchedule.length?12:0}}>
+                      {card.desc}
+                    </div>
+                    {/* Day pills */}
+                    {splitSchedule.length > 0 && (
+                      <div style={{display:"flex",gap:5,flexWrap:"wrap",marginBottom:10}}>
+                        {splitSchedule.map(d => (
+                          <span key={d.key} style={{fontSize:9,letterSpacing:1,textTransform:"uppercase",background:"var(--up)",border:"1px solid var(--border)",color:"var(--muted)",padding:"3px 9px",borderRadius:5}}>
+                            {d.tag}
+                          </span>
+                        ))}
+                      </div>
+                    )}
+                    {/* CTA */}
+                    <div style={{display:"flex",justifyContent:"flex-end",alignItems:"center",gap:6}}>
+                      <span style={{fontSize:11,fontFamily:"'Bebas Neue',sans-serif",letterSpacing:1.5,color:card.color}}>
+                        {card.id === "custom" ? "START SESSION →" : "VIEW PROGRAM →"}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    );
+  }
+
+  // ── SPLIT DETAIL / DASHBOARD VIEW ──────────────────────────────────────────
+
+  const splitDef = SPLITS[tState?.split || "ppl"];
   const schedule = splitDef.schedule;
   const currentDay = schedule[activeDay % schedule.length];
   const dayPlan = tState.program?.[currentDay.key];
@@ -4213,11 +4365,17 @@ Give post-session feedback: what was solid, anything to flag, and one specific f
 
   return (
     <div className="screen">
-      {/* HEADER */}
+      {/* HEADER — detail view with back button */}
       <div className="sh">
-        <div>
-          <div className="sh-label">Your {splitDef.label} Program</div>
-          <div className="sh-title">TRAINING</div>
+        <div style={{display:"flex",alignItems:"center",gap:12}}>
+          <button onClick={()=>setSplitView(null)}
+            style={{background:"none",border:"none",cursor:"pointer",color:"var(--muted)",fontSize:13,fontFamily:"'DM Sans',sans-serif",padding:0,display:"flex",alignItems:"center",gap:4}}>
+            ← Back
+          </button>
+          <div>
+            <div className="sh-greeting">{splitDef.abbr}</div>
+            <div className="sh-title">{splitDef.label.split("/")[0].trim().toUpperCase()}</div>
+          </div>
         </div>
         <div style={{ display: "flex", gap: 6 }}>
           {[
@@ -4225,8 +4383,6 @@ Give post-session feedback: what was solid, anything to flag, and one specific f
               icon:<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" style={{width:14,height:14}}><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg> },
             { label:"Stats", active:showStats, color:C.accent, onClick:()=>setShowStats(!showStats),
               icon:<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" style={{width:14,height:14}}><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg> },
-            { label:"Split", active:false, color:C.muted, onClick:handleChangeSplit,
-              icon:<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" style={{width:14,height:14}}><circle cx="12" cy="12" r="3"/><path d="M12 1v4M12 19v4M4.22 4.22l2.83 2.83M16.95 16.95l2.83 2.83M1 12h4M19 12h4M4.22 19.78l2.83-2.83M16.95 7.05l2.83-2.83"/></svg> },
           ].map(btn => (
             <button key={btn.label} onClick={btn.onClick}
               style={{ display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:3,padding:"6px 10px",borderRadius:10,background:btn.active?`${btn.color}18`:C.surface,border:`1px solid ${btn.active?btn.color:C.border}`,color:btn.active?btn.color:C.muted,cursor:"pointer",transition:"all .2s",minWidth:48 }}>
@@ -4426,13 +4582,11 @@ Give post-session feedback: what was solid, anything to flag, and one specific f
             </div>
           );
         })}
-        {/* Custom session indicator */}
-        {(tState.history||[]).some(h=>h.isCustom)&&(
-          <div className="dchip" onClick={()=>{setShowPath(false);startSession("custom",{exercises:[],loggedSets:{}});}} style={{minWidth:64,background:C.up,borderColor:C.blue}}>
-            <div style={{fontSize:9,color:C.blue,letterSpacing:1,textAlign:"center",marginBottom:2}}>FREE</div>
-            <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:12,letterSpacing:1,color:C.blue,textAlign:"center"}}>LOG</div>
-          </div>
-        )}
+        {/* Back to split cards */}
+        <div className="dchip" onClick={()=>{setShowPath(false);setSplitView(null);}} style={{minWidth:64,background:C.up,borderColor:C.border}}>
+          <div style={{fontSize:9,color:C.muted,letterSpacing:1,textAlign:"center",marginBottom:2}}>ALL</div>
+          <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:11,letterSpacing:1,color:C.muted,textAlign:"center"}}>↩</div>
+        </div>
       </div>
 
       {/* FIRST-SESSION ORIENTATION */}
