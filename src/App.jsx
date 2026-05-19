@@ -115,7 +115,7 @@ body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;-we
 .screen>*:nth-child(4){animation:screenIn .44s cubic-bezier(.16,1,.3,1) .16s both;}
 .screen>*:nth-child(n+5){animation:screenIn .44s cubic-bezier(.16,1,.3,1) .20s both;}
 /* Hard override for any fixed element that happens to be a .screen child */
-.ci-area,.wt-notif-wrap,.photo-strip,.msv{animation:none!important;}
+.ci-area,.wt-notif-wrap,.photo-strip,.msv,.cx-card-wrap{animation:none!important;}
 
 /* Cinematic keyframes */
 @keyframes chargePulse{
@@ -3338,7 +3338,7 @@ function CustomWorkoutLogger({onComplete,onBack,muscleVol,level}) {
       <div style={{margin:"16px 24px 0"}}>
         <div style={{fontSize:10,letterSpacing:2,textTransform:"uppercase",color:C.blue,marginBottom:10}}>● Add Exercise</div>
 
-        <div style={{position:"relative",zIndex:400}}>
+        <div style={{position:"relative",zIndex:9999}}>
           <div style={{display:"flex",gap:8,alignItems:"stretch"}}>
             <input
               type="text"
@@ -3456,7 +3456,7 @@ function CustomWorkoutLogger({onComplete,onBack,muscleVol,level}) {
         const recognized = ex.tag?.primary && ex.tag.primary !== "custom";
         const inDB = !!EX_DB[ex.name];
         return (
-          <div key={ex.id} style={{margin:"14px 24px 0"}}>
+          <div key={ex.id} className="cx-card-wrap" style={{margin:"14px 24px 0"}}>
             <div style={{background:C.card||C.surface,border:`2px solid ${C.brutal||C.border}`,borderRadius:10,padding:16,boxShadow:`4px 4px 0 ${C.brutal||C.border}`}}>
               <div style={{display:"flex",alignItems:"flex-start",justifyContent:"space-between",marginBottom:12}}>
                 <div>
