@@ -2673,32 +2673,85 @@ function resolveExerciseTag(name) {
   // Input contains a known exercise name ("machine bench press" → "Bench Press")
   const partial = Object.entries(EX_DB).find(([k]) => lower.includes(k.toLowerCase()));
   if (partial) return partial[1];
-  // A known DB name is contained in the input ("reverse barbell curl" contains "barbell curl")
+  // All words of a DB name appear in the input
   const reversed = Object.entries(EX_DB).find(([k]) => k.toLowerCase().split(" ").every(w => lower.includes(w)));
   if (reversed) return reversed[1];
-  // Keyword inference by movement pattern
-  if (/\b(bench|chest press|pec dec?k?|cable fly|incline press|chest fly|machine chest|machine incline)\b/.test(lower))
-    return {primary:"chest",  secondary:["triceps"],   movement:"horizontal_push",stim:7};
-  if (/\b(row|lat pull|pulldown|pull-?up|chin-?up|pullover|lying machine)\b/.test(lower))
-    return {primary:"back",   secondary:["biceps"],    movement:"horizontal_pull",stim:7};
-  if (/\b(squat|leg press|lunge|hack|pendulum|leg ext)\b/.test(lower))
-    return {primary:"quads",  secondary:["glutes"],    movement:"squat",stim:7};
-  if (/\b(rdl|romanian|stiff.?leg|leg curl|hamstring|nordic)\b/.test(lower))
-    return {primary:"hams",   secondary:["glutes"],    movement:"hinge",stim:7};
-  if (/\b(hip thrust|glute bridge|glute)\b/.test(lower))
-    return {primary:"hams",   secondary:["glutes"],    movement:"hip_extension",stim:7};
-  if (/\b(overhead press|ohp|shoulder press|arnold|lateral raise|side raise|upright|machine shoulder)\b/.test(lower))
-    return {primary:"delts",  secondary:["triceps"],   movement:"vertical_push",stim:7};
-  if (/\b(rear delt|face pull|reverse fly|rear fly|rear delt machine)\b/.test(lower))
-    return {primary:"rear_delt",secondary:["back"],    movement:"fly",stim:7};
-  if (/\b(tricep|skull crusher|pushdown|rope push|overhead ext|jm press|tricep machine)\b/.test(lower))
-    return {primary:"triceps",secondary:[],            movement:"isolation",stim:7};
-  if (/\b(curl|bicep|preacher|concentration|hammer)\b/.test(lower))
-    return {primary:"biceps", secondary:[],            movement:"isolation",stim:7};
-  if (/\b(calf|calves)\b/.test(lower))
-    return {primary:"calves", secondary:[],            movement:"isolation",stim:7};
-  if (/\b(ab |abs|crunch|plank|core|sit.?up|leg raise|toes.?to.?bar)\b/.test(lower))
-    return {primary:"abs",    secondary:[],            movement:"isometric",stim:6};
+
+  // ── EXPANDED KEYWORD INFERENCE ──────────────────────────────────────────
+  // Flags used across patterns
+  const isRear    = /\b(rear|reverse|bent.?over)\b/.test(lower);
+  const hasPull   = /\b(pull|row|chin|lat)\b/.test(lower);
+  const hasLeg    = /\b(leg|hip|glute|hamstring|quad)\b/.test(lower);
+
+  // ── CHEST: pec (any variant), fly/flye (non-rear), bench, push-up, crossover
+  if (!isRear && (
+    lower.includes("pec") ||
+    /\bflyes?\b/.test(lower) ||
+    /\b(bench|chest press|incline press|chest fly|cable fly|machine chest|machine incline|push.?up|crossover|dumbbell press|db press)\b/.test(lower)
+  )) return {primary:"chest", secondary:["triceps"], movement:"horizontal_push", stim:7};
+
+  // ── BACK: rows, pulldowns, pull-ups, cable pulls, machine back
+  if (/\b(row|lat pull|pulldown|pull.?up|chin.?up|pullover|t.?bar|seated cable|low row|machine row|cable row|v.?bar|single arm row|chest supported|wide grip pull)\b/.test(lower))
+    return {primary:"back",   secondary:["biceps"],   movement:"horizontal_pull", stim:7};
+
+  // ── QUADS
+  if (/\b(squat|leg press|lunge|hack|pendulum|leg ext|step.?up|split squat|wall sit)\b/.test(lower))
+    return {primary:"quads",  secondary:["glutes"],   movement:"squat",          stim:7};
+
+  // ── HAMSTRINGS / GLUTES
+  if (/\b(rdl|romanian|stiff.?leg|leg curl|hamstring|nordic|hip thrust|glute bridge|glute|sumo|deadlift)\b/.test(lower))
+    return {primary:"hams",   secondary:["glutes"],   movement:"hinge",          stim:7};
+
+  // ── REAR DELT (check before general delts)
+  if (isRear || /\b(face pull|reverse fly|rear fly|rear delt|cable pull.?apart|band pull.?apart|prone y|prone t)\b/.test(lower))
+    return {primary:"rear_delt", secondary:["back"], movement:"fly",            stim:7};
+
+  // ── DELTS: shoulder, press (non-chest context), lateral, upright, overhead
+  if (/\b(overhead press|ohp|shoulder press|arnold|lateral raise|side raise|upright|machine shoulder|shoulder|pike|military press|dumbbell shoulder)\b/.test(lower))
+    return {primary:"delts",  secondary:["triceps"],  movement:"vertical_push",  stim:7};
+
+  // ── TRICEPS: pushdown, extension, dip, kickback — guard against leg/back
+  if (!hasLeg && /\b(tricep|skull.?crusher|push.?down|overhead ext|jm press|rope push|tate press|dip|kickback|close.?grip|cable extension|tricep machine)\b/.test(lower))
+    return {primary:"triceps",secondary:[],           movement:"isolation",      stim:7};
+
+  // ── BICEPS: curl, hammer, preacher, zottman, spider
+  if (/\b(curl|bicep|preacher|concentration|hammer|zottman|spider|incline curl|cable curl)\b/.test(lower))
+    return {primary:"biceps", secondary:[],           movement:"isolation",      stim:7};
+
+  // ── CALVES
+  if (/\b(calf|calves|calf raise|standing raise|seated raise)\b/.test(lower))
+    return {primary:"calves", secondary:[],           movement:"isolation",      stim:7};
+
+  // ── ABS: crunch, plank, core, sit-up, cable crunch, russian twist
+  if (/\b(ab |abs|crunch|plank|core|sit.?up|leg raise|toes.?to.?bar|cable crunch|russian twist|hollow|v.?up|decline crunch)\b/.test(lower))
+    return {primary:"abs",    secondary:[],           movement:"isometric",      stim:6};
+
+  return null;
+}
+
+// AI fallback — called when keyword matching returns null.
+// Uses Haiku for speed/cost; result cached in customExDB for future use.
+async function resolveExerciseTagWithAI(name) {
+  const VALID = ['chest','back','quads','hams','delts','rear_delt','triceps','biceps','calves','abs'];
+  try {
+    const res = await fetch("/api/chat", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        model: "claude-haiku-4-5-20251001",
+        max_tokens: 10,
+        system: "Classify gym exercises. Reply with ONLY the primary muscle group in lowercase. Options: chest back quads hams delts rear_delt triceps biceps calves abs",
+        messages: [{ role: "user", content: `Exercise: "${name}"` }],
+      }),
+    });
+    const data = await res.json();
+    const muscle = (data.content?.[0]?.text || "").trim().toLowerCase().replace(/[^a-z_]/g, "");
+    if (VALID.includes(muscle)) {
+      const mvt = ["chest","delts","triceps"].includes(muscle) ? "horizontal_push"
+        : ["back","biceps"].includes(muscle) ? "horizontal_pull" : "isolation";
+      return { primary: muscle, secondary: [], movement: mvt, stim: 7 };
+    }
+  } catch {}
   return null;
 }
 
@@ -3183,6 +3236,7 @@ function CustomWorkoutLogger({onComplete,onBack,muscleVol,level}) {
   const [exercises,setExercises]=useState(()=>session?.customExercises||[]);
   const [search,setSearch]=useState("");
   const [showSearch,setShowSearch]=useState(false);
+  const [tagging,setTagging]=useState(false); // AI muscle identification in progress
   const [timer,setTimer]=useState(0);
   const timerRef=useRef(null);
   const [customExDB,setCustomExDB]=useState({});
@@ -3206,12 +3260,33 @@ function CustomWorkoutLogger({onComplete,onBack,muscleVol,level}) {
   const allNames=[...Object.keys(EX_DB),...Object.keys(customExDB).filter(n=>!EX_DB[n])];
   const filtered=search.length>=1?allNames.filter(n=>n.toLowerCase().includes(search.toLowerCase())).slice(0,10):[];
 
-  const addExercise=name=>{
-    // resolveExerciseTag handles case-insensitive + keyword inference so
-    // "barbell curl" / "incline press" etc. get the correct muscle group
-    // even when the exact-case EX_DB key doesn't match.
-    const tag=EX_DB[name]||customExDB[name]||resolveExerciseTag(name)||{primary:"custom",secondary:[],movement:"custom",stim:5};
-    setExercises(prev=>[...prev,{id:`cx_${Date.now()}_${Math.random().toString(36).slice(2)}`,name,muscle:tag.primary,category:tag.movement==="isolation"?"isolation":"compound",loggedSets:[{weight:"",reps:"",rpe:""}],tag,isCustom:!EX_DB[name]}]);
+  const addExercise=async name=>{
+    // 1. Fast synchronous resolution (EX_DB, saved custom, keyword patterns)
+    let tag=EX_DB[name]||customExDB[name]||resolveExerciseTag(name);
+
+    // 2. AI fallback for truly unrecognised names (e.g. "pec fly machine", "hip abduction")
+    if(!tag||tag.primary==="custom"){
+      setTagging(true);
+      setSearch(""); setShowSearch(false);
+      const aiTag=await resolveExerciseTagWithAI(name);
+      setTagging(false);
+      if(aiTag){
+        tag=aiTag;
+        // Cache so next use is instant
+        const updated={...customExDB,[name]:{...aiTag,savedAt:Date.now(),aiClassified:true}};
+        setCustomExDB(updated);
+        window.storage.set(CUSTOM_EX_KEY,JSON.stringify(updated)).catch(()=>{});
+      } else {
+        tag={primary:"custom",secondary:[],movement:"custom",stim:5};
+      }
+    }
+
+    setExercises(prev=>[...prev,{
+      id:`cx_${Date.now()}_${Math.random().toString(36).slice(2)}`,
+      name,muscle:tag.primary,
+      category:tag.movement==="isolation"?"isolation":"compound",
+      loggedSets:[{weight:"",reps:"",rpe:""}],tag,isCustom:!EX_DB[name],
+    }]);
     setSearch(""); setShowSearch(false);
   };
 
@@ -3274,7 +3349,7 @@ function CustomWorkoutLogger({onComplete,onBack,muscleVol,level}) {
               onBlur={()=>setTimeout(()=>setShowSearch(false),400)}
               onChange={e=>{setSearch(e.target.value);setShowSearch(true);}}
               onKeyDown={e=>{
-                if(e.key==="Enter"&&search.trim()){
+                if(e.key==="Enter"&&search.trim()&&!tagging){
                   e.preventDefault();
                   addExercise(search.trim());
                 }
@@ -3289,8 +3364,8 @@ function CustomWorkoutLogger({onComplete,onBack,muscleVol,level}) {
               }}
             />
             <button
-              onClick={()=>{ if(search.trim()) addExercise(search.trim()); }}
-              disabled={!search.trim()}
+              onClick={()=>{ if(search.trim()&&!tagging) addExercise(search.trim()); }}
+              disabled={!search.trim()||tagging}
               style={{
                 flexShrink:0,padding:"0 20px",
                 background:search.trim()?C.blue:`${C.blue}18`,
@@ -3309,8 +3384,16 @@ function CustomWorkoutLogger({onComplete,onBack,muscleVol,level}) {
 
           {/* hint line */}
           <div style={{fontSize:11,color:C.muted,marginTop:7,paddingLeft:2}}>
-            Write any exercise name and hit <span style={{color:C.blue}}>Enter</span> or <span style={{color:C.blue}}>ADD</span>.
-            {search.length>=2&&filtered.length>0&&<span style={{color:C.muted}}> Suggestions below ↓</span>}
+            {tagging
+              ? <span style={{color:C.accent,display:"flex",alignItems:"center",gap:6}}>
+                  <span style={{display:"inline-flex",gap:3}}>
+                    {[0,1,2].map(i=><span key={i} style={{width:5,height:5,borderRadius:"50%",background:C.accent,display:"inline-block",opacity:.7,animation:`pulse ${.9+i*.15}s infinite`}}/>)}
+                  </span>
+                  Identifying muscle group...
+                </span>
+              : <>Write any exercise name and hit <span style={{color:C.blue}}>Enter</span> or <span style={{color:C.blue}}>ADD</span>.
+                {search.length>=2&&filtered.length>0&&<span style={{color:C.muted}}> Suggestions below ↓</span>}</>
+            }
           </div>
 
           {/* SUGGESTIONS — secondary assist, only if DB matches exist */}
