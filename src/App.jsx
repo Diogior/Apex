@@ -115,7 +115,7 @@ body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;-we
 .screen>*:nth-child(4){animation:screenIn .44s cubic-bezier(.16,1,.3,1) .16s both;}
 .screen>*:nth-child(n+5){animation:screenIn .44s cubic-bezier(.16,1,.3,1) .20s both;}
 /* Hard override for any fixed element that happens to be a .screen child */
-.ci-area,.wt-notif-wrap,.photo-strip,.msv,.cx-card-wrap{animation:none!important;}
+.ci-area,.wt-notif-wrap,.photo-strip,.msv,.cx-card-wrap,.cx-empty-state{animation:none!important;}
 
 /* Cinematic keyframes */
 @keyframes chargePulse{
@@ -3449,7 +3449,7 @@ function CustomWorkoutLogger({onComplete,onBack,muscleVol,level}) {
       </div>
 
       {exercises.length===0?(
-        <div style={{padding:"36px 24px",textAlign:"center"}}>
+        <div className="cx-empty-state" style={{padding:"36px 24px",textAlign:"center"}}>
           <div style={{width:44,height:44,borderRadius:12,background:C.up,display:"flex",alignItems:"center",justifyContent:"center",margin:"0 auto 14px",color:C.muted}}><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" style={{width:22,height:22}}><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></div>
           <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:20,letterSpacing:2,color:C.muted,marginBottom:8}}>YOUR SESSION STARTS HERE</div>
           <div style={{fontSize:13,color:C.muted,lineHeight:1.65,maxWidth:280,margin:"0 auto"}}>
