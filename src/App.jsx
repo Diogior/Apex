@@ -3415,10 +3415,16 @@ function CustomWorkoutLogger({onComplete,onBack,muscleVol,level}) {
                 const tag=EX_DB[name]||customExDB[name];
                 const bench=MUSCLE_BENCHMARKS[tag?.primary];
                 return (
-                  <div key={name}
-                    onMouseDown={e=>{e.preventDefault();addExercise(name);}}
-                    onTouchEnd={e=>{e.preventDefault();addExercise(name);}}
-                    style={{padding:"10px 16px",cursor:"pointer",borderBottom:`1px solid ${C.border}`,display:"flex",alignItems:"center",justifyContent:"space-between",transition:"background .12s"}}
+                  <button key={name} type="button"
+                    onClick={()=>addExercise(name)}
+                    style={{
+                      width:"100%",textAlign:"left",background:"transparent",border:"none",
+                      padding:"10px 16px",cursor:"pointer",
+                      borderBottom:`1px solid ${C.border}`,
+                      display:"flex",alignItems:"center",justifyContent:"space-between",
+                      touchAction:"manipulation",  // kills iOS 300ms tap delay
+                      transition:"background .12s",
+                    }}
                     onMouseOver={e=>e.currentTarget.style.background=C.up}
                     onMouseOut={e=>e.currentTarget.style.background="transparent"}>
                     <div>
@@ -3434,7 +3440,7 @@ function CustomWorkoutLogger({onComplete,onBack,muscleVol,level}) {
                       {bench&&<div style={{width:7,height:7,borderRadius:"50%",background:bench.color}}/>}
                       <span style={{fontSize:10,color:bench?.color||C.muted}}>{bench?.label||tag?.primary||""}</span>
                     </div>
-                  </div>
+                  </button>
                 );
               })}
             </div>
