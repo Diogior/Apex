@@ -98,6 +98,38 @@ body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;-we
   .app{background-image:radial-gradient(ellipse 70% 35% at 82% 0%,rgba(245,166,35,.06) 0%,transparent 55%),radial-gradient(ellipse 38% 20% at 12% 100%,rgba(91,143,249,.04) 0%,transparent 50%);}
 }
 
+/* ═══ NEOBRUTALIST DESIGN SYSTEM ════════════════════════════════════════════ */
+/* Consistent brutalist input + card language across all pages */
+
+/* All text inputs get hard 2px brutal border + sharp corners */
+input[type="text"]:not(.no-brutal),
+input[type="number"]:not(.no-brutal),
+input[type="email"]:not(.no-brutal),
+input[type="password"]:not(.no-brutal),
+textarea:not(.no-brutal),
+select:not(.no-brutal){
+  border-radius:6px!important;
+}
+
+/* Auth inputs + onboarding inputs keep 4px (already sharp) */
+.auth-input,.ob2-input{border-radius:4px!important;}
+
+/* Stat strip: pump shadow offset slightly */
+.stat-strip{box-shadow:var(--depth-shadow),var(--inner-light),5px 5px 0 var(--brutal)!important;}
+
+/* Ecard hover: sharper lift + stronger shadow */
+.ecard:hover{
+  transform:translate(-3px,-4px)!important;
+  box-shadow:var(--depth-shadow),var(--inner-light),7px 7px 0 var(--accent)!important;
+}
+
+/* Brutalist focus ring for all normal inputs */
+input:focus,textarea:focus,select:focus{
+  outline:none!important;
+  border-color:var(--accent)!important;
+  box-shadow:3px 3px 0 var(--accent)!important;
+}
+
 /* Surface material helpers */
 .surface-glass{background:var(--glass-tint);backdrop-filter:blur(20px) saturate(1.6);-webkit-backdrop-filter:blur(20px) saturate(1.6);border:1px solid var(--glass-border);}
 .surface-charged{box-shadow:var(--charge-glow),var(--inner-light) !important;}
@@ -504,7 +536,8 @@ body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;-we
 .wt-bar-wrap{display:flex;flex-direction:column;align-items:center;flex:1;}
 .wt-bar{border-radius:3px 3px 0 0;min-height:4px;transition:height .5s ease;width:100%;max-width:18px;}
 .wt-input-row{display:flex;gap:8px;}
-.wt-input{flex:1;background:var(--up);border:2px solid var(--brutal);border-radius:10px;padding:11px 44px 11px 14px;color:var(--text);font-size:18px;font-family:'Bebas Neue',sans-serif;letter-spacing:2px;outline:none;transition:border-color .2s,box-shadow .2s;}
+.wt-input{flex:1;background:var(--up);border:2px solid var(--brutal);border-radius:6px;padding:11px 44px 11px 14px;color:var(--text);font-size:18px;font-family:'Bebas Neue',sans-serif;letter-spacing:2px;outline:none;transition:border-color .2s,box-shadow .2s;}
+.wt-input:focus{border-color:var(--accent);box-shadow:3px 3px 0 var(--accent);}
 .wt-input:focus{border-color:var(--accent);box-shadow:3px 3px 0 var(--accent);}
 .wt-input-unit{position:absolute;right:14px;top:50%;transform:translateY(-50%);font-size:11px;color:var(--muted);}
 .wt-log-btn{padding:0 20px;background:var(--accent);color:#FFF;border:none;border-radius:100px;font-family:'Bebas Neue',sans-serif;font-size:14px;letter-spacing:1.5px;cursor:pointer;flex-shrink:0;position:relative;overflow:hidden;transition:all 0.2s ease;box-shadow:inset 0 0.3rem 0.7rem rgba(255,255,255,0.35),inset 0 -0.1rem 0.3rem rgba(0,0,0,0.5),inset 0 -0.35rem 0.7rem rgba(255,255,255,0.4),0 0.6rem 0.8rem -0.4rem rgba(0,0,0,0.7);}
@@ -3493,20 +3526,20 @@ function CustomWorkoutLogger({onComplete,onBack,muscleVol,level}) {
                 return (
                   <div key={si} style={{display:"grid",gridTemplateColumns:"24px 1fr 1fr 1fr 20px",gap:5,marginBottom:5,alignItems:"center"}}>
                     <div style={{fontFamily:"'DM Mono',monospace",fontSize:11,color:d?C.blue:C.muted,textAlign:"center"}}>{si+1}</div>
-                    <input type="number" placeholder="lbs" value={set.weight} onChange={e=>updateSet(ei,si,"weight",e.target.value)} style={{background:C.up,border:`1px solid ${d?C.blue+"50":C.border}`,borderRadius:7,padding:"8px 6px",color:C.text,fontSize:12,fontFamily:"'DM Mono',monospace",textAlign:"center",outline:"none",width:"100%"}}/>
-                    <input type="number" placeholder="reps" value={set.reps} onChange={e=>updateSet(ei,si,"reps",e.target.value)} style={{background:C.up,border:`1px solid ${d?C.blue+"50":C.border}`,borderRadius:7,padding:"8px 6px",color:C.text,fontSize:12,fontFamily:"'DM Mono',monospace",textAlign:"center",outline:"none",width:"100%"}}/>
-                    <input type="number" min="6" max="10" step=".5" placeholder="RPE" value={set.rpe} onChange={e=>updateSet(ei,si,"rpe",e.target.value)} style={{background:C.up,border:`1px solid ${set.rpe?rpeC(set.rpe)+"50":C.border}`,borderRadius:7,padding:"8px 6px",color:set.rpe?rpeC(set.rpe):C.muted,fontSize:12,fontFamily:"'DM Mono',monospace",textAlign:"center",outline:"none",width:"100%"}}/>
+                    <input type="number" placeholder="lbs" value={set.weight} onChange={e=>updateSet(ei,si,"weight",e.target.value)} style={{background:C.up,border:`2px solid ${d?C.brutal:C.border}`,borderRadius:4,boxShadow:d?`2px 2px 0 ${C.brutal}`:"none",padding:"8px 6px",color:d?C.text:C.muted,fontSize:12,fontFamily:"'DM Mono',monospace",textAlign:"center",outline:"none",width:"100%",transition:"border-color .15s,box-shadow .15s"}}/>
+                    <input type="number" placeholder="reps" value={set.reps} onChange={e=>updateSet(ei,si,"reps",e.target.value)} style={{background:C.up,border:`2px solid ${d?C.brutal:C.border}`,borderRadius:4,boxShadow:d?`2px 2px 0 ${C.brutal}`:"none",padding:"8px 6px",color:d?C.text:C.muted,fontSize:12,fontFamily:"'DM Mono',monospace",textAlign:"center",outline:"none",width:"100%",transition:"border-color .15s,box-shadow .15s"}}/>
+                    <input type="number" min="6" max="10" step=".5" placeholder="RPE" value={set.rpe} onChange={e=>updateSet(ei,si,"rpe",e.target.value)} style={{background:C.up,border:`2px solid ${set.rpe?rpeC(set.rpe):C.border}`,borderRadius:4,boxShadow:set.rpe?`2px 2px 0 ${rpeC(set.rpe)}`:"none",padding:"8px 6px",color:set.rpe?rpeC(set.rpe):C.muted,fontSize:12,fontFamily:"'DM Mono',monospace",textAlign:"center",outline:"none",width:"100%",transition:"border-color .15s,box-shadow .15s"}}/>
                     <div style={{display:"flex",alignItems:"center",justifyContent:"center"}}>{d&&<div style={{width:14,height:14,borderRadius:"50%",background:C.green,display:"flex",alignItems:"center",justifyContent:"center",fontSize:8}}>✓</div>}</div>
                   </div>
                 );
               })}
-              <button onClick={()=>addSet(ei)} style={{width:"100%",marginTop:8,padding:"7px",background:"transparent",border:`1px solid ${C.border}`,borderRadius:7,color:C.faint,fontSize:11,cursor:"pointer"}}>+ Add Set</button>
+              <button onClick={()=>addSet(ei)} style={{width:"100%",marginTop:8,padding:"7px",background:"transparent",border:`2px solid ${C.brutal}`,borderRadius:4,boxShadow:`2px 2px 0 ${C.brutal}`,color:C.muted,fontSize:11,cursor:"pointer",transition:"all .12s",fontFamily:"'Bebas Neue',sans-serif",letterSpacing:1}}>+ ADD SET</button>
             </div>
           </div>
         );
       })}
       <div style={{position:"fixed",bottom:"calc(96px + env(safe-area-inset-bottom,0px))",left:"50%",transform:"translateX(-50%)",width:"100%",maxWidth:430,padding:"12px 24px",background:"rgba(8,10,12,0.97)",borderTop:`1px solid ${C.border}`,zIndex:110,animation:"none"}}>
-        <button onClick={handleComplete} disabled={totalSets===0} style={{width:"100%",padding:15,background:C.blue,color:"#080A0C",border:"none",borderRadius:12,fontFamily:"'Bebas Neue',sans-serif",fontSize:17,letterSpacing:2,cursor:totalSets>0?"pointer":"not-allowed",opacity:totalSets>0?1:.4,transition:"all .3s"}}>
+        <button onClick={handleComplete} disabled={totalSets===0} style={{width:"100%",padding:15,background:C.blue,color:"#080A0C",border:`2px solid ${C.brutal}`,borderRadius:6,boxShadow:totalSets>0?`3px 3px 0 ${C.brutal}`:"none",fontFamily:"'Bebas Neue',sans-serif",fontSize:17,letterSpacing:2,cursor:totalSets>0?"pointer":"not-allowed",opacity:totalSets>0?1:.4,transition:"all .2s"}}>
           COMPLETE SESSION ({totalSets} sets)
         </button>
       </div>
@@ -3910,14 +3943,14 @@ function WorkoutSession({ dayKey, dayPlan, adaptation, history = [], onComplete,
                           <div style={{ fontFamily: "'DM Mono',monospace", fontSize: 12, color: done ? C.accent : C.muted, textAlign: "center" }}>{si + 1}</div>
                           <input type="number" placeholder={weightPlaceholder} value={set.weight}
                             onChange={e => updateSet(ex.id, si, "weight", e.target.value)}
-                            style={{ background: C.surface, border: `2px solid ${isPR ? C.accent : done ? C.accent + "40" : C.border}`, borderRadius: 8, padding: "9px 8px", color: isPR ? C.accent : C.text, fontSize: 13, fontFamily: "'DM Mono',monospace", textAlign: "center", outline: "none", width: "100%", transition: "all .2s", fontWeight: isPR ? 700 : 400 }} />
+                            style={{ background: C.up, border: `2px solid ${isPR ? C.red : done ? C.brutal : C.border}`, borderRadius: 4, boxShadow: isPR ? `2px 2px 0 ${C.red}` : done ? `2px 2px 0 ${C.brutal}` : "none", padding: "9px 8px", color: isPR ? C.red : done ? C.text : C.muted, fontSize: 13, fontFamily: "'DM Mono',monospace", textAlign: "center", outline: "none", width: "100%", transition: "all .15s", fontWeight: isPR ? 700 : 400 }} />
                           <input type="number" placeholder={repsPlaceholder} value={set.reps}
                             onChange={e => updateSet(ex.id, si, "reps", e.target.value)}
-                            style={{ background: C.surface, border: `2px solid ${done ? C.accent + "40" : C.border}`, borderRadius: 8, padding: "9px 8px", color: C.text, fontSize: 13, fontFamily: "'DM Mono',monospace", textAlign: "center", outline: "none", width: "100%", transition: "border-color .2s" }} />
+                            style={{ background: C.up, border: `2px solid ${done ? C.brutal : C.border}`, borderRadius: 4, boxShadow: done ? `2px 2px 0 ${C.brutal}` : "none", padding: "9px 8px", color: done ? C.text : C.muted, fontSize: 13, fontFamily: "'DM Mono',monospace", textAlign: "center", outline: "none", width: "100%", transition: "all .15s" }} />
                           <input type="number" min="1" max="5" step="1" placeholder="SFR"
                             value={set.rpe}
                             onChange={e => updateSet(ex.id, si, "rpe", e.target.value)}
-                            style={{ background: C.surface, border: `1px solid ${set.rpe ? sfrColor(set.rpe) + "50" : C.border}`, borderRadius: 8, padding: "9px 8px", color: set.rpe ? sfrColor(set.rpe) : C.muted, fontSize: 13, fontFamily: "'DM Mono',monospace", textAlign: "center", outline: "none", width: "100%" }} />
+                            style={{ background: C.up, border: `2px solid ${set.rpe ? sfrColor(set.rpe) : C.border}`, borderRadius: 4, boxShadow: set.rpe ? `2px 2px 0 ${sfrColor(set.rpe)}` : "none", padding: "9px 8px", color: set.rpe ? sfrColor(set.rpe) : C.muted, fontSize: 13, fontFamily: "'DM Mono',monospace", textAlign: "center", outline: "none", width: "100%", transition: "all .15s" }} />
                           <div style={{ display: "flex", alignItems: "center", justifyContent: "center" }}>
                             {isPR ? <div style={{ fontSize: 10, color: C.accent, fontWeight: 700 }}>▲</div>
                               : done ? <div style={{ width: 16, height: 16, borderRadius: "50%", background: C.green, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 9 }}>✓</div>
