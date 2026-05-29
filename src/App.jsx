@@ -1,11 +1,14 @@
 import { useState, useRef, useEffect, useCallback, useMemo, createContext, useContext } from "react";
-import { auth } from "./firebase.js";
+import { auth, db } from "./firebase.js";
 import {
   onAuthStateChanged,
   signOut as fbSignOut,
   createUserWithEmailAndPassword,
   signInWithEmailAndPassword,
 } from "firebase/auth";
+import { getDocs, collection } from "firebase/firestore";
+
+const ADMIN_EMAIL = "michaelstoics999@gmail.com";
 
 // Canvas-only color tokens — CSS vars can't be read by the Canvas 2D API.
 // Call getCanvasC() inside useEffect (after mount) to read the live system theme.
@@ -5009,6 +5012,76 @@ function parseLocalFallback(rawInput) {
     notes:"Estimated from local database — values are approximate. Add an API key for AI-powered precision." };
 }
 
+// ── PHOTO RESIZE — compress before sending to API ────────────────────────────
+function resizeImageBase64(file, maxDim = 1280, quality = 0.85) {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    const url = URL.createObjectURL(file);
+    img.onload = () => {
+      URL.revokeObjectURL(url);
+      let w = img.naturalWidth, h = img.naturalHeight;
+      if (w > maxDim || h > maxDim) {
+        const ratio = Math.min(maxDim / w, maxDim / h);
+        w = Math.round(w * ratio);
+        h = Math.round(h * ratio);
+      }
+      const canvas = document.createElement("canvas");
+      canvas.width = w; canvas.height = h;
+      canvas.getContext("2d").drawImage(img, 0, 0, w, h);
+      resolve(canvas.toDataURL("image/jpeg", quality).split(",")[1]);
+    };
+    img.onerror = reject;
+    img.src = url;
+  });
+}
+
+// ── PHOTO MACRO ANALYZER — Claude Sonnet vision ───────────────────────────────
+const PHOTO_PROMPT = (mealName) =>
+`You are a precise sports nutrition analyst. Analyze this food photo and estimate macros for every visible food item.
+
+Meal context: "${mealName}"
+
+Return ONLY valid JSON — no prose, no markdown fences:
+{"items":[{"food":"name","qty":number,"unit":"g|oz|piece|cup|tbsp","qty_g":number,"protein_g":number,"carbs_g":number,"fat_g":number,"calories":number}],"totals":{"protein_g":number,"carbs_g":number,"fat_g":number,"calories":number},"confidence":"high|medium|low","notes":"brief portion assumptions or empty string"}
+
+Rules:
+- Identify each distinct food item visible in the photo
+- Estimate portions from visual cues: plate/bowl diameter, relative sizes, typical restaurant/home portions
+- Use USDA nutritional values; round all numbers to integers
+- confidence: high = food + portions both clear, medium = food clear but portions estimated, low = unclear items
+- If multiple foods are mixed (e.g. stir fry), break them into individual components as best you can`;
+
+async function analyzePhotoWithAI(imageBase64, mealName) {
+  try {
+    const res = await fetch("/api/chat", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        model: "claude-sonnet-4-6",
+        max_tokens: 1200,
+        messages: [{
+          role: "user",
+          content: [
+            { type: "image", source: { type: "base64", media_type: "image/jpeg", data: imageBase64 } },
+            { type: "text", text: PHOTO_PROMPT(mealName) },
+          ],
+        }],
+      }),
+    });
+    if (!res.ok) return null;
+    const data = await res.json();
+    const text = data.content?.find(b => b.type === "text")?.text || "";
+    const jsonStr = text.replace(/```json|```/g, "").trim().match(/\{[\s\S]*\}/)?.[0] || "";
+    const result = JSON.parse(jsonStr);
+    if (!Array.isArray(result.items)) result.items = [];
+    if (!result.totals || typeof result.totals !== "object")
+      result.totals = { protein_g: 0, carbs_g: 0, fat_g: 0, calories: 0 };
+    return result;
+  } catch {
+    return null;
+  }
+}
+
 // ── AI MACRO PARSER — Claude API with local fallback ─────────────────────────
 const AI_PROMPT = (rawInput, mealName) =>
 `You are a precise sports nutrition database. Parse the food log and return ONLY valid JSON.
@@ -5093,7 +5166,41 @@ function MealLogModal({ onSave, onClose, existingLog }) {
   } : null);
   const [error, setError] = useState("");
   const [step, setStep] = useState(existingLog ? "review" : "input"); // input | parsing | review
-  const [inputMode, setInputMode] = useState("free"); // free | quick
+  const [inputMode, setInputMode] = useState("free"); // free | quick | photo
+  const [photoBase64, setPhotoBase64] = useState(null);
+  const [photoPreview, setPhotoPreview] = useState(null);
+  const photoInputRef = useRef(null);
+
+  const handlePhotoSelect = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setPhotoPreview(URL.createObjectURL(file));
+    setError("");
+    try {
+      const b64 = await resizeImageBase64(file, 1280, 0.85);
+      setPhotoBase64(b64);
+    } catch {
+      setError("Could not read image — try a different photo.");
+      setPhotoPreview(null);
+    }
+  };
+
+  const handlePhotoAnalyze = async () => {
+    if (!photoBase64) return;
+    if (!mealName.trim()) setMealName("Meal");
+    setError("");
+    setStep("parsing");
+    setParsing(true);
+    const result = await analyzePhotoWithAI(photoBase64, mealName || "Meal");
+    setParsing(false);
+    if (!result) {
+      setStep("input");
+      setError("Photo analysis failed. Try again or describe your meal with text.");
+      return;
+    }
+    setParsed(result);
+    setStep("review");
+  };
 
   const QUICK_REFS = [
     { label: "Palm protein", food: "chicken breast", qty: "150", unit: "g" },
@@ -5167,9 +5274,9 @@ function MealLogModal({ onSave, onClose, existingLog }) {
           <div style={{ padding: "20px 24px" }}>
             {/* Mode toggle */}
             <div style={{ display: "flex", gap: 8, marginBottom: 18 }}>
-              {[{ id: "free", label: "Free Entry" }, { id: "quick", label: "Quick Refs" }].map(m => (
-                <button key={m.id} onClick={() => setInputMode(m.id)}
-                  style={{ flex: 1, padding: "10px", background: inputMode === m.id ? `${C.green}15` : C.up, border: `1px solid ${inputMode === m.id ? C.green : C.border}`, borderRadius: 10, color: inputMode === m.id ? C.green : C.muted, fontSize: 12, cursor: "pointer", fontFamily: "'DM Sans',sans-serif", display: "flex", alignItems: "center", justifyContent: "center", gap: 6 }}>
+              {[{ id: "free", label: "Text" }, { id: "quick", label: "Quick" }, { id: "photo", label: "📷 Photo" }].map(m => (
+                <button key={m.id} onClick={() => { setInputMode(m.id); setError(""); }}
+                  style={{ flex: 1, padding: "10px 6px", background: inputMode === m.id ? (m.id === "photo" ? `${C.accent}18` : `${C.green}15`) : C.up, border: `1px solid ${inputMode === m.id ? (m.id === "photo" ? C.accent : C.green) : C.border}`, borderRadius: 10, color: inputMode === m.id ? (m.id === "photo" ? C.accent : C.green) : C.muted, fontSize: 12, cursor: "pointer", fontFamily: "'DM Sans',sans-serif", display: "flex", alignItems: "center", justifyContent: "center", gap: 6 }}>
                   {m.label}
                 </button>
               ))}
@@ -5206,25 +5313,75 @@ function MealLogModal({ onSave, onClose, existingLog }) {
               </div>
             )}
 
-            {/* Food input */}
-            <div style={{ marginBottom: 6 }}>
-              <div style={{ fontSize: 11, letterSpacing: 1, textTransform: "uppercase", color: C.muted, marginBottom: 6 }}>
-                {inputMode === "free" ? "What did you eat? (be as specific as possible)" : "Your meal (edit as needed)"}
+            {/* Photo mode */}
+            {inputMode === "photo" && (
+              <div style={{ marginBottom: 16 }}>
+                <input
+                  ref={photoInputRef}
+                  type="file"
+                  accept="image/*"
+                  style={{ display: "none" }}
+                  onChange={handlePhotoSelect}
+                />
+                {!photoPreview ? (
+                  <button
+                    type="button"
+                    onClick={() => photoInputRef.current?.click()}
+                    style={{ width: "100%", background: C.up, border: `2px dashed ${C.border}`, borderRadius: 14, padding: "44px 20px", textAlign: "center", cursor: "pointer", transition: "border-color .2s" }}
+                    onMouseOver={e => e.currentTarget.style.borderColor = C.accent}
+                    onMouseOut={e => e.currentTarget.style.borderColor = C.border}>
+                    <div style={{ fontSize: 44, marginBottom: 10, lineHeight: 1 }}>📷</div>
+                    <div style={{ fontSize: 15, fontWeight: 600, color: C.text, marginBottom: 6 }}>Take or upload a photo</div>
+                    <div style={{ fontSize: 12, color: C.muted }}>Works with any food — plate, meal prep, restaurant, snack</div>
+                  </button>
+                ) : (
+                  <div>
+                    <div style={{ position: "relative", borderRadius: 14, overflow: "hidden", marginBottom: 12 }}>
+                      <img src={photoPreview} alt="Food" style={{ width: "100%", maxHeight: 260, objectFit: "cover", display: "block" }}/>
+                      <button
+                        onClick={() => { setPhotoPreview(null); setPhotoBase64(null); }}
+                        style={{ position: "absolute", top: 8, right: 8, background: "rgba(0,0,0,0.6)", border: "none", borderRadius: "50%", width: 30, height: 30, color: "#fff", fontSize: 16, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                        ✕
+                      </button>
+                    </div>
+                    {!photoBase64 && (
+                      <div style={{ fontSize: 12, color: C.muted, textAlign: "center", marginBottom: 8 }}>Processing image…</div>
+                    )}
+                  </div>
+                )}
               </div>
-              <textarea value={rawInput} onChange={e => setRawInput(e.target.value)}
-                placeholder={"Examples:\n• 8oz chicken breast, 1.5 cups white rice, 1 tbsp olive oil\n• Chipotle bowl with chicken, rice, black beans, cheese, salsa\n• 2 scoops whey, 1 banana, handful of oats\n• About 6 oz salmon, sweet potato medium"}
-                style={{ width: "100%", background: C.up, border: `1px solid ${rawInput ? C.green : C.border}`, borderRadius: 10, padding: "14px", color: C.text, fontSize: 14, fontFamily: "'DM Sans',sans-serif", outline: "none", resize: "none", height: 130, lineHeight: 1.5, transition: "border-color .2s" }} />
-            </div>
-            <div style={{ fontSize: 11, color: C.muted, marginBottom: 16 }}>
-              Include amounts: "8oz", "200g", "1 cup", "2 tablespoons", "1 medium", "handful"
-            </div>
+            )}
+
+            {/* Food input — text modes only */}
+            {inputMode !== "photo" && (
+              <>
+                <div style={{ marginBottom: 6 }}>
+                  <div style={{ fontSize: 11, letterSpacing: 1, textTransform: "uppercase", color: C.muted, marginBottom: 6 }}>
+                    {inputMode === "free" ? "What did you eat? (be as specific as possible)" : "Your meal (edit as needed)"}
+                  </div>
+                  <textarea value={rawInput} onChange={e => setRawInput(e.target.value)}
+                    placeholder={"Examples:\n• 8oz chicken breast, 1.5 cups white rice, 1 tbsp olive oil\n• Chipotle bowl with chicken, rice, black beans, cheese, salsa\n• 2 scoops whey, 1 banana, handful of oats\n• About 6 oz salmon, sweet potato medium"}
+                    style={{ width: "100%", background: C.up, border: `1px solid ${rawInput ? C.green : C.border}`, borderRadius: 10, padding: "14px", color: C.text, fontSize: 14, fontFamily: "'DM Sans',sans-serif", outline: "none", resize: "none", height: 130, lineHeight: 1.5, transition: "border-color .2s" }} />
+                </div>
+                <div style={{ fontSize: 11, color: C.muted, marginBottom: 16 }}>
+                  Include amounts: "8oz", "200g", "1 cup", "2 tablespoons", "1 medium", "handful"
+                </div>
+              </>
+            )}
 
             {error && <div style={{ padding: "10px 14px", background: `${C.red}12`, border: `1px solid ${C.red}30`, borderRadius: 8, fontSize: 12, color: C.red, marginBottom: 14 }}>{error}</div>}
 
-            <button onClick={handleParse} disabled={!rawInput.trim()}
-              style={{ width: "100%", padding: 15, background: rawInput.trim() ? C.green : C.border, color: "#080A0C", border: "none", borderRadius: 12, fontFamily: "'Bebas Neue',sans-serif", fontSize: 17, letterSpacing: 2, cursor: rawInput.trim() ? "pointer" : "not-allowed", transition: "all .2s" }}>
-              ANALYZE WITH AI ▶
-            </button>
+            {inputMode === "photo" ? (
+              <button onClick={handlePhotoAnalyze} disabled={!photoBase64}
+                style={{ width: "100%", padding: 15, background: photoBase64 ? C.accent : C.border, color: photoBase64 ? "#080A0C" : C.muted, border: "none", borderRadius: 12, fontFamily: "'Bebas Neue',sans-serif", fontSize: 17, letterSpacing: 2, cursor: photoBase64 ? "pointer" : "not-allowed", transition: "all .2s" }}>
+                {photoBase64 ? "SCAN PHOTO WITH AI ▶" : "SELECT A PHOTO FIRST"}
+              </button>
+            ) : (
+              <button onClick={handleParse} disabled={!rawInput.trim()}
+                style={{ width: "100%", padding: 15, background: rawInput.trim() ? C.green : C.border, color: "#080A0C", border: "none", borderRadius: 12, fontFamily: "'Bebas Neue',sans-serif", fontSize: 17, letterSpacing: 2, cursor: rawInput.trim() ? "pointer" : "not-allowed", transition: "all .2s" }}>
+                ANALYZE WITH AI ▶
+              </button>
+            )}
           </div>
         )}
 
@@ -8458,6 +8615,321 @@ function WeightReminderBanner({ type, daysAgo, onDismiss, onLogNow }) {
   );
 }
 
+// ─── ADMIN ────────────────────────────────────────────────────────────────────
+
+function AdminWeightChart({ logs, goalWeight, C }) {
+  if (!logs || logs.length < 2) return (
+    <div style={{color:C.muted,fontSize:12,textAlign:"center",padding:"16px 0"}}>No weight data</div>
+  );
+  const data = [...logs].sort((a, b) => a.ts - b.ts).slice(-30);
+  const weights = data.map(d => d.weight);
+  const gw = goalWeight && goalWeight > 0 ? goalWeight : null;
+  const minW = Math.min(...weights, ...(gw ? [gw] : [])) - 2;
+  const maxW = Math.max(...weights, ...(gw ? [gw] : [])) + 2;
+  const range = maxW - minW || 10;
+  const W = 280, H = 80;
+  const pts = data.map((d, i) => ({
+    x: data.length > 1 ? (i / (data.length - 1)) * W : W / 2,
+    y: H * 0.9 - ((d.weight - minW) / range) * H * 0.85,
+  }));
+  const path = pts.map((p, i) => `${i === 0 ? "M" : "L"}${p.x.toFixed(1)},${p.y.toFixed(1)}`).join(" ");
+  const goalY = gw ? H * 0.9 - ((gw - minW) / range) * H * 0.85 : null;
+  const currentW = weights[weights.length - 1];
+  const fillPath = `${path} L${pts[pts.length-1].x},${H} L${pts[0].x},${H} Z`;
+  return (
+    <svg width="100%" viewBox={`0 0 ${W} ${H + 18}`} style={{display:"block"}}>
+      <defs>
+        <linearGradient id="adm-wfill" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stopColor={C.accent} stopOpacity="0.22"/>
+          <stop offset="100%" stopColor={C.accent} stopOpacity="0"/>
+        </linearGradient>
+      </defs>
+      <path d={fillPath} fill="url(#adm-wfill)"/>
+      {goalY !== null && goalY >= 0 && goalY <= H && (
+        <>
+          <line x1="0" y1={goalY} x2={W} y2={goalY} stroke={C.red} strokeDasharray="4 3" strokeWidth="1.5" opacity="0.7"/>
+          <text x={W - 2} y={goalY - 3} fontSize="9" fill={C.red} textAnchor="end" opacity="0.9">{gw} lb goal</text>
+        </>
+      )}
+      <path d={path} fill="none" stroke={C.accent} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/>
+      <circle cx={pts[pts.length-1].x} cy={pts[pts.length-1].y} r="4" fill={C.accent}/>
+      <text x="2" y={H + 14} fontSize="9" fill={C.muted}>{data.length} entries</text>
+      <text x={W - 2} y={H + 14} fontSize="9" fill={C.text} textAnchor="end" fontWeight="600">{currentW} lbs now</text>
+    </svg>
+  );
+}
+
+function AdminUserDetail({ userData, onBack, C }) {
+  const { profile, weightLog, tState, nutState, goalConfig } = userData;
+  const sortedLog = [...(weightLog || [])].sort((a, b) => a.ts - b.ts);
+  const trend = sortedLog.length >= 3 ? analyzeWeightTrend(sortedLog) : { rate: 0 };
+  const currentWeight = sortedLog.length ? sortedLog[sortedLog.length - 1].weight : null;
+  const goalWeight = goalConfig?.effectiveGoalWeight || null;
+
+  // ETA from actual trend rate
+  let etaDays = null;
+  if (trend.rate && Math.abs(trend.rate) > 0.01 && currentWeight && goalWeight) {
+    const delta = goalWeight - currentWeight;
+    const daysPerLb = 7 / Math.abs(trend.rate);
+    if ((trend.rate < 0 && delta < 0) || (trend.rate > 0 && delta > 0)) {
+      etaDays = Math.round(Math.abs(delta) * daysPerLb);
+    }
+  }
+  // Fall back to config ETA if no trend data
+  const etaWeeks = etaDays ? Math.round(etaDays / 7) : goalConfig?.etaWeeks;
+
+  const sessions = [...(tState?.history || [])].sort((a, b) => b.ts - a.ts).slice(0, 4);
+
+  const today = new Date().toLocaleDateString("en-US", { month:"short", day:"numeric" });
+  const todayLogs = (nutState?.logs || []).filter(l => l.date === today);
+  const todayMacros = todayLogs.reduce((acc, l) => ({
+    cal: acc.cal + (l.totals?.calories || 0),
+    p: acc.p + (l.totals?.protein_g || 0),
+    c: acc.c + (l.totals?.carbs_g || 0),
+    f: acc.f + (l.totals?.fat_g || 0),
+  }), { cal: 0, p: 0, c: 0, f: 0 });
+
+  const goalLabel = { bulk:"Bulk", cut:"Cut", maintain:"Maintain", recomp:"Recomp", contest:"Contest" }[profile?.goal] || (profile?.goal || "—");
+  const trendColor = trend.rate < -0.1 ? C.green : trend.rate > 0.1 ? C.red : C.muted;
+
+  return (
+    <div className="screen" style={{background:C.bg,overflowY:"auto",paddingBottom:100}}>
+      {/* Header */}
+      <div style={{padding:"56px 20px 20px",borderBottom:`1px solid ${C.border}`}}>
+        <button onClick={onBack} style={{background:"none",border:"none",color:C.accent,fontSize:14,cursor:"pointer",padding:0,marginBottom:12,display:"flex",alignItems:"center",gap:6,fontWeight:600}}>
+          ← Back to Roster
+        </button>
+        <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start"}}>
+          <div>
+            <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:32,letterSpacing:1,lineHeight:1,color:C.text}}>{profile?.name || "Unknown"}</div>
+            <div style={{color:C.muted,fontSize:13,marginTop:4}}>
+              <span style={{background:`color-mix(in srgb,${C.accent} 15%,transparent)`,color:C.accent,padding:"2px 7px",borderRadius:4,fontWeight:700,fontSize:10,marginRight:6}}>{goalLabel.toUpperCase()}</span>
+              {profile?.level || "—"} · {profile?.sex || "—"}
+            </div>
+            <div style={{color:C.muted,fontSize:12,marginTop:4}}>
+              {currentWeight ? `${currentWeight} lbs` : "—"} → {goalWeight ? `${goalWeight} lbs` : "—"}
+            </div>
+          </div>
+          {etaWeeks ? (
+            <div style={{textAlign:"center",background:`color-mix(in srgb,${C.accent} 12%,transparent)`,border:`2px solid ${C.accent}`,borderRadius:8,padding:"8px 12px",minWidth:64}}>
+              <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:28,color:C.accent,lineHeight:1}}>{etaWeeks}</div>
+              <div style={{fontSize:9,color:C.muted,letterSpacing:1,textTransform:"uppercase"}}>wks ETA</div>
+            </div>
+          ) : null}
+        </div>
+      </div>
+
+      {/* Weight chart */}
+      <div style={{padding:"16px 20px"}}>
+        <div style={{fontSize:11,fontWeight:700,letterSpacing:1.5,color:C.muted,textTransform:"uppercase",marginBottom:10}}>Body Weight Trend</div>
+        <div style={{background:C.card,borderRadius:10,padding:12,border:`1px solid ${C.border}`}}>
+          <AdminWeightChart logs={sortedLog} goalWeight={goalWeight} C={C}/>
+          <div style={{display:"flex",justifyContent:"space-between",marginTop:8}}>
+            <span style={{fontSize:11,color:trendColor,fontWeight:600}}>
+              {trend.rate !== 0 ? `${trend.rate > 0 ? "▲ +" : "▼ "}${Math.abs(trend.rate).toFixed(2)} lbs/wk` : "Stable"}
+            </span>
+            <span style={{fontSize:11,color:C.muted}}>{trend.classification?.replace(/_/g," ") || "—"}</span>
+          </div>
+        </div>
+      </div>
+
+      {/* Today's nutrition */}
+      <div style={{padding:"0 20px 16px"}}>
+        <div style={{fontSize:11,fontWeight:700,letterSpacing:1.5,color:C.muted,textTransform:"uppercase",marginBottom:10}}>Today's Nutrition</div>
+        {todayLogs.length === 0 ? (
+          <div style={{color:C.faint,fontSize:13,background:C.card,borderRadius:10,padding:"14px 16px",border:`1px solid ${C.border}`}}>Nothing logged today</div>
+        ) : (
+          <div style={{background:C.card,borderRadius:10,padding:14,border:`1px solid ${C.border}`}}>
+            <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr 1fr",gap:8,textAlign:"center"}}>
+              {[
+                { label:"CALS", val:Math.round(todayMacros.cal), color:C.text },
+                { label:"PRO", val:`${Math.round(todayMacros.p)}g`, color:C.blue },
+                { label:"CARBS", val:`${Math.round(todayMacros.c)}g`, color:C.green },
+                { label:"FAT", val:`${Math.round(todayMacros.f)}g`, color:C.accent },
+              ].map(m => (
+                <div key={m.label}>
+                  <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:22,color:m.color,lineHeight:1}}>{m.val}</div>
+                  <div style={{fontSize:9,color:C.muted,marginTop:2,letterSpacing:1}}>{m.label}</div>
+                </div>
+              ))}
+            </div>
+            {todayLogs.length > 0 && (
+              <div style={{marginTop:12,paddingTop:10,borderTop:`1px solid ${C.border}`}}>
+                {todayLogs.map(l => (
+                  <div key={l.id} style={{fontSize:12,color:C.muted,marginBottom:3}}>
+                    · {l.name || "Meal"} — {Math.round(l.totals?.calories || 0)} kcal / {Math.round(l.totals?.protein_g || 0)}g P
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+
+      {/* Recent workouts */}
+      <div style={{padding:"0 20px 16px"}}>
+        <div style={{fontSize:11,fontWeight:700,letterSpacing:1.5,color:C.muted,textTransform:"uppercase",marginBottom:10}}>Recent Workouts</div>
+        {sessions.length === 0 ? (
+          <div style={{color:C.faint,fontSize:13,background:C.card,borderRadius:10,padding:"14px 16px",border:`1px solid ${C.border}`}}>No sessions logged</div>
+        ) : sessions.map(s => {
+          const dayName = (s.dayKey || "Session").replace(/_/g, " ").toUpperCase();
+          const mins = Math.floor((s.duration || 0) / 60);
+          const date = new Date(s.ts).toLocaleDateString("en-US", { month:"short", day:"numeric" });
+          const exes = (s.completedExercises || []);
+          const topSets = exes.slice(0, 3).map(e => {
+            const best = [...(e.loggedSets || [])].filter(x => x.reps).sort((a, b) => (b.weight || 0) - (a.weight || 0))[0];
+            return best ? `${e.name} ${best.weight || 0}×${best.reps}` : e.name;
+          });
+          return (
+            <div key={s.ts} style={{background:C.card,borderRadius:10,padding:14,border:`1px solid ${C.border}`,marginBottom:8}}>
+              <div style={{display:"flex",justifyContent:"space-between",marginBottom:6}}>
+                <span style={{fontWeight:700,fontSize:13,color:C.text}}>{dayName}</span>
+                <span style={{fontSize:11,color:C.muted}}>{date}{mins ? ` · ${mins}m` : ""}</span>
+              </div>
+              <div style={{fontSize:11,color:C.muted,lineHeight:1.7}}>
+                {topSets.map((t, i) => <div key={i}>{t}</div>)}
+                {exes.length > 3 && <div style={{color:C.faint}}>+{exes.length - 3} more</div>}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+
+      {/* Goal config */}
+      {goalConfig && (
+        <div style={{padding:"0 20px 24px"}}>
+          <div style={{fontSize:11,fontWeight:700,letterSpacing:1.5,color:C.muted,textTransform:"uppercase",marginBottom:10}}>Goal Config</div>
+          <div style={{background:C.card,borderRadius:10,padding:14,border:`1px solid ${C.border}`,fontSize:12,color:C.muted,lineHeight:2}}>
+            {[
+              ["Target weight", `${goalConfig.effectiveGoalWeight} lbs`],
+              ["Goal body fat", `${goalConfig.goalBfPct}%`],
+              ["Weekly rate", `${goalConfig.idealWeeklyRate > 0 ? "+" : ""}${goalConfig.idealWeeklyRate} lbs/wk`],
+              ["Planned ETA", `${goalConfig.etaWeeks} wks (${goalConfig.etaDate})`],
+              ["Sustainability", `${goalConfig.sustainabilityScore}/100`],
+            ].map(([k, v]) => (
+              <div key={k} style={{display:"flex",justifyContent:"space-between"}}>
+                <span style={{color:C.text,fontWeight:600}}>{k}</span>
+                <span>{v}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function AdminScreen() {
+  const C = useThemeColors();
+  const [users, setUsers] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [selectedUid, setSelectedUid] = useState(null);
+  const [error, setError] = useState(null);
+
+  useEffect(() => {
+    async function loadAll() {
+      try {
+        const snap = await getDocs(collection(db, "users"));
+        const uidList = snap.docs.map(d => d.id);
+        const results = await Promise.all(uidList.map(async uid => {
+          try {
+            const storageSnap = await getDocs(collection(db, "users", uid, "storage"));
+            const store = {};
+            storageSnap.forEach(d => { store[d.id] = d.data().value; });
+            const parse = (key) => { try { return store[key] ? JSON.parse(store[key]) : null; } catch { return null; } };
+            return {
+              uid,
+              profile:    parse("apex_user_v1"),
+              weightLog:  parse("apex_weight_log_v1") || [],
+              tState:     parse("apex_training_v2"),
+              nutState:   parse("apex_nutrition_v1"),
+              goalConfig: parse("apex_goal_config_v1"),
+            };
+          } catch {
+            return { uid, profile: null, weightLog: [], tState: null, nutState: null, goalConfig: null };
+          }
+        }));
+        setUsers(results.filter(u => u.profile));
+      } catch (err) {
+        setError(err.code === "permission-denied"
+          ? "Permission denied — update Firestore rules to allow admin reads."
+          : (err.message || "Failed to load users"));
+      } finally {
+        setLoading(false);
+      }
+    }
+    loadAll();
+  }, []);
+
+  const selectedUser = selectedUid ? users.find(u => u.uid === selectedUid) : null;
+  if (selectedUser) return <AdminUserDetail userData={selectedUser} onBack={() => setSelectedUid(null)} C={C}/>;
+
+  return (
+    <div className="screen" style={{background:C.bg,overflowY:"auto",paddingBottom:100}}>
+      <div style={{padding:"56px 20px 16px",borderBottom:`1px solid ${C.border}`}}>
+        <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:40,letterSpacing:2,lineHeight:1,color:C.text}}>ROSTER</div>
+        <div style={{color:C.muted,fontSize:13,marginTop:4}}>
+          {loading ? "Loading..." : `${users.length} athlete${users.length !== 1 ? "s" : ""}`}
+        </div>
+      </div>
+
+      {loading && (
+        <div style={{padding:"40px 20px",textAlign:"center",color:C.muted,fontSize:13}}>Fetching athletes from Firestore…</div>
+      )}
+
+      {error && (
+        <div style={{margin:"20px",padding:"14px 16px",background:`color-mix(in srgb,${C.red} 10%,transparent)`,border:`1px solid ${C.red}`,borderRadius:10,color:C.red,fontSize:13,lineHeight:1.6}}>
+          <div style={{fontWeight:700,marginBottom:4}}>Admin access error</div>
+          {error}
+          <div style={{marginTop:8,color:C.muted,fontSize:11}}>Update your Firestore rules to allow reads when request.auth.email == "{ADMIN_EMAIL}"</div>
+        </div>
+      )}
+
+      {!loading && !error && users.map(u => {
+        const sortedLog = [...(u.weightLog || [])].sort((a, b) => a.ts - b.ts);
+        const currentW = sortedLog.length ? sortedLog[sortedLog.length - 1].weight : null;
+        const trend = sortedLog.length >= 3 ? analyzeWeightTrend(sortedLog) : null;
+        const goalWeight = u.goalConfig?.effectiveGoalWeight;
+        const goalLabel = { bulk:"BULK", cut:"CUT", maintain:"MAINTAIN", recomp:"RECOMP", contest:"CONTEST" }[u.profile?.goal] || (u.profile?.goal || "").toUpperCase();
+        const sessionCount = (u.tState?.history || []).length;
+        const lastSession = sessionCount ? [...(u.tState.history)].sort((a, b) => b.ts - a.ts)[0] : null;
+        const lastDate = lastSession ? new Date(lastSession.ts).toLocaleDateString("en-US", { month:"short", day:"numeric" }) : null;
+        const trendColor = trend?.rate < -0.1 ? C.green : trend?.rate > 0.1 ? C.red : C.muted;
+
+        return (
+          <button key={u.uid} onClick={() => setSelectedUid(u.uid)} style={{
+            display:"block",width:"calc(100% - 40px)",margin:"12px 20px 0",textAlign:"left",
+            background:C.surface,border:`1px solid ${C.border}`,borderRadius:12,
+            padding:16,cursor:"pointer",transition:"border-color .15s",
+          }}>
+            <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start"}}>
+              <div style={{flex:1,minWidth:0}}>
+                <div style={{fontWeight:700,fontSize:16,color:C.text,marginBottom:4}}>{u.profile.name}</div>
+                <div style={{display:"flex",flexWrap:"wrap",gap:4,alignItems:"center",marginBottom:4}}>
+                  <span style={{background:`color-mix(in srgb,${C.accent} 15%,transparent)`,color:C.accent,padding:"1px 6px",borderRadius:4,fontWeight:700,fontSize:10}}>{goalLabel}</span>
+                  <span style={{fontSize:12,color:C.muted}}>{u.profile.level || "—"}</span>
+                  {sessionCount > 0 && <span style={{fontSize:11,color:C.muted}}>· {sessionCount} sessions</span>}
+                  {lastDate && <span style={{fontSize:11,color:C.muted}}>· Last: {lastDate}</span>}
+                </div>
+              </div>
+              <div style={{textAlign:"right",flexShrink:0,marginLeft:12}}>
+                <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:24,lineHeight:1,color:C.text}}>{currentW ?? "—"}</div>
+                <div style={{fontSize:10,color:C.muted,marginTop:1}}>→ {goalWeight ?? "—"} lbs</div>
+                {trend?.rate !== undefined && Math.abs(trend.rate) > 0.1 && (
+                  <div style={{fontSize:10,color:trendColor,fontWeight:700,marginTop:3}}>
+                    {trend.rate > 0 ? "▲ +" : "▼ "}{Math.abs(trend.rate).toFixed(1)}/wk
+                  </div>
+                )}
+              </div>
+            </div>
+          </button>
+        );
+      })}
+      <div style={{height:20}}/>
+    </div>
+  );
+}
+
 // ─── APP ──────────────────────────────────────────────────────────────────────
 
 
@@ -8468,7 +8940,9 @@ function NavIcon({ id }) {
     training: "M6.5 6.5v11M17.5 6.5v11M4 9h4.5v6H4zM15.5 9h4.5v6h-4.5zM8.5 12h7",
     nutrition: "M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 0v10m0 0l4.5-4.5",
     postprep: "M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z",
+    archive: "M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4",
     coach: "M13 10V3L4 14h7v7l9-11h-7z",
+    admin: "M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2M9 11a4 4 0 100-8 4 4 0 000 8zM23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75",
   };
   return (
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" style={{width:22,height:22}}>
@@ -9280,7 +9754,8 @@ function AppInner() {
     try { localStorage.setItem(NOTIF_KEY, JSON.stringify({ dismissedDate: todayDateKey })); } catch {}
   };
 
-  // Rebound tab only for contest goal
+  const isAdmin = authUser?.email === ADMIN_EMAIL;
+
   const NAV = [
     {id:"home",label:"Home"},
     {id:"training",label:"Training"},
@@ -9288,6 +9763,7 @@ function AppInner() {
     ...(user?.goal==="contest" ? [{id:"postprep",label:"Rebound"}] : []),
     {id:"archive",label:"Archive"},
     {id:"coach",label:"Coach"},
+    ...(isAdmin ? [{id:"admin",label:"Roster"}] : []),
   ];
 
   const [endConfirm, setEndConfirm] = useState(false);
@@ -9478,6 +9954,7 @@ function AppInner() {
             {tab==="postprep"&&user?.goal==="contest"&&<PostPrepScreen user={enrichedUser}/>}
             {tab==="archive"&&<FeedbackArchiveScreen/>}
             {tab==="coach"&&<CoachScreen user={enrichedUser}/>}
+            {tab==="admin"&&isAdmin&&<AdminScreen/>}
             {/* Mini session view — shown on all non-training tabs when a session is active */}
             {session && tab !== "training" && (
               <MiniSessionView
