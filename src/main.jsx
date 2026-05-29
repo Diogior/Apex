@@ -32,6 +32,12 @@ async function pushLocalToFirestore(uid) {
     .map(key => ({ key, value: localStorage.getItem(key) }))
     .filter(({ value }) => value != null);
   if (!writes.length) return 0;
+
+  // Ensure the /users/{uid} parent document exists so the admin roster
+  // query (getDocs(collection(db,"users"))) can enumerate all user UIDs.
+  // Without this, the subcollection data exists but the parent is invisible to list queries.
+  setDoc(doc(db, "users", uid), { uid, lastSeen: Date.now() }, { merge: true }).catch(() => {});
+
   const results = await Promise.allSettled(
     writes.map(({ key, value }) =>
       setDoc(doc(db, "users", uid, "storage", key), { value })
