@@ -50,7 +50,11 @@ async function pushLocalToFirestore(uid) {
 
 async function pullFirestoreToLocal(uid) {
   const snap = await getDocs(collection(db, "users", uid, "storage"));
-  snap.forEach(d => localStorage.setItem(d.id, d.data().value));
+  snap.forEach(d => {
+    const val = d.data().value;
+    // Guard: never store the string "undefined" — a missing value field means skip the key
+    if (val != null) localStorage.setItem(d.id, val);
+  });
   return snap.size;
 }
 
@@ -66,10 +70,14 @@ window.storage = {
       return;
     }
 
-    // New device — clear stale user data, pull from Firestore
+    // New device (or first-ever login) — clear stale user data, pull from Firestore
     // Preserve SESSION_KEY_LOCAL — do not wipe an in-progress workout on sign-in
     if (prevUid) APEX_KEYS.forEach(k => localStorage.removeItem(k));
     localStorage.setItem(UID_KEY, uid);
+
+    // Write parent doc immediately so this user is visible to the admin roster
+    // even before they trigger a full push (which only happens on same-device logins).
+    setDoc(doc(db, "users", uid), { uid, lastSeen: Date.now() }, { merge: true }).catch(() => {});
 
     try {
       await pullFirestoreToLocal(uid);
