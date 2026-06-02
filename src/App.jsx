@@ -9667,6 +9667,305 @@ function IntelligenceReportModal({ text, loading, ts, onClose, onOpenCoach }) {
   );
 }
 
+// ─── ONBOARDING TOUR ─────────────────────────────────────────────────────────
+const ONBOARDING_KEY = "apex_onboarding_v1";
+
+const OB_CARDS = [
+  {
+    id: "home",
+    tag: "HOME",
+    headline: "YOUR COMMAND\nCENTER",
+    body: "Log your weight every day. APEX tracks your trend, your pace toward goal, and your body composition — automatically.",
+    sub: "Consistency is the only input.",
+  },
+  {
+    id: "training",
+    tag: "TRAINING",
+    headline: "YOUR\nPROGRAM",
+    body: "Pick a split. APEX generates your full training program, adapts volume as you progress, and delivers AI feedback after every session.",
+    sub: "It adjusts. You just lift.",
+  },
+  {
+    id: "nutrition",
+    tag: "NUTRITION",
+    headline: "YOUR\nFUEL",
+    body: "Log meals by describing them, tapping quick references, or photographing your food. APEX sets your daily targets based on goal and training load.",
+    sub: "Text it. Tap it. Shoot it.",
+  },
+  {
+    id: "coach",
+    tag: "COACH",
+    headline: "YOUR\nCOACH",
+    body: "APEX Coach knows your stats, your goal, your lifts, and your trend. Ask anything — you get direct answers grounded in your actual data.",
+    sub: "Questions? Just ask.",
+  },
+];
+
+function ObIllustration({ id }) {
+  const g = "#F5A623";
+  const dim = "rgba(245,166,35,0.22)";
+  if (id === "home") return (
+    <svg viewBox="0 0 140 96" width={160} height={110} style={{display:"block",margin:"0 auto"}}>
+      <path d="M 14 80 A 56 56 0 0 1 126 80" fill="none" stroke={dim} strokeWidth="7" strokeLinecap="round"/>
+      <path d="M 14 80 A 56 56 0 0 1 126 80" fill="none" stroke={g} strokeWidth="7" strokeLinecap="round"
+        strokeDasharray="117 176" style={{transition:"stroke-dasharray 1s cubic-bezier(.22,1,.36,1)"}}/>
+      <circle cx="93" cy="33" r="6" fill={g}/>
+      <circle cx="93" cy="33" r="11" fill="none" stroke={g} strokeWidth="1.5" opacity="0.35"/>
+      <text x="14" y="92" textAnchor="middle" fontSize="9" fill={dim} fontFamily="DM Mono,monospace">START</text>
+      <text x="126" y="92" textAnchor="middle" fontSize="9" fill={dim} fontFamily="DM Mono,monospace">GOAL</text>
+      <text x="70" y="60" textAnchor="middle" fontSize="14" fill={g} fontFamily="Bebas Neue,sans-serif" letterSpacing="1">67%</text>
+      <text x="70" y="72" textAnchor="middle" fontSize="8" fill={dim} fontFamily="DM Sans,sans-serif">to goal</text>
+    </svg>
+  );
+  if (id === "training") return (
+    <svg viewBox="0 0 160 80" width={180} height={90} style={{display:"block",margin:"0 auto"}}>
+      <rect x="6" y="24" width="14" height="32" rx="3" fill="none" stroke={g} strokeWidth="2.5" opacity="0.9"/>
+      <rect x="22" y="30" width="9" height="20" rx="2" fill="none" stroke={g} strokeWidth="2" opacity="0.55"/>
+      <rect x="31" y="35" width="98" height="10" rx="4" fill={g} opacity="0.9"/>
+      <rect x="129" y="30" width="9" height="20" rx="2" fill="none" stroke={g} strokeWidth="2" opacity="0.55"/>
+      <rect x="140" y="24" width="14" height="32" rx="3" fill="none" stroke={g} strokeWidth="2.5" opacity="0.9"/>
+      <line x1="80" y1="35" x2="80" y2="45" stroke="rgba(9,9,11,0.5)" strokeWidth="2"/>
+    </svg>
+  );
+  if (id === "nutrition") return (
+    <svg viewBox="0 0 120 120" width={120} height={120} style={{display:"block",margin:"0 auto"}}>
+      <circle cx="60" cy="60" r="44" fill="none" stroke={dim} strokeWidth="6"/>
+      <circle cx="60" cy="60" r="44" fill="none" stroke={g} strokeWidth="6"
+        strokeDasharray="166 276" strokeLinecap="round" transform="rotate(-90 60 60)" opacity="0.95"/>
+      <circle cx="60" cy="60" r="32" fill="none" stroke={dim} strokeWidth="5"/>
+      <circle cx="60" cy="60" r="32" fill="none" stroke={g} strokeWidth="5"
+        strokeDasharray="100 201" strokeLinecap="round" transform="rotate(-90 60 60)" opacity="0.55"/>
+      <circle cx="60" cy="60" r="20" fill="none" stroke={dim} strokeWidth="4"/>
+      <circle cx="60" cy="60" r="20" fill="none" stroke={g} strokeWidth="4"
+        strokeDasharray="56 126" strokeLinecap="round" transform="rotate(-90 60 60)" opacity="0.3"/>
+      <text x="60" y="57" textAnchor="middle" fontSize="10" fill={g} fontFamily="Bebas Neue,sans-serif" letterSpacing="1.5">MACRO</text>
+      <text x="60" y="68" textAnchor="middle" fontSize="8" fill={dim} fontFamily="DM Mono,monospace">P · C · F</text>
+    </svg>
+  );
+  if (id === "coach") return (
+    <svg viewBox="0 0 120 100" width={130} height={110} style={{display:"block",margin:"0 auto"}}>
+      <path d="M 64 8 L 48 44 L 59 44 L 54 78 L 76 38 L 64 38 Z" fill="none" stroke={g} strokeWidth="2.5" strokeLinejoin="round" strokeLinecap="round"/>
+      <path d="M 36 22 A 30 30 0 0 0 36 78" fill="none" stroke={g} strokeWidth="2" strokeLinecap="round" opacity="0.45"/>
+      <path d="M 24 12 A 44 44 0 0 0 24 88" fill="none" stroke={g} strokeWidth="1.5" strokeLinecap="round" opacity="0.2"/>
+      <path d="M 84 22 A 30 30 0 0 1 84 78" fill="none" stroke={g} strokeWidth="2" strokeLinecap="round" opacity="0.45"/>
+      <path d="M 96 12 A 44 44 0 0 1 96 88" fill="none" stroke={g} strokeWidth="1.5" strokeLinecap="round" opacity="0.2"/>
+    </svg>
+  );
+  return null;
+}
+
+function OnboardingCarousel({ onComplete }) {
+  const [current, setCurrent] = useState(0);
+  const [exiting, setExiting] = useState(false);
+  const [dir, setDir] = useState(1); // 1 = forward, -1 = back
+  const touchStartX = useRef(null);
+
+  const advance = () => {
+    if (current < OB_CARDS.length - 1) {
+      setDir(1); setExiting(true);
+      setTimeout(() => { setCurrent(c => c + 1); setExiting(false); }, 320);
+    } else {
+      onComplete();
+    }
+  };
+
+  const handleTouchStart = e => { touchStartX.current = e.touches[0].clientX; };
+  const handleTouchEnd = e => {
+    if (touchStartX.current === null) return;
+    const dx = e.changedTouches[0].clientX - touchStartX.current;
+    touchStartX.current = null;
+    if (dx < -50) advance();
+    else if (dx > 50 && current > 0) {
+      setDir(-1); setExiting(true);
+      setTimeout(() => { setCurrent(c => c - 1); setExiting(false); }, 320);
+    }
+  };
+
+  const card = OB_CARDS[current];
+  const isLast = current === OB_CARDS.length - 1;
+
+  return (
+    <div style={{
+      position:"fixed",inset:0,zIndex:1000,
+      background:"#09090B",
+      display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"space-between",
+      padding:"env(safe-area-inset-top,0px) 0 env(safe-area-inset-bottom,0px)",
+      overflow:"hidden",
+    }}
+      onTouchStart={handleTouchStart}
+      onTouchEnd={handleTouchEnd}
+    >
+      {/* Warm glow behind illustration */}
+      <div style={{
+        position:"absolute",top:"15%",left:"50%",transform:"translateX(-50%)",
+        width:280,height:280,
+        background:"radial-gradient(ellipse 60% 60% at 50% 50%, rgba(245,166,35,0.09) 0%, transparent 70%)",
+        pointerEvents:"none",
+      }}/>
+
+      {/* Skip */}
+      <div style={{width:"100%",display:"flex",justifyContent:"flex-end",padding:"56px 28px 0",position:"relative",zIndex:1}}>
+        <button onClick={onComplete} style={{background:"none",border:"none",color:"rgba(134,140,150,0.6)",fontSize:13,cursor:"pointer",fontFamily:"'DM Sans',sans-serif",letterSpacing:.5,padding:"4px 0"}}>
+          SKIP
+        </button>
+      </div>
+
+      {/* Card content */}
+      <div style={{
+        flex:1,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",
+        padding:"0 36px",
+        transform: exiting ? `translateX(${dir * -40}px)` : "translateX(0)",
+        opacity: exiting ? 0 : 1,
+        transition:"transform 0.32s cubic-bezier(.22,1,.36,1), opacity 0.32s ease",
+        textAlign:"center",
+        position:"relative",zIndex:1,
+      }}>
+        {/* Illustration */}
+        <div style={{marginBottom:32}}>
+          <ObIllustration id={card.id}/>
+        </div>
+
+        {/* Tag */}
+        <div style={{
+          fontSize:9,fontFamily:"'Bebas Neue',sans-serif",letterSpacing:3,
+          color:"#F5A623",marginBottom:12,
+          display:"flex",alignItems:"center",gap:8,
+        }}>
+          <div style={{width:20,height:1,background:"rgba(245,166,35,0.4)"}}/>
+          {card.tag}
+          <div style={{width:20,height:1,background:"rgba(245,166,35,0.4)"}}/>
+        </div>
+
+        {/* Headline */}
+        <div style={{
+          fontFamily:"'Bebas Neue',sans-serif",
+          fontSize:46,letterSpacing:2,lineHeight:1.0,
+          color:"#F0EDE8",marginBottom:20,
+          whiteSpace:"pre-line",
+        }}>
+          {card.headline}
+        </div>
+
+        {/* Body */}
+        <div style={{
+          fontSize:15,color:"#868C96",lineHeight:1.7,
+          maxWidth:300,marginBottom:16,
+        }}>
+          {card.body}
+        </div>
+
+        {/* Sub */}
+        <div style={{fontSize:13,color:"rgba(245,166,35,0.7)",fontStyle:"italic",letterSpacing:.3}}>
+          {card.sub}
+        </div>
+      </div>
+
+      {/* Bottom — dots + CTA */}
+      <div style={{width:"100%",padding:"0 36px 48px",position:"relative",zIndex:1}}>
+        {/* Dot indicators */}
+        <div style={{display:"flex",gap:6,justifyContent:"center",marginBottom:28}}>
+          {OB_CARDS.map((_, i) => (
+            <div key={i} style={{
+              height:5,
+              width: i === current ? 22 : 5,
+              borderRadius:3,
+              background: i === current ? "#F5A623" : "rgba(245,166,35,0.25)",
+              transition:"all 0.3s cubic-bezier(.22,1,.36,1)",
+            }}/>
+          ))}
+        </div>
+
+        {/* CTA button */}
+        <button
+          onClick={advance}
+          style={{
+            width:"100%",padding:"16px 0",
+            background: isLast ? "#F5A623" : "transparent",
+            color: isLast ? "#09090B" : "#F0EDE8",
+            border: isLast ? "none" : "1px solid rgba(240,237,232,0.2)",
+            borderRadius:12,
+            fontFamily:"'Bebas Neue',sans-serif",fontSize:18,letterSpacing:2.5,
+            cursor:"pointer",
+            transition:"all 0.2s ease",
+          }}
+        >
+          {isLast ? "GET STARTED →" : "NEXT"}
+        </button>
+      </div>
+    </div>
+  );
+}
+
+// Tab-contextual tooltip — appears once per tab on first visit
+const TAB_TIPS = {
+  home:     "Log your weight above — even a rough number starts your trend.",
+  training: "Tap a split card below to generate your full program.",
+  nutrition:"Tap + to log your first meal — describe it, or use a photo.",
+  coach:    "Ask APEX anything — it knows your goal, your lifts, your trend.",
+};
+
+function TabTooltip({ tabId, onDismiss }) {
+  const [vis, setVis] = useState(false);
+  const text = TAB_TIPS[tabId];
+
+  useEffect(() => {
+    const t1 = setTimeout(() => setVis(true), 500);
+    const t2 = setTimeout(() => { setVis(false); setTimeout(onDismiss, 350); }, 7000);
+    return () => { clearTimeout(t1); clearTimeout(t2); };
+  }, [tabId]);
+
+  const dismiss = () => { setVis(false); setTimeout(onDismiss, 350); };
+  if (!text) return null;
+
+  const isTop = tabId === "home";
+
+  return (
+    <div style={{
+      position:"fixed",
+      ...(isTop ? { top: 130 } : { bottom: 160 }),
+      left:"50%",
+      transform:`translateX(-50%) translateY(${vis ? 0 : isTop ? -16 : 16}px)`,
+      opacity: vis ? 1 : 0,
+      transition:"transform 0.35s cubic-bezier(.22,1,.36,1), opacity 0.3s ease",
+      zIndex:600,
+      width:"calc(100% - 48px)",
+      maxWidth:340,
+      pointerEvents: vis ? "auto" : "none",
+    }}>
+      {/* Arrow for home (points up) */}
+      {isTop && (
+        <div style={{display:"flex",justifyContent:"center",marginBottom:-1}}>
+          <svg width="16" height="9" viewBox="0 0 16 9" style={{display:"block"}}>
+            <path d="M8 0 L16 9 L0 9 Z" fill="#1A1917"/>
+            <path d="M8 1.5 L14.5 9 L1.5 9" fill="none" stroke="rgba(245,166,35,0.5)" strokeWidth="1"/>
+          </svg>
+        </div>
+      )}
+      <div style={{
+        background:"#1A1917",
+        border:"1px solid rgba(245,166,35,0.5)",
+        borderRadius:12,
+        padding:"12px 14px 12px 16px",
+        display:"flex",alignItems:"center",gap:10,
+        boxShadow:"0 8px 32px rgba(0,0,0,0.5), 0 0 0 1px rgba(245,166,35,0.1)",
+      }}>
+        <div style={{width:6,height:6,borderRadius:"50%",background:"#F5A623",flexShrink:0,boxShadow:"0 0 8px rgba(245,166,35,0.6)"}}/>
+        <span style={{fontSize:13,color:"#F0EDE8",lineHeight:1.55,flex:1}}>{text}</span>
+        <button onClick={dismiss} style={{background:"none",border:"none",color:"rgba(134,140,150,0.7)",fontSize:15,cursor:"pointer",padding:"0 0 0 4px",flexShrink:0,lineHeight:1}}>✕</button>
+      </div>
+      {/* Arrow for non-home (points down toward nav) */}
+      {!isTop && (
+        <div style={{display:"flex",justifyContent:"center",marginTop:-1}}>
+          <svg width="16" height="9" viewBox="0 0 16 9" style={{display:"block"}}>
+            <path d="M8 9 L0 0 L16 0 Z" fill="#1A1917"/>
+            <path d="M8 7.5 L1.5 0 L14.5 0" fill="none" stroke="rgba(245,166,35,0.5)" strokeWidth="1"/>
+          </svg>
+        </div>
+      )}
+    </div>
+  );
+}
+
 // Fires once after onboarding; sends GoalConfig data to Claude for a
 // personalised opening analysis, saves to GOAL_ANALYSIS_KEY for injection
 // into the Coach tab on first open.
@@ -9716,6 +10015,8 @@ function AppInner() {
   const [retrying, setRetrying] = useState(false);
   const [retryFailed, setRetryFailed] = useState(false);
   const sessionRestoredRef = useRef(false);
+  const [obState, setObState] = useState(null);      // onboarding state
+  const [activeTooltip, setActiveTooltip] = useState(null); // tab id or null
 
   // If an active session exists when the app loads (e.g. after iOS Safari refresh),
   // immediately restore to the Training tab so the workout is not hidden
@@ -9745,6 +10046,41 @@ function AppInner() {
       setWtLoaded(true);
     }).catch(() => setWtLoaded(true));
   }, []);
+
+  // Load onboarding state; auto-complete for existing users that predate this feature
+  useEffect(() => {
+    window.storage.get(ONBOARDING_KEY).then(async r => {
+      if (r?.value) {
+        try { setObState(JSON.parse(r.value)); } catch { setObState({ welcomeDone:true, tabsSeen:[] }); }
+        return;
+      }
+      // No key yet — check if this is a returning user (has weight data)
+      const wt = await window.storage.get(WT_KEY).catch(() => null);
+      const hasData = wt?.value && (() => { try { return JSON.parse(wt.value).length > 0; } catch { return false; } })();
+      const init = hasData
+        ? { welcomeDone:true, tabsSeen:["home","training","nutrition","coach"] }
+        : { welcomeDone:false, tabsSeen:[] };
+      window.storage.set(ONBOARDING_KEY, JSON.stringify(init)).catch(() => {});
+      setObState(init);
+    }).catch(() => setObState({ welcomeDone:true, tabsSeen:[] }));
+  }, []);
+
+  // Show tab tooltip on first visit after welcome is done
+  useEffect(() => {
+    if (!obState?.welcomeDone) return;
+    if (obState.tabsSeen?.includes(tab)) return;
+    if (!TAB_TIPS[tab]) return;
+    setActiveTooltip(tab);
+    const updated = { ...obState, tabsSeen: [...(obState.tabsSeen || []), tab] };
+    setObState(updated);
+    window.storage.set(ONBOARDING_KEY, JSON.stringify(updated)).catch(() => {});
+  }, [tab, obState?.welcomeDone]);
+
+  const handleWelcomeDone = () => {
+    const updated = { ...obState, welcomeDone:true };
+    setObState(updated);
+    window.storage.set(ONBOARDING_KEY, JSON.stringify(updated)).catch(() => {});
+  };
 
   const handleLogWeight = useCallback(async (w) => {
     const today = new Date().toLocaleDateString("en-US", {month:"short", day:"numeric"});
@@ -10000,9 +10336,21 @@ function AppInner() {
         }];
         window.storage.set(GOAL_HISTORY_KEY, JSON.stringify(firstPhase)).catch(()=>{});
         generateGoalRationale(u, gc);
+        // Mark onboarding as unseen for fresh users
+        const fresh = { welcomeDone:false, tabsSeen:[] };
+        setObState(fresh);
+        window.storage.set(ONBOARDING_KEY, JSON.stringify(fresh)).catch(() => {});
         setUser(u); setTab("home");
       }}/> : (
           <>
+            {/* Onboarding carousel — fires once after first profile setup */}
+            {obState && !obState.welcomeDone && (
+              <OnboardingCarousel onComplete={handleWelcomeDone}/>
+            )}
+            {/* Tab tooltip — fires once per tab on first visit */}
+            {activeTooltip && (
+              <TabTooltip key={activeTooltip} tabId={activeTooltip} onDismiss={() => setActiveTooltip(null)}/>
+            )}
             {/* Weight reminder banner — fixed overlay, visible on all tabs */}
             {showNotif && (
               <WeightReminderBanner

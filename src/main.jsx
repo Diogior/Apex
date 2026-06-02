@@ -19,6 +19,8 @@ const APEX_KEYS = [
   "apex_weekly_digest_v1", "apex_notif_v1",
   // Physique scan history (analysis results only — photos not stored)
   "apex_physique_v1",
+  // Onboarding tour state
+  "apex_onboarding_v1",
 ];
 // Session key is intentionally excluded — it is device-local only.
 // An active workout on your phone must never sync to or be wiped by another device.
