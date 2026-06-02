@@ -507,7 +507,7 @@ input:focus,textarea:focus,select:focus{
 .goal-rate-target{font-size:10px;color:var(--faint);margin-top:3px;}
 /* Weigh-in streak pill */
 .streak-pill{display:inline-flex;align-items:center;gap:5px;padding:4px 10px;border-radius:20px;font-size:9px;font-family:'Bebas Neue',sans-serif;letter-spacing:1.5px;}
-.streak-pill.ok{background:rgba(26,158,88,.12);color:var(--green);border:1px solid rgba(26,158,88,.25);animation:greenPulse 3s ease-in-out infinite;}
+.streak-pill.ok{background:rgba(26,158,88,.12);color:var(--green);border:1px solid rgba(26,158,88,.25);}
 .streak-pill.nudge{background:rgba(251,191,36,.12);color:#FBBF24;border:1px solid rgba(251,191,36,.25);}
 .streak-pill.warn{background:rgba(var(--accent-rgb),.12);color:var(--accent);border:1px solid rgba(var(--accent-rgb),.25);}
 .streak-pill.danger{background:rgba(var(--red-rgb),.12);color:var(--red);border:1px solid rgba(var(--red-rgb),.25);}
@@ -6249,7 +6249,7 @@ function PostPrepScreen({user}) {
 
 // ─── FEEDBACK ARCHIVE ─────────────────────────────────────────────────────────
 
-function FeedbackArchiveScreen() {
+function FeedbackArchiveScreen({ embedded = false }) {
   const C = useThemeColors();
   const [feedbacks, setFeedbacks] = useState([]);
   const [loaded, setLoaded] = useState(false);
@@ -6322,21 +6322,25 @@ function FeedbackArchiveScreen() {
     </div>
   );
 
+  const Wrap = embedded ? ({ children }) => <div style={{paddingBottom:32}}>{children}</div> : ({ children }) => <div className="screen">{children}</div>;
+
   return (
-    <div className="screen">
-      {/* HEADER */}
-      <div className="sh">
-        <div>
-          <div className="sh-label">Coach</div>
-          <div className="sh-title">FEEDBACK ARCHIVE</div>
-        </div>
-        {unreadCount > 0 && (
-          <div style={{ display:"flex", alignItems:"center", gap:6, padding:"6px 12px", background:`${C.accent}18`, border:`1px solid ${C.accent}40`, borderRadius:8 }}>
-            <div style={{ width:6, height:6, borderRadius:"50%", background:C.accent }}/>
-            <span style={{ fontSize:11, fontWeight:700, color:C.accent, letterSpacing:.5 }}>{unreadCount} NEW</span>
+    <Wrap>
+      {/* HEADER — only when standalone */}
+      {!embedded && (
+        <div className="sh">
+          <div>
+            <div className="sh-label">Coach</div>
+            <div className="sh-title">FEEDBACK ARCHIVE</div>
           </div>
-        )}
-      </div>
+          {unreadCount > 0 && (
+            <div style={{ display:"flex", alignItems:"center", gap:6, padding:"6px 12px", background:`${C.accent}18`, border:`1px solid ${C.accent}40`, borderRadius:8 }}>
+              <div style={{ width:6, height:6, borderRadius:"50%", background:C.accent }}/>
+              <span style={{ fontSize:11, fontWeight:700, color:C.accent, letterSpacing:.5 }}>{unreadCount} NEW</span>
+            </div>
+          )}
+        </div>
+      )}
 
       {/* GROUP BY TOGGLE */}
       <div style={{ margin:"0 24px 20px", display:"flex", background:C.up, borderRadius:10, padding:3 }}>
@@ -6425,7 +6429,7 @@ function FeedbackArchiveScreen() {
           ))}
         </div>
       )}
-    </div>
+    </Wrap>
   );
 }
 
@@ -6433,6 +6437,7 @@ function FeedbackArchiveScreen() {
 
 function CoachScreen({user}) {
   const C = useThemeColors();
+  const [coachTab, setCoachTab] = useState("chat"); // "chat" | "history"
   const [messages,setMessages]=useState([{
     role:"coach",
     text:`What's up ${user.name}! I'm APEX — your AI performance coach.\n\nI've built your program around your ${user.goal||"physique"} goal. Whether you're in the offseason, on prep, or navigating post-show — I've got you.\n\nHow can I help you today?`,
@@ -6580,6 +6585,16 @@ Keep all responses conversational, specific, and actionable. Max 4 short paragra
   const inputBottom = 90 + msvH;                 // 90 = nav clearance, +62 when MSV showing
   const msgsHeight = `calc(100vh - ${pending.length > 0 ? 452 + msvH : 364 + msvH}px)`;
 
+  if (coachTab === "history") return (
+    <div className="screen" style={{overflowY:"auto"}}>
+      <div style={{padding:"56px 20px 12px",borderBottom:`1px solid ${C.border}`,display:"flex",alignItems:"center",gap:12}}>
+        <button onClick={() => setCoachTab("chat")} style={{background:"none",border:"none",color:C.accent,fontSize:13,cursor:"pointer",padding:0,fontWeight:600}}>← Coach</button>
+        <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:24,letterSpacing:1,color:C.text}}>SESSION HISTORY</div>
+      </div>
+      <FeedbackArchiveScreen embedded/>
+    </div>
+  );
+
   return (
     <div className="screen" style={{paddingBottom:0}}>
       <div className="ch-header">
@@ -6588,11 +6603,20 @@ Keep all responses conversational, specific, and actionable. Max 4 short paragra
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
             <div className="ch-dot"/>
           </div>
-          <div><div className="ch-name">APEX COACH</div><div className="ch-status">Online · Ready to coach</div></div>
+          <div>
+            <div className="ch-name">APEX COACH</div>
+            <div className="ch-status">Online · Ready to coach</div>
+          </div>
         </div>
-        <div className="chips">
-          {QPROMPTS.map(p=><div key={p} className="chip" onClick={()=>send(p)}>{p}</div>)}
+        <div style={{display:"flex",alignItems:"center",gap:8}}>
+          <button onClick={() => setCoachTab("history")}
+            style={{background:"none",border:`1px solid ${C.border}`,borderRadius:8,padding:"5px 10px",color:C.muted,fontSize:10,cursor:"pointer",fontFamily:"'Bebas Neue',sans-serif",letterSpacing:1}}>
+            HISTORY
+          </button>
         </div>
+      </div>
+      <div className="chips">
+        {QPROMPTS.map(p=><div key={p} className="chip" onClick={()=>send(p)}>{p}</div>)}
       </div>
 
       <div className="msgs" ref={msgsRef} style={{height:msgsHeight}}>
@@ -6923,6 +6947,29 @@ function WeightGraph3D({ logs, ceilingWeight, stageWeight }) {
   );
 }
 
+// ─── TIP — lightweight tap/hover tooltip for terminology ─────────────────────
+function Tip({ label, children }) {
+  const C = useThemeColors();
+  const [open, setOpen] = useState(false);
+  return (
+    <span style={{ position:"relative", display:"inline-flex", alignItems:"center", gap:3 }}>
+      {children}
+      <button type="button" onClick={e => { e.stopPropagation(); setOpen(o => !o); }}
+        style={{ background:"none", border:`1px solid ${C.faint}`, borderRadius:"50%", width:12, height:12, fontSize:7, color:C.faint, cursor:"pointer", padding:0, lineHeight:1, display:"inline-flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>
+        ?
+      </button>
+      {open && (
+        <>
+          <div onClick={() => setOpen(false)} style={{ position:"fixed", inset:0, zIndex:98 }}/>
+          <div style={{ position:"absolute", bottom:"calc(100% + 6px)", left:"50%", transform:"translateX(-50%)", background:C.surface, border:`1px solid ${C.border}`, borderRadius:8, padding:"7px 10px", fontSize:11, color:C.muted, lineHeight:1.55, whiteSpace:"nowrap", zIndex:99, boxShadow:"var(--depth-shadow)", maxWidth:220, whiteSpace:"normal", textAlign:"left" }}>
+            {label}
+          </div>
+        </>
+      )}
+    </span>
+  );
+}
+
 // ─── DASHBOARD ────────────────────────────────────────────────────────────────
 
 function AvatarMenu({ initial, onEditProfile }) {
@@ -7016,6 +7063,7 @@ function DashboardScreen({ user, weightLog, onLogWeight, onDeleteWeight, onEditW
   const [showReport, setShowReport] = useState(false);
   const [reportData, setReportData] = useState({ text: null, ts: null, loading: false });
   const snapshotTriggerRef = useRef(-1);   // tracks sortedLog.length at last trigger
+  const [gcExpanded, setGcExpanded] = useState(false);
   const [bfOverride, setBfOverride] = useState(null);
   const [showBfEditor, setShowBfEditor] = useState(false);
   const [bfTab, setBfTab] = useState("manual");
@@ -7435,16 +7483,16 @@ function DashboardScreen({ user, weightLog, onLogWeight, onDeleteWeight, onEditW
               {(weighInStreak.current > 0 || weighInStreak.urgency !== "none") && (() => {
                 const { current, urgency, lastDaysAgo, loggedToday } = weighInStreak;
                 if (urgency === "danger") return (
-                  <div className="streak-pill danger">⚠ {lastDaysAgo}d since last log</div>
+                  <div className="streak-pill danger">! {lastDaysAgo}d since last log</div>
                 );
                 if (urgency === "warn") return (
-                  <div className="streak-pill warn">⚡ Log today</div>
+                  <div className="streak-pill warn">→ Log today</div>
                 );
                 if (urgency === "nudge") return (
                   <div className="streak-pill nudge">● Log today</div>
                 );
                 if (current >= 7) return (
-                  <div className="streak-pill ok">🔥 {current}-day streak</div>
+                  <div className="streak-pill ok">▲ {current}-day streak</div>
                 );
                 if (current > 0) return (
                   <div className="streak-pill ok">✓ {current}-day streak</div>
@@ -7520,42 +7568,25 @@ function DashboardScreen({ user, weightLog, onLogWeight, onDeleteWeight, onEditW
             const accentCol = goalPacing.colorKey === "green" ? "var(--green)"
                             : goalPacing.colorKey === "red"   ? "var(--red)"
                             : "var(--accent)";
-            // Waveform path: sine wave from x=8..108, y=46+6sin(x)
-            let wavePath = `M 8 50`;
-            for (let x = 8; x <= 108; x += 3) {
-              const y = 50 + 5 * Math.sin(((x - 8) / 16) * Math.PI * 2);
-              wavePath += ` L ${x} ${y.toFixed(1)}`;
-            }
             return (
-              <svg viewBox="0 0 116 70" width={108} height={65}
+              <svg viewBox="0 0 116 72" width={108} height={66}
                 style={{flexShrink:0, alignSelf:"flex-start", marginTop:8, overflow:"visible"}}>
-                <defs>
-                  <clipPath id="heroArcClip">
-                    <rect x="0" y="0" width="116" height="62"/>
-                  </clipPath>
-                </defs>
                 {/* Track */}
                 <path d="M 8 62 A 50 50 0 0 1 108 62" fill="none" stroke="var(--up)" strokeWidth="7" strokeLinecap="round"/>
-                {/* Animated waveform (clipped to arc zone) */}
-                <g clipPath="url(#heroArcClip)" opacity="0.22">
-                  <path d={wavePath} fill="none" stroke={accentCol} strokeWidth="1.8" strokeLinecap="round"
-                    style={{strokeDasharray:"4 2", animation:"waveflow 2s linear infinite"}}/>
-                </g>
-                {/* Progress fill */}
+                {/* Progress fill — no glow, color carries the status signal */}
                 <path d="M 8 62 A 50 50 0 0 1 108 62" fill="none" stroke={accentCol} strokeWidth="7"
                   strokeLinecap="round"
                   strokeDasharray={`${fill.toFixed(1)} ${arcLen}`}
-                  style={{filter:`drop-shadow(0 0 5px ${accentCol})`, transition:"stroke-dasharray 1.2s cubic-bezier(.16,1,.3,1)"}}
+                  style={{transition:"stroke-dasharray 1.2s cubic-bezier(.16,1,.3,1)"}}
                 />
                 {/* Percent label */}
-                <text x="58" y="44" textAnchor="middle" fontSize="15" fontFamily="Bebas Neue,sans-serif" letterSpacing="1"
-                  fill={accentCol} style={{filter:`drop-shadow(0 0 4px ${accentCol})`}}>
+                <text x="58" y="44" textAnchor="middle" fontSize="15" fontFamily="Bebas Neue,sans-serif" letterSpacing="1" fill={accentCol}>
                   {Math.round(heroPct)}%
                 </text>
-                <text x="58" y="54" textAnchor="middle" fontSize="7" fontFamily="DM Sans,sans-serif" fill="var(--muted)">to goal</text>
-                {/* Start / goal labels */}
-                <text x="4" y="70" textAnchor="start" fontSize="7" fontFamily="DM Mono,monospace" fill="var(--faint)">{Math.round(goalConfig.startWeight)}</text>
-                <text x="112" y="70" textAnchor="end" fontSize="7" fontFamily="DM Mono,monospace" fill="var(--faint)">{Math.round(goalConfig.effectiveGoalWeight)}</text>
+                <text x="58" y="54" textAnchor="middle" fontSize="8" fontFamily="DM Sans,sans-serif" fill="var(--muted)">to goal</text>
+                {/* Start / goal labels — bumped to 9px for readability */}
+                <text x="4" y="72" textAnchor="start" fontSize="9" fontFamily="DM Mono,monospace" fill="var(--faint)">{Math.round(goalConfig.startWeight)}</text>
+                <text x="112" y="72" textAnchor="end" fontSize="9" fontFamily="DM Mono,monospace" fill="var(--faint)">{Math.round(goalConfig.effectiveGoalWeight)}</text>
               </svg>
             );
           })() : recentWeights.length >= 2 && (
@@ -7649,11 +7680,22 @@ function DashboardScreen({ user, weightLog, onLogWeight, onDeleteWeight, onEditW
                     <div style={{display:"flex",alignItems:"center",justifyContent:"space-between"}}>
                       <span style={{fontSize:11,color:"var(--muted)",fontVariantNumeric:"tabular-nums"}}>{e.date}</span>
                       <div style={{display:"flex",alignItems:"center",gap:10}}>
-                        {change !== null && (
-                          <span style={{fontSize:10,color:parseFloat(change)>0?"var(--green)":parseFloat(change)<0?"var(--blue)":"var(--muted)"}}>
-                            {parseFloat(change)>0?"+":""}{change}
-                          </span>
-                        )}
+                        {change !== null && (() => {
+                          const n = parseFloat(change);
+                          const goal = user?.goal;
+                          // Toward goal = green, away = red, maintain/neutral = muted
+                          const losingIsGood = goal === "cut" || goal === "contest";
+                          const gainingIsGood = goal === "bulk";
+                          const changeCol = n === 0 ? "var(--muted)"
+                            : (losingIsGood && n < 0) || (gainingIsGood && n > 0) ? "var(--green)"
+                            : (losingIsGood && n > 0) || (gainingIsGood && n < 0) ? "var(--red)"
+                            : "var(--accent)";
+                          return (
+                            <span style={{fontSize:10,color:changeCol}}>
+                              {n>0?"+":""}{change}
+                            </span>
+                          );
+                        })()}
                         <span
                           onClick={()=>{setPendingDeleteTs(null);setEditingTs(e.ts);setEditingVal(String(e.weight));}}
                           style={{display:"flex",alignItems:"center",gap:4,fontFamily:"'Bebas Neue',sans-serif",fontSize:15,color:savedTs===e.ts?"var(--green)":i===0?"var(--accent)":"var(--text)",cursor:"pointer",transition:"color .35s"}}
@@ -7795,8 +7837,23 @@ function DashboardScreen({ user, weightLog, onLogWeight, onDeleteWeight, onEditW
               </div>
             </div>
 
-            {/* Progress bar + sparkline + delta */}
-            {totalDelta > 0 && (
+            {/* Compact summary row — always visible */}
+            <div style={{padding:"8px 16px",borderBottom:"1px solid var(--border)",display:"flex",alignItems:"center",justifyContent:"space-between"}}>
+              <div style={{fontSize:11,color:"var(--muted)"}}>
+                {totalDelta > 0
+                  ? <><span style={{color:"var(--text)",fontWeight:600}}>{Math.round(progressPct)}%</span> of the way · ETA <span style={{color:"var(--text)",fontWeight:600}}>{liveEta > 0 ? `${liveEta}w` : "—"}</span></>
+                  : <span style={{color:"var(--muted)"}}>Recomposition target — weight stays flat</span>}
+              </div>
+              <button onClick={() => setGcExpanded(e => !e)} style={{background:"none",border:"none",padding:0,cursor:"pointer",display:"flex",alignItems:"center",gap:4,fontSize:10,color:"var(--faint)",fontFamily:"'Bebas Neue',sans-serif",letterSpacing:1}}>
+                {gcExpanded ? "LESS" : "DETAILS"}
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{width:12,height:12,transition:"transform .2s",transform:gcExpanded?"rotate(180deg)":"none"}}>
+                  <path d="M6 9l6 6 6-6"/>
+                </svg>
+              </button>
+            </div>
+
+            {/* Progress bar + sparkline + delta — hidden when collapsed */}
+            {gcExpanded && totalDelta > 0 && (
               <div style={{padding:"10px 16px 8px",borderBottom:"1px solid var(--border)"}}>
                 <div style={{display:"flex",justifyContent:"space-between",alignItems:"baseline",marginBottom:5}}>
                   <div style={{fontSize:9,letterSpacing:1.5,textTransform:"uppercase",color:"var(--muted)"}}>Progress</div>
@@ -7843,8 +7900,8 @@ function DashboardScreen({ user, weightLog, onLogWeight, onDeleteWeight, onEditW
               </div>
             )}
 
-            {/* Key metrics row */}
-            <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",borderBottom:"1px solid var(--border)"}}>
+            {/* Key metrics row — shown when expanded */}
+            {gcExpanded && <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",borderBottom:"1px solid var(--border)"}}>
               {[
                 {
                   label: "ETA",
@@ -7866,14 +7923,20 @@ function DashboardScreen({ user, weightLog, onLogWeight, onDeleteWeight, onEditW
                 },
               ].map((m, i) => (
                 <div key={m.label} style={{padding:"10px 12px",borderRight: i < 2 ? "1px solid var(--border)" : "none"}}>
-                  <div style={{fontSize:9,letterSpacing:1.5,textTransform:"uppercase",color:"var(--muted)",marginBottom:3}}>{m.label}</div>
+                  <div style={{fontSize:9,letterSpacing:1.5,textTransform:"uppercase",color:"var(--muted)",marginBottom:3}}>
+                    {m.label === "LBM Goal" ? (
+                      <Tip label="Lean Body Mass target — your muscle + organ weight at goal, no fat included">LBM GOAL</Tip>
+                    ) : m.label === "Sustain" ? (
+                      <Tip label="Sustainability score: how realistic this goal is given your starting point (0 = unrealistic, 100 = conservative)">SUSTAIN</Tip>
+                    ) : m.label}
+                  </div>
                   <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:20,letterSpacing:.5,color:m.color,lineHeight:1}}>{m.val}</div>
                   <div style={{fontSize:9,color:"var(--faint)",marginTop:2}}>{m.sub}</div>
                 </div>
               ))}
-            </div>
+            </div>}
 
-            {/* Rate alert from latest snapshot */}
+            {/* Rate alert — always visible (it's an action signal) */}
             {latestSnapshot?.rateAlert && (
               <div style={{padding:"8px 16px",borderBottom:"1px solid var(--border)",display:"flex",alignItems:"center",gap:8,background:`color-mix(in srgb,${rateAlertCol[latestSnapshot.rateAlert]} 8%,transparent)`}}>
                 <div style={{width:5,height:5,borderRadius:"50%",flexShrink:0,background:rateAlertCol[latestSnapshot.rateAlert]}}/>
@@ -7885,7 +7948,8 @@ function DashboardScreen({ user, weightLog, onLogWeight, onDeleteWeight, onEditW
               </div>
             )}
 
-            {/* Visual outcome + Full Analysis CTA */}
+            {/* Visual outcome + Full Analysis CTA — collapsed by default */}
+            {gcExpanded && (
             <div style={{padding:"10px 16px",borderBottom:"1px solid var(--border)"}}>
               <div style={{display:"flex",alignItems:"flex-start",justifyContent:"space-between",gap:12}}>
                 <div style={{flex:1}}>
@@ -7900,15 +7964,16 @@ function DashboardScreen({ user, weightLog, onLogWeight, onDeleteWeight, onEditW
                     border:"1px solid color-mix(in srgb,var(--accent) 35%,transparent)",
                     borderRadius:8,fontFamily:"'Bebas Neue',sans-serif",fontSize:10,letterSpacing:1.5,
                     color:"var(--accent)",cursor:"pointer",whiteSpace:"nowrap",alignSelf:"flex-start",marginTop:2}}>
-                  ⚡ FULL ANALYSIS
+                  → FULL ANALYSIS
                 </button>
               </div>
             </div>
+            )}
 
             {/* Goal revision suggestion — Accept / Defer 7d / Dismiss */}
             {goalRevision?.suggested && (
               <div style={{padding:"12px 16px",background:"color-mix(in srgb,var(--accent) 8%,transparent)",borderTop:"1px solid var(--border)"}}>
-                <div style={{fontSize:9,letterSpacing:2,textTransform:"uppercase",color:"var(--accent)",marginBottom:6}}>⚡ APEX SUGGESTS</div>
+                <div style={{fontSize:9,letterSpacing:2,textTransform:"uppercase",color:"var(--accent)",marginBottom:6}}>● APEX SUGGESTS</div>
                 <div style={{fontSize:12,color:"var(--faint)",lineHeight:1.65,marginBottom:10}}>{goalRevision.reason}</div>
                 {goalRevision.revisedGoalWeight && (
                   <div style={{fontSize:11,fontFamily:"'Bebas Neue',sans-serif",letterSpacing:1,color:"var(--accent)",marginBottom:10}}>
@@ -7981,7 +8046,7 @@ function DashboardScreen({ user, weightLog, onLogWeight, onDeleteWeight, onEditW
               <div style={{display:"flex",alignItems:"flex-start",justifyContent:"space-between",marginBottom:8}}>
                 <div>
                   <div style={{fontSize:9,letterSpacing:2,textTransform:"uppercase",color:completionState==="reached"?"var(--green)":"var(--accent)",marginBottom:3}}>
-                    {completionState==="reached" ? "🎯 GOAL REACHED" : "⚡ GOAL EXCEEDED"}
+                    {completionState==="reached" ? "GOAL REACHED" : "GOAL EXCEEDED"}
                   </div>
                   <div style={{fontSize:12,color:"var(--faint)",lineHeight:1.5}}>
                     {completionState==="reached"
@@ -9761,7 +9826,6 @@ function AppInner() {
     {id:"training",label:"Training"},
     {id:"nutrition",label:"Nutrition"},
     ...(user?.goal==="contest" ? [{id:"postprep",label:"Rebound"}] : []),
-    {id:"archive",label:"Archive"},
     {id:"coach",label:"Coach"},
     ...(isAdmin ? [{id:"admin",label:"Roster"}] : []),
   ];
@@ -9952,7 +10016,6 @@ function AppInner() {
             {tab==="training"&&<TrainingScreen user={enrichedUser} onNavigate={setTab}/>}
             {tab==="nutrition"&&<NutritionScreen user={enrichedUser}/>}
             {tab==="postprep"&&user?.goal==="contest"&&<PostPrepScreen user={enrichedUser}/>}
-            {tab==="archive"&&<FeedbackArchiveScreen/>}
             {tab==="coach"&&<CoachScreen user={enrichedUser}/>}
             {tab==="admin"&&isAdmin&&<AdminScreen/>}
             {/* Mini session view — shown on all non-training tabs when a session is active */}
