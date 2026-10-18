@@ -93,8 +93,10 @@ Ring colours must pass the colour-blindness check (`dataviz` validator) in both 
 - **Left for later:**
   - Screens stay in `App.jsx` and move into `src/screens/` as each one is rebuilt in Phases 1–2.
     No point moving code that's about to be rewritten.
-- **Open question:** the 5-day program stores `rpe: 3` and `rpe: 4`, which look like
-  reps-in-reserve rather than RPE. Confirm before changing, because it affects adaptation.
+- **Answered (Phase 3):** the live workout's `rpe` field actually stores SFR (stimulus-to-fatigue,
+  1–5), so the 5-day program's `rpe: 3` / `rpe: 4` are SFR targets, not mistakes. But
+  `runAdaptation` reads that field as RPE (fatigue above 9, progress below 8.5), so with SFR
+  values it never signals fatigue. That needs a decision before adaptation uses effort.
 
 - **Lock down `api/chat.js`:**
   - require a Firebase ID token
@@ -210,6 +212,41 @@ at 390 px, light and dark.
   - the check-in waits until day 7
 
 ### Phase 3: Workout experience (about 2 to 3 weeks)
+
+**Status (2026-10-18, branch `phase-3/workout`):** first pass done. A full workout was run
+end to end in the preview (light and dark): start, log a set, rest, effort, summary.
+- **Workout maths:** `src/domain/workout.js`, 12 tests (59 in total).
+  - rep-range parsing
+  - next-session load: +10 lb lower-body compounds, +5 lb otherwise, once every set hits
+    the top of the range; "chase reps" inside the range; "hold" below it
+  - volume
+  - personal records by estimated 1-rep max, where a first-ever lift sets a baseline rather
+    than a record
+  - rest time per exercise
+  - effort labels
+- **Rest timer:**
+  - starts when a set gets both weight and reps
+  - a closing ring with +30 s and Skip, and a vibration at zero
+  - stored in the session, so it survives leaving the screen
+- **Screen awake:** the Wake Lock API keeps the screen on while the workout is open.
+- **Effort sheet:** "Finish workout" asks "How hard was that?" (1–10, Easy → All out, or Skip).
+  The rating is saved on the session and passed to the coach's feedback prompt.
+- **Summary after saving:**
+  - a highlight (personal record, or the biggest "+5 lb")
+  - time, sets, volume and effort
+  - personal records and "Next time" per exercise
+  - the coach's feedback
+- **Regression found and fixed:** the Phase 1 tab-icon change also landed in the "choose
+  workout type" screen, so starting any workout crashed with "on is not defined".
+  `npm run check` now fails the build on any unresolved name.
+- **Fixed while here:**
+  - the workout-type choices are real buttons (they were clickable divs that keyboards and
+    VoiceOver couldn't reach), without the brutalist press effect
+  - the rest timer and sheets no longer pick up the screen's entrance animation
+- **Not yet:**
+  - feeding effort into `runAdaptation` (see the SFR note in Phase 0)
+  - per-exercise history charts
+  - a one-exercise-at-a-time focused layout
 - **Live workout:**
   - full-screen, with a large elapsed time
   - one focused exercise at a time and a preview of what's next

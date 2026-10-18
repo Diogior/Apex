@@ -13,6 +13,8 @@ import { styles } from "./styles/legacyStyles.js";
 import { ErrorBoundary } from "./components/ErrorBoundary.jsx";
 import { ActivityRingsCard, NextCard, RingStack } from "./components/ActivityRings.jsx";
 import { computeRings, ringHistory, nextAction, nextSessionDay } from "./domain/rings.js";
+import { summarizeSession, restSecondsFor, effortLabel } from "./domain/workout.js";
+import { RestTimer, EffortSheet, WorkoutSummary, useWakeLock } from "./components/Workout.jsx";
 import { CANVAS_DARK, CANVAS_LIGHT, getCanvasC, useThemeColors } from "./styles/theme.js";
 import {
   calcProtocol,
@@ -784,30 +786,22 @@ function PathSelector({dayTag,onSelectGenerated,onSelectCustom}) {
   const C = useThemeColors();
   return (
     <div style={{animation:"slideUp .3s ease"}}>
-      <div style={{fontSize:12,color:C.muted,marginBottom:14}}>● Choose your approach for {dayTag}</div>
+      <div style={{fontSize:13,color:C.muted,marginBottom:14}}>Choose your approach for {dayTag}</div>
       <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12}}>
-        <div onClick={onSelectGenerated}
-          style={{background:C.card||C.surface,border:`1px solid ${C.border}`,borderRadius:12,padding:18,cursor:"pointer",transition:"all .15s cubic-bezier(.22,1,.36,1)",boxShadow:"var(--shadow-1)"}}
-          onMouseOver={e=>{e.currentTarget.style.transform="translate(-2px,-2px)";e.currentTarget.style.boxShadow="var(--shadow-1)";}}
-          onMouseOut={e=>{e.currentTarget.style.transform="";e.currentTarget.style.boxShadow="var(--shadow-1)";}}
-          onMouseDown={e=>{e.currentTarget.style.transform="translate(4px,4px)";e.currentTarget.style.boxShadow="none";}}
-          onMouseUp={e=>{e.currentTarget.style.transform="translate(-2px,-2px)";e.currentTarget.style.boxShadow="var(--shadow-1)";}}>
-          <div style={{marginBottom:10,color:C.accentInk}}><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={on ? 2.25 : 1.6} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" style={{width:26,height:26}}><path d="M13 10V3L4 14h7v7l9-11h-7z"/></svg></div>
+        <button type="button" className="path-option" onClick={onSelectGenerated}
+          style={{background:C.card||C.surface,border:`1px solid ${C.border}`,borderRadius:12,padding:18,cursor:"pointer",transition:"all .15s cubic-bezier(.22,1,.36,1)",boxShadow:"var(--shadow-1)"}}>
+          <div style={{marginBottom:10,color:C.accentInk}}><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" style={{width:22,height:22}}><path d="M13 10V3L4 14h7v7l9-11h-7z"/></svg></div>
           <div style={{fontFamily:"var(--font-display)", fontWeight:700,fontSize:16,color:C.accentInk,marginBottom:6}}>Generate workout</div>
           <div style={{fontSize:12,color:C.faint,lineHeight:1.5}}>AI-designed. Evidence-based selection, balanced stimulus, adaptive sets.</div>
           <div style={{marginTop:10,fontSize:12,color:C.accentInk}}>Recommended →</div>
-        </div>
-        <div onClick={onSelectCustom}
-          style={{background:C.card||C.surface,border:`1px solid ${C.border}`,borderRadius:12,padding:18,cursor:"pointer",transition:"all .15s cubic-bezier(.22,1,.36,1)",boxShadow:"var(--shadow-1)"}}
-          onMouseOver={e=>{e.currentTarget.style.transform="translate(-2px,-2px)";e.currentTarget.style.boxShadow="var(--shadow-1)";}}
-          onMouseOut={e=>{e.currentTarget.style.transform="";e.currentTarget.style.boxShadow="var(--shadow-1)";}}
-          onMouseDown={e=>{e.currentTarget.style.transform="translate(4px,4px)";e.currentTarget.style.boxShadow="none";}}
-          onMouseUp={e=>{e.currentTarget.style.transform="translate(-2px,-2px)";e.currentTarget.style.boxShadow="var(--shadow-1)";}}>
-          <div style={{marginBottom:10,color:C.blue}}><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={on ? 2.25 : 1.6} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" style={{width:26,height:26}}><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></div>
+        </button>
+        <button type="button" className="path-option" onClick={onSelectCustom}
+          style={{background:C.card||C.surface,border:`1px solid ${C.border}`,borderRadius:12,padding:18,cursor:"pointer",transition:"all .15s cubic-bezier(.22,1,.36,1)",boxShadow:"var(--shadow-1)"}}>
+          <div style={{marginBottom:10,color:C.blue}}><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" style={{width:22,height:22}}><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></div>
           <div style={{fontFamily:"var(--font-display)", fontWeight:700,fontSize:16,color:C.blue,marginBottom:6}}>Log custom</div>
           <div style={{fontSize:12,color:C.faint,lineHeight:1.5}}>Full control. Any exercise. System tracks muscle balance automatically.</div>
           <div style={{marginTop:10,fontSize:12,color:C.blue}}>Free form →</div>
-        </div>
+        </button>
       </div>
     </div>
   );
@@ -1034,7 +1028,7 @@ function CustomWorkoutLogger({onComplete,onBack,muscleVol,level}) {
 
       {exercises.length===0?(
         <div className="cx-empty-state" style={{padding:"36px 24px",textAlign:"center"}}>
-          <div style={{width:44,height:44,borderRadius:12,background:C.up,display:"flex",alignItems:"center",justifyContent:"center",margin:"0 auto 14px",color:C.muted}}><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={on ? 2.25 : 1.6} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" style={{width:26,height:26}}><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></div>
+          <div style={{width:44,height:44,borderRadius:12,background:C.up,display:"flex",alignItems:"center",justifyContent:"center",margin:"0 auto 14px",color:C.muted}}><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" style={{width:22,height:22}}><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></div>
           <div style={{fontFamily:"var(--font-display)", fontWeight:700,fontSize:20,color:C.muted,marginBottom:8}}>Your session starts here</div>
           <div style={{fontSize:13,color:C.muted,lineHeight:1.65,maxWidth:280,margin:"0 auto"}}>
             Write any exercise above — a classic lift, a machine move, or something completely your own. Hit Enter to add it instantly.
@@ -1254,7 +1248,11 @@ function WorkoutSession({ dayKey, dayPlan, adaptation, history = [], onComplete,
   const toastTimerRef = useRef(null);
   const toastCountRef = useRef(null);
   const [showAbandonConfirm, setShowAbandonConfirm] = useState(false);
+  const [showEffort, setShowEffort] = useState(false);
   const [sfrHelpEx, setSfrHelpEx] = useState(null);
+  useWakeLock(true); // keep the screen on while the workout is open
+  const closeRest = useCallback(() => updateSession(p => ({ ...p, restEndsAt: null })), [updateSession]);
+  const addRest = useCallback(() => updateSession(p => ({ ...p, restEndsAt: (p.restEndsAt || Date.now()) + 30000, restTotal: (p.restTotal || 0) + 30 })), [updateSession]);
   const [removedSet, setRemovedSet] = useState(null); // { exId, set } — offered for undo
   const removedTimerRef = useRef(null);
   useEffect(() => () => clearTimeout(removedTimerRef.current), []);
@@ -1274,7 +1272,15 @@ function WorkoutSession({ dayKey, dayPlan, adaptation, history = [], onComplete,
     updateSession(prev => {
       const prevSets = prev.loggedSets?.[exId] || [];
       const updated = prevSets.map((s, i) => i === setIdx ? { ...s, [field]: val } : s);
-      return { ...prev, loggedSets: { ...prev.loggedSets, [exId]: updated } };
+      const next = { ...prev, loggedSets: { ...prev.loggedSets, [exId]: updated } };
+      // A set with both weight and reps is complete: start the rest timer for this exercise.
+      const isDone = (x) => Number(x?.weight) > 0 && Number(x?.reps) > 0;
+      if (!isDone(prevSets[setIdx]) && isDone(updated[setIdx])) {
+        const secs = restSecondsFor(dayPlan.exercises.find(e => e.id === exId));
+        next.restEndsAt = Date.now() + secs * 1000;
+        next.restTotal = secs;
+      }
+      return next;
     });
   };
 
@@ -1318,13 +1324,14 @@ function WorkoutSession({ dayKey, dayPlan, adaptation, history = [], onComplete,
 
   const formatTime = (s) => `${Math.floor(s/60)}:${String(s%60).padStart(2,"0")}`;
 
-  const handleComplete = () => {
+  const handleComplete = (effort = null) => {
+    setShowEffort(false);
     setCompleting(true);
     const completedExercises = dayPlan.exercises.map(ex => ({
       id: ex.id, name: ex.name, muscle: ex.muscle,
       loggedSets: (loggedSets[ex.id] || []).filter(s => s.reps && s.weight),
     }));
-    const result = { dayKey, completedExercises, duration: timer, ts: Date.now() };
+    const result = { dayKey, completedExercises, duration: timer, ts: Date.now(), ...(effort ? { effort } : {}) };
     setToastResult(result);
     setToastCountdown(4);
     // Countdown display
@@ -1391,7 +1398,7 @@ function WorkoutSession({ dayKey, dayPlan, adaptation, history = [], onComplete,
           </div>
           <div style={{ textAlign: "right" }}>
             <div style={{ fontFamily:"var(--font-num)", fontVariantNumeric:"tabular-nums", fontSize: 22, color: C.accentInk }}>{formatTime(timer)}</div>
-            <div style={{ fontSize:12, color: C.muted, marginTop: 2 }}>{totalSets} sets logged</div>
+            <div style={{ fontSize:12, color: C.muted, marginTop: 2 }}>{totalSets} set{totalSets !== 1 ? "s" : ""} logged</div>
           </div>
         </div>
 
@@ -1567,7 +1574,7 @@ function WorkoutSession({ dayKey, dayPlan, adaptation, history = [], onComplete,
                       style={{ flex: 1, minHeight: 44, padding: "8px", background: "transparent", border: `1px solid ${C.border}`, borderRadius: 12, color: C.faint, fontSize: 12, cursor: "pointer", transition: "all .2s" }}
                       onMouseOver={e => e.target.style.borderColor = C.text}
                       onMouseOut={e => e.target.style.borderColor = C.border}>
-                      + Add Set
+                      + Add set
                     </button>
                     {sets.length > 1 && (
                       <button onClick={() => removeSet(ex.id)}
@@ -1601,12 +1608,17 @@ function WorkoutSession({ dayKey, dayPlan, adaptation, history = [], onComplete,
       {/* COMPLETE BUTTON */}
       <div style={{ margin: "20px 24px 12px" }}>
         <button
-          onClick={handleComplete}
+          onClick={() => setShowEffort(true)}
           disabled={completing || totalSets === 0}
           style={{ width: "100%", padding: 16, background: completing ? C.green : C.accent, color: "#080A0C", border: "none", borderRadius: 12, fontFamily:"var(--font-display)", fontWeight:700, fontSize: 18, cursor: totalSets > 0 ? "pointer" : "not-allowed", opacity: totalSets > 0 ? 1 : 0.4, transition: "all .3s" }}>
-          {completing ? "Saving..." : `COMPLETE SESSION (${totalSets} sets logged)`}
+          {completing ? "Saving…" : `Finish workout · ${totalSets} set${totalSets !== 1 ? "s" : ""}`}
         </button>
       </div>
+
+      {session?.restEndsAt && !toastResult && (
+        <RestTimer endsAt={session.restEndsAt} total={session.restTotal || 0} onAdd={addRest} onSkip={closeRest} />
+      )}
+      {showEffort && <EffortSheet onSave={handleComplete} onCancel={() => setShowEffort(false)} />}
 
       {/* UNDO TOAST */}
       {toastResult && (
@@ -1621,7 +1633,7 @@ function WorkoutSession({ dayKey, dayPlan, adaptation, history = [], onComplete,
         }}>
           <div>
             <div style={{ fontFamily:"var(--font-display)", fontWeight:700, fontSize: 15, color: C.green }}>Session saved</div>
-            <div style={{ fontSize:12, color: C.muted, marginTop: 2 }}>{totalSets} sets logged</div>
+            <div style={{ fontSize:12, color: C.muted, marginTop: 2 }}>{totalSets} set{totalSets !== 1 ? "s" : ""} logged</div>
           </div>
           <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
             <div style={{ width: 28, height: 28, borderRadius: "50%", border: `1px solid ${C.border}`, display: "flex", alignItems: "center", justifyContent: "center", fontSize:12, fontWeight: 700, color: C.muted, fontVariantNumeric: "tabular-nums" }}>{toastCountdown}</div>
@@ -1729,6 +1741,7 @@ function TrainingScreen({ user, onNavigate }) {
   const [showChart, setShowChart] = useState(false);
   const [expandedSession, setExpandedSession] = useState(null);
   const [sessionFeedback, setSessionFeedback] = useState(null); // {text, ts, loading}
+  const [sessionSummary, setSessionSummary] = useState(null); // shown once after a workout is saved
   const [splitView, setSplitView] = useState(null); // null=cards, string=split detail
 
   useEffect(() => {
@@ -1760,6 +1773,8 @@ function TrainingScreen({ user, onNavigate }) {
 
   const handleSessionComplete = async (result) => {
     endGlobalSession(); setShowPath(false);
+    const summary = summarizeSession(result, tState.history || [], tState.program?.[result.dayKey]);
+    setSessionSummary({ ...summary, title: tState.program?.[result.dayKey]?.tag || (result.dayKey ? labelCase(result.dayKey) : "Custom session") });
     const newHistory = [...(tState.history || []), result];
     // Muscle compensation: detect neglected muscles and boost volume in next program
     const muscleVol = computeMuscleVolume(newHistory, 14);
@@ -1800,7 +1815,8 @@ function TrainingScreen({ user, onNavigate }) {
             role: "user",
             content: `Athlete: ${user.name}, ${user.level||"intermediate"} level, goal: ${user.goal||"bulk"}.
 
-Session: ${result.dayKey.toUpperCase()} — ${mins} min, avg SFR ${avgRpe} (Stimulus to Fatigue Ratio, 1–5 scale)
+Session: ${result.dayKey.toUpperCase()} — ${mins} min, avg SFR ${avgRpe} (Stimulus to Fatigue Ratio, 1–5 scale)${result.effort ? `
+Athlete-rated session effort: ${result.effort}/10 (${effortLabel(result.effort)})` : ""}
 ${sessionSummary}
 
 14-day muscle volume — groups below MEV:
@@ -1936,6 +1952,11 @@ Give post-session feedback: what was solid, anything to flag, and one specific f
       );
     }
     return null;
+  }
+
+  // ── POST-WORKOUT SUMMARY — shown once, until the athlete taps Done ──
+  if (sessionSummary) {
+    return <WorkoutSummary summary={sessionSummary} title={sessionSummary.title} feedback={sessionFeedback} onDone={() => setSessionSummary(null)} />;
   }
 
   // ── ACTIVE SESSIONS — read from global context ──
@@ -2424,7 +2445,7 @@ Give post-session feedback: what was solid, anything to flag, and one specific f
               <CubeButton onClick={()=>setShowPath(true)}>Start {currentDay.tag}</CubeButton>
               <button onClick={()=>startSession("custom",{exercises:[],loggedSets:{}})}
                 style={{padding:"0 16px",background:`${C.blue}15`,border:`1px solid ${C.blue}50`,borderRadius:12,color:C.blue,fontFamily:"var(--font-display)", fontWeight:700,fontSize:14,cursor:"pointer",whiteSpace:"nowrap"}}>
-                + CUSTOM
+                + Custom
               </button>
             </div>
           )}
