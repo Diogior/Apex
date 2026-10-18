@@ -3,3 +3,7 @@ dist/
 .env
 *.local
 .DS_Store
+
+# Firebase service-account keys (used by scripts/set-admin-claim.mjs) must never be committed
+*service-account*.json
+*-firebase-adminsdk-*.json

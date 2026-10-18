@@ -2,19 +2,22 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
+    // Admin = a Firebase custom claim, set server-side with scripts/set-admin-claim.mjs.
+    // Users can't give themselves claims, unlike an email address they control at sign-up.
+    function isAdmin() {
+      return request.auth != null && request.auth.token.admin == true;
+    }
+
     // Each user can read and write their own storage.
-    // The admin account can read ALL users' storage (coach/roster view).
+    // The admin can read every user's storage (coach / roster view).
     match /users/{userId}/storage/{docId} {
-      allow read:  if request.auth != null
-                   && (request.auth.uid == userId
-                       || request.auth.token.email == "michaelstoics999@gmail.com");
+      allow read:  if request.auth != null && (request.auth.uid == userId || isAdmin());
       allow write: if request.auth != null && request.auth.uid == userId;
     }
 
-    // Admin needs to list /users to enumerate UIDs.
+    // The admin lists /users to enumerate UIDs.
     match /users/{userId} {
-      allow list: if request.auth != null
-                  && request.auth.token.email == "michaelstoics999@gmail.com";
+      allow list: if isAdmin();
       allow read, write: if request.auth != null && request.auth.uid == userId;
     }
   }

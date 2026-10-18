@@ -18,6 +18,8 @@ export default defineConfig(({ mode }) => {
             'anthropic-version': '2023-06-01',
           },
         },
+        // Dev only: talks to Anthropic directly. Production goes through api/chat.js,
+        // which checks the Firebase token. Strip that token so Anthropic never sees it.
         '/api/chat': {
           target: 'https://api.anthropic.com',
           changeOrigin: true,
@@ -25,6 +27,9 @@ export default defineConfig(({ mode }) => {
           headers: {
             'x-api-key': apiKey,
             'anthropic-version': '2023-06-01',
+          },
+          configure: (proxy) => {
+            proxy.on('proxyReq', (proxyReq) => proxyReq.removeHeader('authorization'))
           },
         },
       },
