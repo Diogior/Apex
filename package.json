@@ -8,7 +8,7 @@
     "build": "vite build",
     "preview": "vite preview",
     "test": "vitest run",
-    "check": "tsc --allowJs --checkJs --noEmit --target es2022 --module esnext --moduleResolution bundler --jsx react-jsx --skipLibCheck --types vite/client src/App.jsx src/components/*.jsx src/domain/*.js 2>&1 | node scripts/undefined-names.mjs"
+    "check": "tsc -p tsconfig.check.json 2>&1 | node scripts/undefined-names.mjs"
   },
   "dependencies": {
     "firebase": "^12.12.1",

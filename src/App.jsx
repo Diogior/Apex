@@ -13,7 +13,8 @@ import { styles } from "./styles/legacyStyles.js";
 import { ErrorBoundary } from "./components/ErrorBoundary.jsx";
 import { ActivityRingsCard, NextCard, RingStack } from "./components/ActivityRings.jsx";
 import { computeRings, ringHistory, nextAction, nextSessionDay } from "./domain/rings.js";
-import { summarizeSession, restSecondsFor, effortLabel } from "./domain/workout.js";
+import { summarizeSession, restSecondsFor, effortLabel, e1rmSeries } from "./domain/workout.js";
+import { TrendChart } from "./components/TrendChart.jsx";
 import { RestTimer, EffortSheet, WorkoutSummary, useWakeLock } from "./components/Workout.jsx";
 import { CANVAS_DARK, CANVAS_LIGHT, getCanvasC, useThemeColors } from "./styles/theme.js";
 import {
@@ -1451,7 +1452,7 @@ function WorkoutSession({ dayKey, dayPlan, adaptation, history = [], onComplete,
           });
 
           return (
-            <div key={ex.id} style={{ margin: "0 24px 14px" }}>
+            <div key={ex.id} id={`ex-${ex.id}`} style={{ margin: "0 24px 14px" }}>
               {/* Exercise header — tap to expand */}
               <div
                 onClick={() => setActiveEx(isOpen ? null : ex.id)}
@@ -1499,6 +1500,22 @@ function WorkoutSession({ dayKey, dayPlan, adaptation, history = [], onComplete,
                   <MuscleDiagram name={ex.name} />
 
                   {/* Previous session reference bar */}
+                  {(() => {
+                    const series = e1rmSeries(history, ex.name);
+                    if (series.length < 2) return null;
+                    const firstPt = series[0], lastPt = series[series.length - 1];
+                    const delta = lastPt.e1rm - firstPt.e1rm;
+                    return (
+                      <div className="ex-trend">
+                        <div className="ex-trend-head">
+                          <span>Estimated 1-rep max · {series.length} sessions</span>
+                          <strong>{delta === 0 ? "No change" : `${delta > 0 ? "+" : "−"}${Math.abs(delta)} lb`}</strong>
+                        </div>
+                        <TrendChart compact height={72} unit=" lb" label={`${ex.name} estimated 1-rep max`}
+                          points={series.map(p => ({ x: p.ts, y: p.e1rm }))} />
+                      </div>
+                    );
+                  })()}
                   {prevSummary && (
                     <div style={{ background: C.up, border: `1px solid ${C.border}`, borderRadius: 12, padding: "8px 12px", marginBottom: 12, display: "flex", alignItems: "center", gap: 8 }}>
                       <span style={{ fontSize:12, fontWeight: 700, color: C.muted, flexShrink: 0 }}>Last {prevDate}</span>
@@ -1593,6 +1610,19 @@ function WorkoutSession({ dayKey, dayPlan, adaptation, history = [], onComplete,
                     </div>
                   )}
 
+                  {(() => {
+                    const doneCount = sets.filter(x => Number(x.weight) > 0 && Number(x.reps) > 0).length;
+                    const nextEx = dayPlan.exercises[exIdx + 1];
+                    if (!nextEx || doneCount < (Number(ex.sets) || sets.length)) return null;
+                    return (
+                      <button type="button" className="next-ex-btn" onClick={() => {
+                        setActiveEx(nextEx.id);
+                        requestAnimationFrame(() => document.getElementById(`ex-${nextEx.id}`)?.scrollIntoView({ behavior: "smooth", block: "start" }));
+                      }}>
+                        Next: {nextEx.name}
+                      </button>
+                    );
+                  })()}
                   {ex.notes && (
                     <div style={{ marginTop: 10, fontSize:12, color: C.muted, fontStyle: "italic", display: "flex", alignItems: "center", gap: 6 }}>
                       <span style={{color:C.faint,fontSize:12}}>▸</span>{ex.notes}
@@ -1623,7 +1653,7 @@ function WorkoutSession({ dayKey, dayPlan, adaptation, history = [], onComplete,
       {/* UNDO TOAST */}
       {toastResult && (
         <div style={{
-          position: "fixed", bottom: "calc(96px + env(safe-area-inset-bottom,0px))", left: 16, right: 16, animation: "none",
+          position: "fixed", bottom: "calc(96px + env(safe-area-inset-bottom,0px))", left: 16, right: 16,
           background: C.surface, border: `1px solid ${C.border}`,
           borderRadius: 16, padding: "14px 18px",
           display: "flex", alignItems: "center", justifyContent: "space-between",
@@ -4575,7 +4605,7 @@ function Tip({ label, children }) {
       {open && (
         <>
           <div onClick={() => setOpen(false)} style={{ position:"fixed", inset:0, zIndex:98 }}/>
-          <div style={{ position:"absolute", bottom:"calc(100% + 6px)", left:"50%", transform:"translateX(-50%)", background:C.surface, border:`1px solid ${C.border}`, borderRadius:12, padding:"7px 10px", fontSize:12, color:C.muted, lineHeight:1.55, whiteSpace:"nowrap", zIndex:99, boxShadow:"var(--depth-shadow)", maxWidth:220, whiteSpace:"normal", textAlign:"left" }}>
+          <div style={{ position:"absolute", bottom:"calc(100% + 6px)", left:"50%", transform:"translateX(-50%)", background:C.surface, border:`1px solid ${C.border}`, borderRadius:12, padding:"7px 10px", fontSize:12, color:C.muted, lineHeight:1.55, zIndex:99, boxShadow:"var(--depth-shadow)", maxWidth:220, whiteSpace:"normal", textAlign:"left" }}>
             {label}
           </div>
         </>
@@ -7529,6 +7559,44 @@ function OnboardingCarousel({ onComplete }) {
   );
 }
 
+// Fires once after onboarding; sends GoalConfig data to Claude for a
+// personalised opening analysis, saves to GOAL_ANALYSIS_KEY for injection
+// into the Coach tab on first open.
+async function generateGoalRationale(user, gc) {
+  try {
+    const res = await apiChat({
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        model: "claude-haiku-4-5-20251001",
+        max_tokens: 420,
+        system: `You are APEX, an elite AI performance coach. Deliver a direct, specific post-onboarding goal analysis. 3 short paragraphs. No fluff — real training and physiology terminology only.`,
+        messages: [{
+          role: "user",
+          content: `New athlete:
+- ${user.name}, ${user.sex || "male"}, ${user.age}yo, ${user.level || "intermediate"} level
+- Current: ${gc.startWeight} lbs at ~${gc.startBfPct}% BF (${gc.currentVisualOutcome})
+- Goal: ${gc.goalType} → ${gc.effectiveGoalWeight} lbs at ${gc.goalBfPct}% BF
+- Target look: ${gc.projectedVisualOutcome}
+- Timeline: ${gc.etaWeeks} weeks · ${gc.realisticRating} · ${gc.sustainabilityScore}/100 sustainability
+
+Deliver their opening goal analysis:
+1. Why this target weight makes physiological sense for their specific body composition (reference lean mass and BF%)
+2. What the first 2 weeks should focus on to build the right foundation
+3. The single most important metric to track that will confirm they're on course
+
+Be specific and direct. Use their actual numbers. Don't hedge.`,
+        }],
+      }),
+    });
+    const data = await res.json();
+    const text = data.content?.find(b => b.type === "text")?.text;
+    if (!text) return;
+    const entry = { text, ts: Date.now(), goalType: gc.goalType, goalWeight: gc.effectiveGoalWeight, read: false };
+    window.storage.set(GOAL_ANALYSIS_KEY, JSON.stringify(entry)).catch(() => {});
+  } catch {}
+}
+
 function AppInner() {
   const [user,setUser]=useState(null);
   const [userLoaded, setUserLoaded]=useState(false);
@@ -7858,9 +7926,6 @@ function AppInner() {
             {/* Onboarding carousel — fires once after first profile setup */}
             {obState && !obState.welcomeDone && (
               <OnboardingCarousel onComplete={handleWelcomeDone}/>
-            )}
-            {/* Tab tooltip — fires once per tab on first visit */}
-/>
             )}
             {/* The weigh-in reminder lives in Home's Next card now, not as a banner over every tab. */}
             {tab==="home"&&<ErrorBoundary label="Home" resetKey={tab}><DashboardScreen user={enrichedUser} weightLog={weightLog} onLogWeight={handleLogWeight} onDeleteWeight={handleDeleteWeight} onEditWeight={handleEditWeight} onNavigate={setTab} onEditProfile={()=>setShowProfileEdit(true)} onGoalTransition={handleGoalTransition}/></ErrorBoundary>}
