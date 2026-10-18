@@ -3,18 +3,16 @@ import { useEffect, useState } from "react";
 // Canvas-only color tokens — CSS vars can't be read by the Canvas 2D API.
 // Call getCanvasC() inside useEffect (after mount) to read the live system theme.
 export const CANVAS_DARK = {
-  bg:"#09090B", surface:"#111315", up:"#191D22", border:"#232B35",
-  card:"#151C28", brutal:"#F0EDE8",
-  accent:"#F5A623", accentDim:"#C47D10", accentInk:"#F5A623",
-  red:"#E84545", green:"#3DDC84", blue:"#5B8FF9",
-  purple:"#A78BFA", text:"#F0EDE8", muted:"#9BA1AA", faint:"#80868D",
+  bg:"#0B0B0D", surface:"#1C1C1E", up:"#2C2C2E", border:"#38383A", card:"#1C1C1E", brutal:"#F5F5F7",
+  accent:"#F5A623", accentDim:"#C9860F", accentInk:"#F5A623", red:"#FF5A4F", green:"#34C76A", blue:"#4C9BFF",
+  purple:"#B58CF5", text:"#F5F5F7", muted:"#A1A1A6", faint:"#8E8E93",
+  ringTrain:"#DE5A2A", ringFuel:"#12A3A0", ringTrack:"#6A6AF2",
 };
 export const CANVAS_LIGHT = {
-  bg:"#F5F3EF", surface:"#FFFFFF", up:"#EDEAE4", border:"#DDD9D0",
-  card:"#EDE5CF", brutal:"#1A1917",
-  accent:"#C48A00", accentDim:"#946B00", accentInk:"#855E00",
-  red:"#C43030", green:"#1A9E58", blue:"#3A6AD4",
-  purple:"#6B52C8", text:"#1A1917", muted:"#5E5A53", faint:"#686561",
+  bg:"#F2F2F7", surface:"#FFFFFF", up:"#E9E9EE", border:"#D8D8DD", card:"#FFFFFF", brutal:"#111114",
+  accent:"#A86F00", accentDim:"#8A5B00", accentInk:"#8A5B00", red:"#D1291F", green:"#1E7F3E", blue:"#1F64C8",
+  purple:"#7442A8", text:"#111114", muted:"#5F5F66", faint:"#6E6E75",
+  ringTrain:"#C4431A", ringFuel:"#009180", ringTrack:"#4B4FD8",
 };
 export function getCanvasC() {
   if (typeof window === "undefined" || !window.matchMedia) return CANVAS_DARK;

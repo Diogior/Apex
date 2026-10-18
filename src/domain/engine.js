@@ -23,29 +23,29 @@ export function calcProtocol({stageWeight, stageCalories, prepWeeks, sex, mode})
   };
 
   const phases = mode==="maintenance" ? [
-    {key:"p1",dot:"p1",icon:"01",label:"DAY 1–7",name:"LAND AT MAINTENANCE",color:C.green,
+    {key:"p1",dot:"p1",icon:"01",label:"Day 1–7",name:"Land at maintenance",color:C.green,
       ...mk(mainCals,1.1,.24,target),
       desc:`Hit ${mainCals} kcal immediately — this is your full calculated TDEE for your target offseason weight. Insulin sensitivity is elevated post-prep, so even this surplus-free intake drives glycogen restoration faster than expected. Expect 2–4 lbs in 72 hours — that's glycogen, not fat.`},
-    {key:"p2",dot:"p2",icon:"02",label:"WEEK 2–4",name:"STABILIZE & CALIBRATE",color:C.accentInk,
+    {key:"p2",dot:"p2",icon:"02",label:"Week 2–4",name:"Stabilize & calibrate",color:C.accentInk,
       ...mk(mainCals,1.0,.25,target),
       desc:`Hold maintenance for 3 full weeks to lock in your metabolic set point at the new bodyweight. 7-day weight average should be flat (±0.5 lbs). Gaining faster? Trim 100–150 kcals from carbs only. Losing? Add 100. The goal is a flat trendline at your target offseason weight.`},
-    {key:"p3",dot:"p3",icon:"03",label:"WEEK 5–12",name:"ANABOLIC WINDOW SURPLUS",color:C.purple,
+    {key:"p3",dot:"p3",icon:"03",label:"Week 5–12",name:"Anabolic window surplus",color:C.purple,
       ...mk(surplusCals,1.0,.25,target),
       desc:`Now enter a controlled lean surplus — ${surplusCals} kcal. Hormones are recovering, insulin sensitivity is still elevated, body is primed to partition nutrients toward muscle. Push training intensity hard. Acceptable gain rate: 0.3–0.5 lbs/wk. This is where post-show growth actually happens.`},
-    {key:"p4",dot:"p4",icon:"04",label:"WEEK 13+",name:"SUSTAINED OFFSEASON",color:C.blue,
+    {key:"p4",dot:"p4",icon:"04",label:"Week 13+",name:"Sustained offseason",color:C.blue,
       ...mk(surplusCals,1.0,.25,target),
       desc:`Hold your lean surplus through the offseason. Monitor the ${ceiling} lb ceiling — don't cross it. When you're 12–16 weeks out from your next show, drop to maintenance for 2 weeks, then enter prep. No cleanup phase. You're already stage-ready lean.`},
   ] : [
-    {key:"p1",dot:"p1",icon:"01",label:"WEEK 1–2",name:"METABOLIC RESET",color:C.purple,
+    {key:"p1",dot:"p1",icon:"01",label:"Week 1–2",name:"Metabolic reset",color:C.purple,
       ...mk(rdBase,1.2,.22,w),
       desc:"Do NOT jump calories. Your metabolism is suppressed and insulin sensitivity is sky-high. Every single calorie is working harder than it ever did during prep — use that."},
-    {key:"p2",dot:"p2",icon:"02",label:"WEEK 3–6",name:"REVERSE DIET RAMP",color:C.accentInk,
+    {key:"p2",dot:"p2",icon:"02",label:"Week 3–6",name:"Reverse diet ramp",color:C.accentInk,
       ...mk(Math.round(rdBase+380),1.0,.23,target),
       desc:"Add +100 kcal every 7 days — primarily carbohydrates. Gaining more than 1 lb/wk? Pull back 100 kcals. The slower you go here, the leaner your offseason will be."},
-    {key:"p3",dot:"p3",icon:"03",label:"WEEK 7–12",name:"ANABOLIC WINDOW",color:C.green,
+    {key:"p3",dot:"p3",icon:"03",label:"Week 7–12",name:"Anabolic window",color:C.green,
       ...mk(Math.round(rdBase+860),1.0,.25,target),
       desc:"Peak anabolic sensitivity. Push intensity in training. Add 1–2 refeed days per week. This is where the real offseason muscle is built."},
-    {key:"p4",dot:"p4",icon:"04",label:"WEEK 13+",name:"SUSTAINED OFFSEASON",color:C.blue,
+    {key:"p4",dot:"p4",icon:"04",label:"Week 13+",name:"Sustained offseason",color:C.blue,
       ...mk(Math.round(target*(male?17:15)),1.0,.25,target),
       desc:"Settled offseason TDEE. Weight gain should not exceed 0.3–0.5 lbs/wk. Hold here until 12–16 weeks before your next show — and you walk in already ready."},
   ];
@@ -380,11 +380,11 @@ export function analyzeWeightTrend(weightLog) {
 
 export function getGoalRateInfo(goal) {
   const map = {
-    cut:         { label:"RATE OF LOSS", min:-1.0,  max:-0.5,  dir:-1 },
-    bulk:        { label:"RATE OF GAIN", min: 0.25, max: 0.75, dir: 1 },
-    recomp:      { label:"RECOMP RATE",  min:-0.25, max: 0.25, dir: 0 },
-    maintenance: { label:"WEIGHT RATE",  min:-0.25, max: 0.25, dir: 0 },
-    contest:     { label:"RATE OF LOSS", min:-1.5,  max:-0.75, dir:-1 },
+    cut:         { label:"Rate of loss", min:-1.0,  max:-0.5,  dir:-1 },
+    bulk:        { label:"Rate of gain", min: 0.25, max: 0.75, dir: 1 },
+    recomp:      { label:"Recomp rate",  min:-0.25, max: 0.25, dir: 0 },
+    maintenance: { label:"Weight rate",  min:-0.25, max: 0.25, dir: 0 },
+    contest:     { label:"Rate of loss", min:-1.5,  max:-0.75, dir:-1 },
   };
   return map[goal] || null;
 }
@@ -463,17 +463,17 @@ export function computeGoalPacing(weightLog, user) {
   let status, statusLabel, colorKey;
   const wrongDir = (info.dir === -1 && rate > 0.1) || (info.dir === 1 && rate < -0.1);
   if (wrongDir) {
-    status = "off_course"; statusLabel = "WRONG DIRECTION"; colorKey = "red";
+    status = "off_course"; statusLabel = "Wrong direction"; colorKey = "red";
   } else if (rateStatus.label === "On track" || rateStatus.label === "Stable") {
-    status = "on_track"; statusLabel = "ON TRACK"; colorKey = "green";
+    status = "on_track"; statusLabel = "On track"; colorKey = "green";
   } else if (rateStatus.label === "Too fast") {
     status = "ahead";
-    statusLabel = info.dir === -1 ? "CUTTING FAST" : "GAINING FAST";
+    statusLabel = info.dir === -1 ? "Cutting fast" : "Gaining fast";
     colorKey = "accent";
   } else {
     const noMovement = Math.abs(rate) < 0.05;
     status = noMovement ? "off_course" : "behind";
-    statusLabel = noMovement ? "NOT MOVING" : "BEHIND PACE";
+    statusLabel = noMovement ? "Not moving" : "Behind pace";
     colorKey = noMovement ? "red" : "red";
   }
 

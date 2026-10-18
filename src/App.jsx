@@ -100,7 +100,7 @@ const QPROMPTS = ["How's my progress?","Adjust my macros","Contest prep advice",
 
 const MODES = {
   reverse:{
-    label:"REVERSE DIET",color:CANVAS_DARK.purple,
+    label:"Reverse diet",color:CANVAS_DARK.purple,
     tagline:"Methodical ramp from prep calories to offseason TDEE over 12+ weeks.",
     heroSub:"APEX maps a precise reverse diet ramp — adding calories weekly to rebuild your metabolism while staying lean, then landing at a controlled offseason surplus.",
     day1Label:"Day 1 Start",day1Note:"Begin here — just above your prep floor. Do not jump higher.",
@@ -108,7 +108,7 @@ const MODES = {
     tradeoff:"Slower to reach full calories. Requires patience and consistent weekly tracking.",
   },
   maintenance:{
-    label:"STRAIGHT TO MAINTENANCE",color:CANVAS_DARK.green,
+    label:"Straight to maintenance",color:CANVAS_DARK.green,
     tagline:"Land at your full TDEE on Day 1 — stabilize, then move into a lean surplus.",
     heroSub:"APEX calculates your exact offseason maintenance TDEE — hit it immediately post-show, stabilize for 3–4 weeks, then step into a controlled anabolic surplus.",
     day1Label:"Day 1 Maintenance",day1Note:"Your full calculated TDEE — land here immediately.",
@@ -137,8 +137,8 @@ function MacroRing({protein,carbs,fat,calories}) {
       <svg width={108} height={108} viewBox="0 0 108 108">
         {paths.map((p,i)=><path key={i} d={p.d} fill={p.color} style={{opacity:.85,animation:`macroSegIn .5s cubic-bezier(.22,1,.36,1) ${i*100}ms both`}}/>)}
         <circle cx={cx} cy={cy} r={30} fill={C.surface}/>
-        <text x={cx} y={cy-3} textAnchor="middle" fill={C.text} fontSize="13" fontFamily="Bebas Neue,sans-serif" letterSpacing="1">{calories}</text>
-        <text x={cx} y={cy+12} textAnchor="middle" fill={C.muted} fontSize="8" fontFamily="DM Sans,sans-serif">KCAL</text>
+        <text x={cx} y={cy-3} textAnchor="middle" fill={C.text} fontSize="13" fontFamily="system-ui,-apple-system,sans-serif" fontWeight="700">{calories}</text>
+        <text x={cx} y={cy+12} textAnchor="middle" fill={C.muted} fontSize="8" fontFamily="system-ui,-apple-system,sans-serif">kcal</text>
       </svg>
       <div style={{flex:1,display:"flex",flexDirection:"column",gap:10}}>
         {[{l:"Protein",v:`${protein}g`,cl:C.accent},{l:"Carbs",v:`${carbs}g`,cl:C.green},{l:"Fat",v:`${fat}g`,cl:C.blue}].map(m=>(
@@ -147,7 +147,7 @@ function MacroRing({protein,carbs,fat,calories}) {
               <div style={{width:7,height:7,borderRadius:"50%",background:m.cl}}/>
               <span style={{fontSize:13,color:C.faint}}>{m.l}</span>
             </div>
-            <span style={{fontFamily:"'DM Mono',monospace",fontSize:13,color:C.text}}>{m.v}</span>
+            <span style={{fontFamily:"var(--font-num)", fontVariantNumeric:"tabular-nums",fontSize:13,color:C.text}}>{m.v}</span>
           </div>
         ))}
       </div>
@@ -193,6 +193,14 @@ function AuthProvider({ children }) {
 }
 
 function useAuth() { return useContext(AuthContext); }
+
+/** "push_1" -> "Push 1", "BULK" -> "Bulk": readable labels from stored keys, in sentence case. */
+function labelCase(value) {
+  if (!value) return value;
+  const s = String(value).replace(/_/g, " ").toLowerCase();
+  return s.charAt(0).toUpperCase() + s.slice(1);
+}
+
 
 function AuthScreen() {
   const [mode, setMode]       = useState("signin");
@@ -243,8 +251,8 @@ function AuthScreen() {
           <span>{mode === "signin" ? "sign in to continue" : "start your program today"}</span>
         </div>
         <div className="auth-toggle">
-          <button className={`auth-tab${mode==="signin"?" active":""}`} onClick={()=>switchMode("signin")}>SIGN IN</button>
-          <button className={`auth-tab${mode==="signup"?" active":""}`} onClick={()=>switchMode("signup")}>CREATE ACCOUNT</button>
+          <button className={`auth-tab${mode==="signin"?" active":""}`} onClick={()=>switchMode("signin")}>Sign in</button>
+          <button className={`auth-tab${mode==="signup"?" active":""}`} onClick={()=>switchMode("signup")}>Create account</button>
         </div>
         <div className="auth-field">
           <label className="auth-label">Email</label>
@@ -268,7 +276,7 @@ function AuthScreen() {
         )}
         {error && <div className="auth-error">{error}</div>}
         <button className="auth-submit" onClick={submit} disabled={loading}>
-          {loading ? "LOADING..." : mode==="signin" ? "SIGN IN →" : "LET'S GO →"}
+          {loading ? "Loading..." : mode==="signin" ? "Sign in" : "LET'S GO →"}
         </button>
       </div>
     </div>
@@ -451,7 +459,7 @@ function OnboardScreen({onComplete}) {
                 </div>
               ))}
             </div>
-            <CubeButton onClick={() => setStep(1)} style={{width:"100%"}}>BEGIN ASSESSMENT ▶</CubeButton>
+            <CubeButton onClick={() => setStep(1)} style={{width:"100%"}}>Begin assessment</CubeButton>
           </div>
         </div>
       )}
@@ -464,7 +472,7 @@ function OnboardScreen({onComplete}) {
             <span className="ob2-step-counter">01 / 03</span>
           </div>
           <div className="ob2-step-h" style={{textAlign:"center",marginBottom:8}}>What's the<br/><em>mission?</em></div>
-          <div style={{fontSize:11,color:"var(--muted)",marginBottom:28,textAlign:"center",letterSpacing:.5}}>Select your primary goal</div>
+          <div style={{fontSize:12,color:"var(--muted)",marginBottom:28,textAlign:"center",}}>Select your primary goal</div>
 
           {/* ── ORBITAL GOAL RING ── */}
           {(() => {
@@ -490,20 +498,20 @@ function OnboardScreen({onComplete}) {
                         transform:`translate(calc(-50% + ${x}px), calc(-50% + ${y}px)) scale(${isActive ? 1.1 : 0.92})`,
                         transition:"transform .32s cubic-bezier(.16,1,.3,1), box-shadow .32s, border-color .2s, background .2s",
                         background: isActive ? `color-mix(in srgb,var(--accent) 14%,var(--card))` : "var(--card)",
-                        border:`2px solid ${isActive ? "var(--accent)" : "var(--brutal)"}`,
-                        borderRadius:8,
-                        boxShadow: isActive ? "var(--charge-glow),var(--depth-shadow)" : "var(--depth-shadow),var(--inner-light),3px 3px 0 var(--brutal)",
+                        border:`1px solid ${isActive ? "var(--accent)" : "var(--border)"}`,
+                        borderRadius:12,
+                        boxShadow: isActive ? "var(--charge-glow),var(--depth-shadow)" : "var(--shadow-1)",
                         display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",
                         gap:4, cursor:"pointer", padding:"8px 4px",
                       }}>
-                      <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:11,letterSpacing:1.2,color:isActive?"var(--accent-ink)":"var(--text)",lineHeight:1.1,textAlign:"center"}}>
+                      <div style={{fontFamily:"var(--font-display)", fontWeight:700,fontSize:12,color:isActive?"var(--accent-ink)":"var(--text)",lineHeight:1.1,textAlign:"center"}}>
                         {g.label}
                       </div>
-                      <div style={{fontSize:11,color:isActive?"var(--accent-ink)":"var(--muted)",letterSpacing:.3,textAlign:"center",lineHeight:1.3,opacity:.8}}>
+                      <div style={{fontSize:12,color:isActive?"var(--accent-ink)":"var(--muted)",textAlign:"center",lineHeight:1.3,opacity:.8}}>
                         {g.desc}
                       </div>
                       {isActive && (
-                        <div style={{position:"absolute",inset:-1,borderRadius:8,border:"1px solid var(--accent)",opacity:.4,pointerEvents:"none"}}/>
+                        <div style={{position:"absolute",inset:-1,borderRadius:12,border:"1px solid var(--accent)",opacity:.4,pointerEvents:"none"}}/>
                       )}
                     </button>
                   );
@@ -512,7 +520,7 @@ function OnboardScreen({onComplete}) {
             );
           })()}
 
-          <CubeButton disabled={!canProceed()} onClick={() => setStep(2)} style={{width:"100%",maxWidth:340}}>CONTINUE ▶</CubeButton>
+          <CubeButton disabled={!canProceed()} onClick={() => setStep(2)} style={{width:"100%",maxWidth:340}}>Continue</CubeButton>
         </div>
       )}
 
@@ -532,7 +540,7 @@ function OnboardScreen({onComplete}) {
               </div>
             ))}
           </div>
-          <CubeButton disabled={!canProceed()} onClick={() => setStep(3)} style={{width:"100%"}}>CONTINUE</CubeButton>
+          <CubeButton disabled={!canProceed()} onClick={() => setStep(3)} style={{width:"100%"}}>Continue</CubeButton>
         </div>
       )}
 
@@ -583,7 +591,7 @@ function OnboardScreen({onComplete}) {
               </select>
             </div>
           </div>
-          <CubeButton disabled={!canProceed()} onClick={() => onComplete({name,weight,height,age,sex,goal,level,activity})} style={{width:"100%"}}>BUILD MY PROGRAM ▶</CubeButton>
+          <CubeButton disabled={!canProceed()} onClick={() => onComplete({name,weight,height,age,sex,goal,level,activity})} style={{width:"100%"}}>Build my program</CubeButton>
         </div>
       )}
 
@@ -708,32 +716,32 @@ function HimboStatChart({muscleVol,level}) {
         const v=muscleVol[key]||{sets:0},mav=bench.mav*levelMod,pct=v.sets/mav;
         const sc=pct<.5?cc.red:pct<1?cc.accent:cc.green,ih=stateRef.current.hoveredAxis===i;
         ctx.textAlign="center";
-        ctx.font=`${ih?"bold ":""}9px 'DM Sans',sans-serif`; ctx.fillStyle=ih?bench.color:sc;
+        ctx.font=`${ih?"bold ":""}9px system-ui,sans-serif`; ctx.fillStyle=ih?bench.color:sc;
         ctx.fillText(bench.label,lx,ly-3);
-        ctx.font="8px 'DM Mono',monospace"; ctx.fillStyle=ih?cc.text:cc.muted;
+        ctx.font="8px ui-rounded,system-ui,sans-serif"; ctx.fillStyle=ih?cc.text:cc.muted;
         ctx.fillText(`${Math.round(v.sets)}/${Math.round(mav)}`,lx,ly+7); ctx.textAlign="left";
       });
       // Center hub
       ctx.beginPath(); ctx.arc(cx,cy,22,0,Math.PI*2); ctx.fillStyle=cc.surface; ctx.fill();
       ctx.strokeStyle=hex2rgba(cc.accent,0.3); ctx.lineWidth=1; ctx.stroke();
-      ctx.fillStyle=cc.accent; ctx.font="bold 10px 'Bebas Neue',sans-serif"; ctx.textAlign="center";
+      ctx.fillStyle=cc.accent; ctx.font="bold 10px system-ui,sans-serif"; ctx.textAlign="center";
       ctx.fillText("APEX",cx,cy+4); ctx.textAlign="left";
       // Hover tooltip
       if(stateRef.current.hoveredAxis>=0){
         const i=stateRef.current.hoveredAxis,[key,bench]=axes[i],v=muscleVol[key]||{sets:0};
         const mav=bench.mav*levelMod,mev=bench.mev*levelMod,pct=v.sets/mav;
-        const status=pct<.5?"NEGLECTED":pct<1?"BUILDING":pct>1.15?"MRV RISK":"OPTIMAL";
+        const status=pct<.5?"Neglected":pct<1?"Building":pct>1.15?"MRV risk":"Optimal";
         const sc=pct<.5?cc.red:pct<1?cc.accent:pct>1.15?cc.blue:cc.green;
         const tw=165,th=68,tx=Math.min(Math.max(cx-tw/2,8),W-tw-8),ty=8;
         ctx.fillStyle=cc.surface; ctx.beginPath(); ctx.roundRect(tx,ty,tw,th,8); ctx.fill();
         ctx.strokeStyle=`${bench.color}60`; ctx.lineWidth=1; ctx.stroke();
-        ctx.fillStyle=bench.color; ctx.font="bold 11px 'Bebas Neue',sans-serif"; ctx.textAlign="left";
-        ctx.fillText(bench.label.toUpperCase(),tx+12,ty+18);
-        ctx.fillStyle=sc; ctx.font="bold 9px 'DM Sans',sans-serif";
+        ctx.fillStyle=bench.color; ctx.font="bold 11px system-ui,sans-serif"; ctx.textAlign="left";
+        ctx.fillText(bench.label,tx+12,ty+18);
+        ctx.fillStyle=sc; ctx.font="bold 9px system-ui,sans-serif";
         ctx.fillText(status,tx+tw-12-ctx.measureText(status).width,ty+18);
-        ctx.fillStyle=cc.text; ctx.font="10px 'DM Mono',monospace";
+        ctx.fillStyle=cc.text; ctx.font="10px ui-rounded,system-ui,sans-serif";
         ctx.fillText(`Sets: ${Math.round(v.sets)} / ${Math.round(mav)} target`,tx+12,ty+34);
-        ctx.fillStyle=cc.muted; ctx.font="9px 'DM Sans',sans-serif";
+        ctx.fillStyle=cc.muted; ctx.font="9px system-ui,sans-serif";
         ctx.fillText(`MEV ${Math.round(mev)} · MAV ${Math.round(mav)} · MRV ${bench.mrv}`,tx+12,ty+50);
         ctx.fillText(`Freq: ${v.freq} sessions this week`,tx+12,ty+62);
       }
@@ -774,29 +782,29 @@ function PathSelector({dayTag,onSelectGenerated,onSelectCustom}) {
   const C = useThemeColors();
   return (
     <div style={{animation:"slideUp .3s ease"}}>
-      <div style={{fontSize:11,letterSpacing:2,textTransform:"uppercase",color:C.muted,marginBottom:14}}>● Choose your approach for {dayTag}</div>
+      <div style={{fontSize:12,color:C.muted,marginBottom:14}}>● Choose your approach for {dayTag}</div>
       <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12}}>
         <div onClick={onSelectGenerated}
-          style={{background:C.card||C.surface,border:`2px solid ${C.brutal||C.accent}`,borderRadius:10,padding:18,cursor:"pointer",transition:"all .15s cubic-bezier(.22,1,.36,1)",boxShadow:`4px 4px 0 ${C.brutal||C.accent}`}}
-          onMouseOver={e=>{e.currentTarget.style.transform="translate(-2px,-2px)";e.currentTarget.style.boxShadow=`6px 6px 0 ${C.brutal||C.accent}`;}}
-          onMouseOut={e=>{e.currentTarget.style.transform="";e.currentTarget.style.boxShadow=`4px 4px 0 ${C.brutal||C.accent}`;}}
+          style={{background:C.card||C.surface,border:`1px solid ${C.border}`,borderRadius:12,padding:18,cursor:"pointer",transition:"all .15s cubic-bezier(.22,1,.36,1)",boxShadow:"var(--shadow-1)"}}
+          onMouseOver={e=>{e.currentTarget.style.transform="translate(-2px,-2px)";e.currentTarget.style.boxShadow="var(--shadow-1)";}}
+          onMouseOut={e=>{e.currentTarget.style.transform="";e.currentTarget.style.boxShadow="var(--shadow-1)";}}
           onMouseDown={e=>{e.currentTarget.style.transform="translate(4px,4px)";e.currentTarget.style.boxShadow="none";}}
-          onMouseUp={e=>{e.currentTarget.style.transform="translate(-2px,-2px)";e.currentTarget.style.boxShadow=`6px 6px 0 ${C.brutal||C.accent}`;}}>
-          <div style={{marginBottom:10,color:C.accentInk}}><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" style={{width:22,height:22}}><path d="M13 10V3L4 14h7v7l9-11h-7z"/></svg></div>
-          <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:16,letterSpacing:1,color:C.accentInk,marginBottom:6}}>GENERATE WORKOUT</div>
+          onMouseUp={e=>{e.currentTarget.style.transform="translate(-2px,-2px)";e.currentTarget.style.boxShadow="var(--shadow-1)";}}>
+          <div style={{marginBottom:10,color:C.accentInk}}><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={on ? 2.25 : 1.6} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" style={{width:26,height:26}}><path d="M13 10V3L4 14h7v7l9-11h-7z"/></svg></div>
+          <div style={{fontFamily:"var(--font-display)", fontWeight:700,fontSize:16,color:C.accentInk,marginBottom:6}}>Generate workout</div>
           <div style={{fontSize:12,color:C.faint,lineHeight:1.5}}>AI-designed. Evidence-based selection, balanced stimulus, adaptive sets.</div>
-          <div style={{marginTop:10,fontSize:11,letterSpacing:1,textTransform:"uppercase",color:C.accentInk}}>Recommended →</div>
+          <div style={{marginTop:10,fontSize:12,color:C.accentInk}}>Recommended →</div>
         </div>
         <div onClick={onSelectCustom}
-          style={{background:C.card||C.surface,border:`2px solid ${C.brutal||C.blue}`,borderRadius:10,padding:18,cursor:"pointer",transition:"all .15s cubic-bezier(.22,1,.36,1)",boxShadow:`4px 4px 0 ${C.brutal||C.blue}`}}
-          onMouseOver={e=>{e.currentTarget.style.transform="translate(-2px,-2px)";e.currentTarget.style.boxShadow=`6px 6px 0 ${C.brutal||C.blue}`;}}
-          onMouseOut={e=>{e.currentTarget.style.transform="";e.currentTarget.style.boxShadow=`4px 4px 0 ${C.brutal||C.blue}`;}}
+          style={{background:C.card||C.surface,border:`1px solid ${C.border}`,borderRadius:12,padding:18,cursor:"pointer",transition:"all .15s cubic-bezier(.22,1,.36,1)",boxShadow:"var(--shadow-1)"}}
+          onMouseOver={e=>{e.currentTarget.style.transform="translate(-2px,-2px)";e.currentTarget.style.boxShadow="var(--shadow-1)";}}
+          onMouseOut={e=>{e.currentTarget.style.transform="";e.currentTarget.style.boxShadow="var(--shadow-1)";}}
           onMouseDown={e=>{e.currentTarget.style.transform="translate(4px,4px)";e.currentTarget.style.boxShadow="none";}}
-          onMouseUp={e=>{e.currentTarget.style.transform="translate(-2px,-2px)";e.currentTarget.style.boxShadow=`6px 6px 0 ${C.brutal||C.blue}`;}}>
-          <div style={{marginBottom:10,color:C.blue}}><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" style={{width:22,height:22}}><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></div>
-          <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:16,letterSpacing:1,color:C.blue,marginBottom:6}}>LOG CUSTOM</div>
+          onMouseUp={e=>{e.currentTarget.style.transform="translate(-2px,-2px)";e.currentTarget.style.boxShadow="var(--shadow-1)";}}>
+          <div style={{marginBottom:10,color:C.blue}}><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={on ? 2.25 : 1.6} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" style={{width:26,height:26}}><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></div>
+          <div style={{fontFamily:"var(--font-display)", fontWeight:700,fontSize:16,color:C.blue,marginBottom:6}}>Log custom</div>
           <div style={{fontSize:12,color:C.faint,lineHeight:1.5}}>Full control. Any exercise. System tracks muscle balance automatically.</div>
-          <div style={{marginTop:10,fontSize:11,letterSpacing:1,textTransform:"uppercase",color:C.blue}}>Free form →</div>
+          <div style={{marginTop:10,fontSize:12,color:C.blue}}>Free form →</div>
         </div>
       </div>
     </div>
@@ -894,15 +902,15 @@ function CustomWorkoutLogger({onComplete,onBack,muscleVol,level}) {
       <div style={{padding:"52px 24px 0"}}>
         <button onClick={onBack} style={{background:"none",border:"none",color:C.muted,fontSize:13,cursor:"pointer",marginBottom:12}}>← Back</button>
         <div style={{display:"flex",alignItems:"flex-start",justifyContent:"space-between"}}>
-          <div><div style={{fontSize:11,letterSpacing:2,textTransform:"uppercase",color:C.blue,marginBottom:4}}>Custom Session</div><div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:28,letterSpacing:2}}>LOG WORKOUT</div></div>
-          <div style={{textAlign:"right"}}><div style={{fontFamily:"'DM Mono',monospace",fontSize:20,color:C.blue}}>{fmt(timer)}</div><div style={{fontSize:11,color:C.muted}}>{totalSets} sets</div></div>
+          <div><div style={{fontSize:12,color:C.blue,marginBottom:4}}>Custom Session</div><div style={{fontFamily:"var(--font-display)", fontWeight:700,fontSize:28,}}>Log workout</div></div>
+          <div style={{textAlign:"right"}}><div style={{fontFamily:"var(--font-num)", fontVariantNumeric:"tabular-nums",fontSize:20,color:C.blue}}>{fmt(timer)}</div><div style={{fontSize:12,color:C.muted}}>{totalSets} sets</div></div>
         </div>
       </div>
       {alerts.length>0&&(
         <div style={{margin:"14px 24px 0"}}>
-          <div style={{fontSize:11,letterSpacing:2,textTransform:"uppercase",color:C.muted,marginBottom:8}}>● Balance Alerts</div>
+          <div style={{fontSize:12,color:C.muted,marginBottom:8}}>● Balance Alerts</div>
           {alerts.slice(0,3).map(a=>(
-            <div key={a.key} style={{display:"flex",gap:10,padding:"8px 12px",background:`${a.color}0D`,border:`1px solid ${a.color}30`,borderRadius:8,marginBottom:6,alignItems:"center"}}>
+            <div key={a.key} style={{display:"flex",gap:10,padding:"8px 12px",background:`${a.color}0D`,border:`1px solid ${a.color}30`,borderRadius:12,marginBottom:6,alignItems:"center"}}>
               <span style={{width:8,height:8,borderRadius:"50%",background:a.severity==="critical"?C.red:a.severity==="overreach"?C.blue:C.accent,display:"inline-block",flexShrink:0}}/>
               <span style={{fontSize:12,color:C.faint,lineHeight:1.4}}>{a.msg}</span>
             </div>
@@ -911,7 +919,7 @@ function CustomWorkoutLogger({onComplete,onBack,muscleVol,level}) {
       )}
       {/* ── EXERCISE ENTRY ── */}
       <div style={{margin:"16px 24px 0"}}>
-        <div style={{fontSize:11,letterSpacing:2,textTransform:"uppercase",color:C.blue,marginBottom:10}}>● Add Exercise</div>
+        <div style={{fontSize:12,color:C.blue,marginBottom:10}}>● Add Exercise</div>
 
         <div style={{position:"relative",zIndex:9999}}>
           <div style={{display:"flex",gap:8,alignItems:"stretch"}}>
@@ -931,10 +939,10 @@ function CustomWorkoutLogger({onComplete,onBack,muscleVol,level}) {
               }}
               style={{
                 flex:1,background:C.up,
-                border:`2px solid ${search.trim()?C.blue:C.border}`,
+                border:`1px solid ${search.trim()?C.blue:C.border}`,
                 borderRadius:12,padding:"14px 16px",
                 color:C.text,fontSize:15,
-                fontFamily:"'DM Sans',sans-serif",
+                fontFamily:"var(--font-text)",
                 outline:"none",transition:"border-color .2s",
               }}
             />
@@ -947,9 +955,8 @@ function CustomWorkoutLogger({onComplete,onBack,muscleVol,level}) {
                 border:`2px solid ${search.trim()?C.blue:`${C.blue}28`}`,
                 borderRadius:12,
                 color:search.trim()?"#080A0C":C.muted,
-                fontFamily:"'Bebas Neue',sans-serif",
-                fontSize:14,letterSpacing:1.5,
-                cursor:search.trim()?"pointer":"not-allowed",
+                fontFamily:"var(--font-display)", fontWeight:700,
+                fontSize:14,cursor:search.trim()?"pointer":"not-allowed",
                 transition:"all .2s",
                 boxShadow:"none",
               }}>
@@ -958,7 +965,7 @@ function CustomWorkoutLogger({onComplete,onBack,muscleVol,level}) {
           </div>
 
           {/* hint line */}
-          <div style={{fontSize:11,color:C.muted,marginTop:7,paddingLeft:2}}>
+          <div style={{fontSize:12,color:C.muted,marginTop:7,paddingLeft:2}}>
             {tagging
               ? <span style={{color:C.accentInk,display:"flex",alignItems:"center",gap:6}}>
                   <span style={{display:"inline-flex",gap:3}}>
@@ -966,7 +973,7 @@ function CustomWorkoutLogger({onComplete,onBack,muscleVol,level}) {
                   </span>
                   Identifying muscle group...
                 </span>
-              : <>Write any exercise name and hit <span style={{color:C.blue}}>Enter</span> or <span style={{color:C.blue}}>ADD</span>.
+              : <>Write any exercise name and hit <span style={{color:C.blue}}>Enter</span> or <span style={{color:C.blue}}>Add</span>.
                 {search.length>=2&&filtered.length>0&&<span style={{color:C.muted}}> Suggestions below ↓</span>}</>
             }
           </div>
@@ -981,7 +988,7 @@ function CustomWorkoutLogger({onComplete,onBack,muscleVol,level}) {
               boxShadow:"0 8px 32px rgba(0,0,0,.6)",
               marginTop:4,
             }}>
-              <div style={{padding:"8px 14px 4px",fontSize:11,letterSpacing:1.5,textTransform:"uppercase",color:C.muted,borderBottom:`1px solid ${C.border}`}}>
+              <div style={{padding:"8px 14px 4px",fontSize:12,color:C.muted,borderBottom:`1px solid ${C.border}`}}>
                 Exercises — or press Enter to add your own
               </div>
               {filtered.map(name=>{
@@ -1005,15 +1012,15 @@ function CustomWorkoutLogger({onComplete,onBack,muscleVol,level}) {
                     <div>
                       <div style={{display:"flex",alignItems:"center",gap:7}}>
                         <span style={{fontSize:13,fontWeight:600,color:C.text}}>{name}</span>
-                        {isSavedCustom&&<span style={{fontSize:11,fontWeight:700,letterSpacing:1,textTransform:"uppercase",background:`${C.accent}20`,color:C.accentInk,border:`1px solid ${C.accent}40`,borderRadius:3,padding:"1px 5px"}}>saved</span>}
+                        {isSavedCustom&&<span style={{fontSize:12,fontWeight:700,background:`${C.accent}20`,color:C.accentInk,border:`1px solid ${C.accent}40`,borderRadius:10,padding:"1px 5px"}}>saved</span>}
                       </div>
-                      <div style={{fontSize:11,color:C.muted,marginTop:1}}>
+                      <div style={{fontSize:12,color:C.muted,marginTop:1}}>
                         {isBuiltIn ? `${tag?.movement?.replace(/_/g," ")} · Stim ${tag?.stim}/10` : isSavedCustom ? `Custom · ${tag?.primary||"custom"}` : "Custom exercise"}
                       </div>
                     </div>
                     <div style={{display:"flex",gap:4,alignItems:"center"}}>
                       {bench&&<div style={{width:7,height:7,borderRadius:"50%",background:bench.color}}/>}
-                      <span style={{fontSize:11,color:bench?.color||C.muted}}>{bench?.label||tag?.primary||""}</span>
+                      <span style={{fontSize:12,color:bench?.color||C.muted}}>{bench?.label||tag?.primary||""}</span>
                     </div>
                   </button>
                 );
@@ -1025,8 +1032,8 @@ function CustomWorkoutLogger({onComplete,onBack,muscleVol,level}) {
 
       {exercises.length===0?(
         <div className="cx-empty-state" style={{padding:"36px 24px",textAlign:"center"}}>
-          <div style={{width:44,height:44,borderRadius:12,background:C.up,display:"flex",alignItems:"center",justifyContent:"center",margin:"0 auto 14px",color:C.muted}}><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" style={{width:22,height:22}}><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></div>
-          <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:20,letterSpacing:2,color:C.muted,marginBottom:8}}>YOUR SESSION STARTS HERE</div>
+          <div style={{width:44,height:44,borderRadius:12,background:C.up,display:"flex",alignItems:"center",justifyContent:"center",margin:"0 auto 14px",color:C.muted}}><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={on ? 2.25 : 1.6} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" style={{width:26,height:26}}><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></div>
+          <div style={{fontFamily:"var(--font-display)", fontWeight:700,fontSize:20,color:C.muted,marginBottom:8}}>Your session starts here</div>
           <div style={{fontSize:13,color:C.muted,lineHeight:1.65,maxWidth:280,margin:"0 auto"}}>
             Write any exercise above — a classic lift, a machine move, or something completely your own. Hit Enter to add it instantly.
           </div>
@@ -1038,18 +1045,18 @@ function CustomWorkoutLogger({onComplete,onBack,muscleVol,level}) {
         const inDB = !!EX_DB[ex.name];
         return (
           <div key={ex.id} className="cx-card-wrap" style={{margin:"14px 24px 0"}}>
-            <div style={{background:C.card||C.surface,border:`2px solid ${C.brutal||C.border}`,borderRadius:10,padding:16,boxShadow:`4px 4px 0 ${C.brutal||C.border}`}}>
+            <div style={{background:C.card||C.surface,border:`1px solid ${C.border}`,borderRadius:12,padding:16,boxShadow:"var(--shadow-1)"}}>
               <div style={{display:"flex",alignItems:"flex-start",justifyContent:"space-between",marginBottom:12}}>
                 <div>
                   <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:3}}>
                     {bench&&<div style={{width:8,height:8,borderRadius:"50%",background:bench.color,flexShrink:0}}/>}
                     {recognized
-                      ? <span style={{fontSize:11,color:bench?.color||C.accentInk,letterSpacing:1,textTransform:"uppercase"}}>{bench?.label||ex.tag.primary} · {ex.tag?.movement?.replace(/_/g," ")||"exercise"}</span>
-                      : <span style={{fontSize:11,color:C.blue,letterSpacing:1,textTransform:"uppercase",background:`${C.blue}15`,padding:"1px 7px",borderRadius:4}}>Custom Exercise</span>
+                      ? <span style={{fontSize:12,color:bench?.color||C.accentInk,}}>{bench?.label||ex.tag.primary} · {ex.tag?.movement?.replace(/_/g," ")||"exercise"}</span>
+                      : <span style={{fontSize:12,color:C.blue,background:`${C.blue}15`,padding:"1px 7px",borderRadius:10}}>Custom Exercise</span>
                     }
                   </div>
                   <div style={{fontSize:15,fontWeight:600,color:C.text}}>{ex.name}</div>
-                  <div style={{fontSize:11,color:recognized?C.muted:"var(--muted)",marginTop:2}}>
+                  <div style={{fontSize:12,color:recognized?C.muted:"var(--muted)",marginTop:2}}>
                     {!recognized
                       ? "Not recognized — sets won't count toward muscle volume"
                       : inDB
@@ -1061,27 +1068,27 @@ function CustomWorkoutLogger({onComplete,onBack,muscleVol,level}) {
                 <button onClick={()=>removeEx(ei)} aria-label="Remove exercise" style={{background:"none",border:"none",color:C.muted,cursor:"pointer",fontSize:16,padding:4,minWidth:44,minHeight:44}}>✕</button>
               </div>
               <div style={{display:"grid",gridTemplateColumns:"24px 1fr 1fr 1fr 20px",gap:10,marginBottom:6}}>
-                {["#","WT","REPS","RPE",""].map(h=><div key={h} style={{fontSize:11,letterSpacing:1,textTransform:"uppercase",color:C.muted,textAlign:"center"}}>{h}</div>)}
+                {["#","WT","Reps","RPE",""].map(h=><div key={h} style={{fontSize:12,color:C.muted,textAlign:"center"}}>{h}</div>)}
               </div>
               {ex.loggedSets.map((set,si)=>{
                 const d=set.reps&&set.weight;
                 return (
                   <div key={si} style={{display:"grid",gridTemplateColumns:"24px 1fr 1fr 1fr 20px",gap:10,marginBottom:10,alignItems:"center"}}>
-                    <div style={{fontFamily:"'DM Mono',monospace",fontSize:11,color:d?C.blue:C.muted,textAlign:"center"}}>{si+1}</div>
-                    <input type="number" placeholder="lbs" value={set.weight} onChange={e=>updateSet(ei,si,"weight",e.target.value)} style={{background:C.up,border:`2px solid ${d?C.brutal:C.border}`,borderRadius:4,boxShadow:d?`2px 2px 0 ${C.brutal}`:"none",padding:"8px 6px",color:d?C.text:C.muted,fontSize:12,fontFamily:"'DM Mono',monospace",textAlign:"center",outline:"none",width:"100%",transition:"border-color .15s,box-shadow .15s"}}/>
-                    <input type="number" placeholder="reps" value={set.reps} onChange={e=>updateSet(ei,si,"reps",e.target.value)} style={{background:C.up,border:`2px solid ${d?C.brutal:C.border}`,borderRadius:4,boxShadow:d?`2px 2px 0 ${C.brutal}`:"none",padding:"8px 6px",color:d?C.text:C.muted,fontSize:12,fontFamily:"'DM Mono',monospace",textAlign:"center",outline:"none",width:"100%",transition:"border-color .15s,box-shadow .15s"}}/>
-                    <input type="number" min="6" max="10" step=".5" placeholder="RPE" value={set.rpe} onChange={e=>updateSet(ei,si,"rpe",e.target.value)} style={{background:C.up,border:`2px solid ${set.rpe?rpeC(set.rpe):C.border}`,borderRadius:4,boxShadow:set.rpe?`2px 2px 0 ${rpeC(set.rpe)}`:"none",padding:"8px 6px",color:set.rpe?rpeC(set.rpe):C.muted,fontSize:12,fontFamily:"'DM Mono',monospace",textAlign:"center",outline:"none",width:"100%",transition:"border-color .15s,box-shadow .15s"}}/>
-                    <div style={{display:"flex",alignItems:"center",justifyContent:"center"}}>{d&&<div style={{width:14,height:14,borderRadius:"50%",background:C.green,display:"flex",alignItems:"center",justifyContent:"center",fontSize:11}}>✓</div>}</div>
+                    <div style={{fontFamily:"var(--font-num)", fontVariantNumeric:"tabular-nums",fontSize:12,color:d?C.blue:C.muted,textAlign:"center"}}>{si+1}</div>
+                    <input type="number" placeholder="lbs" value={set.weight} onChange={e=>updateSet(ei,si,"weight",e.target.value)} style={{background:C.up,border:`1px solid ${d?C.text:C.border}`,borderRadius:10,boxShadow:d?"var(--shadow-1)":"none",padding:"8px 6px",color:d?C.text:C.muted,fontSize:12,fontFamily:"var(--font-num)", fontVariantNumeric:"tabular-nums",textAlign:"center",outline:"none",width:"100%",transition:"border-color .15s,box-shadow .15s"}}/>
+                    <input type="number" placeholder="reps" value={set.reps} onChange={e=>updateSet(ei,si,"reps",e.target.value)} style={{background:C.up,border:`1px solid ${d?C.text:C.border}`,borderRadius:10,boxShadow:d?"var(--shadow-1)":"none",padding:"8px 6px",color:d?C.text:C.muted,fontSize:12,fontFamily:"var(--font-num)", fontVariantNumeric:"tabular-nums",textAlign:"center",outline:"none",width:"100%",transition:"border-color .15s,box-shadow .15s"}}/>
+                    <input type="number" min="6" max="10" step=".5" placeholder="RPE" value={set.rpe} onChange={e=>updateSet(ei,si,"rpe",e.target.value)} style={{background:C.up,border:`1px solid ${set.rpe?rpeC(set.rpe):C.border}`,borderRadius:10,boxShadow:set.rpe?"var(--shadow-1)":"none",padding:"8px 6px",color:set.rpe?rpeC(set.rpe):C.muted,fontSize:12,fontFamily:"var(--font-num)", fontVariantNumeric:"tabular-nums",textAlign:"center",outline:"none",width:"100%",transition:"border-color .15s,box-shadow .15s"}}/>
+                    <div style={{display:"flex",alignItems:"center",justifyContent:"center"}}>{d&&<div style={{width:14,height:14,borderRadius:"50%",background:C.green,display:"flex",alignItems:"center",justifyContent:"center",fontSize:12}}>✓</div>}</div>
                   </div>
                 );
               })}
-              <button onClick={()=>addSet(ei)} style={{width:"100%",minHeight:44,marginTop:8,padding:"7px",background:"transparent",border:`2px solid ${C.brutal}`,borderRadius:4,boxShadow:`2px 2px 0 ${C.brutal}`,color:C.muted,fontSize:11,cursor:"pointer",transition:"all .12s",fontFamily:"'Bebas Neue',sans-serif",letterSpacing:1}}>+ ADD SET</button>
+              <button onClick={()=>addSet(ei)} style={{width:"100%",minHeight:44,marginTop:8,padding:"7px",background:"transparent",border:`1px solid ${C.border}`,borderRadius:10,boxShadow:"var(--shadow-1)",color:C.muted,fontSize:12,cursor:"pointer",transition:"all .12s",fontFamily:"var(--font-display)", fontWeight:700,}}>+ Add set</button>
             </div>
           </div>
         );
       })}
       <div style={{position:"fixed",bottom:"calc(96px + env(safe-area-inset-bottom,0px))",left:"50%",transform:"translateX(-50%)",width:"100%",maxWidth:430,padding:"12px 24px",background:"rgba(8,10,12,0.97)",borderTop:`1px solid ${C.border}`,zIndex:110,animation:"none"}}>
-        <button onClick={handleComplete} disabled={totalSets===0} style={{width:"100%",padding:15,background:C.blue,color:"#080A0C",border:`2px solid ${C.brutal}`,borderRadius:6,boxShadow:totalSets>0?`3px 3px 0 ${C.brutal}`:"none",fontFamily:"'Bebas Neue',sans-serif",fontSize:17,letterSpacing:2,cursor:totalSets>0?"pointer":"not-allowed",opacity:totalSets>0?1:.4,transition:"all .2s"}}>
+        <button onClick={handleComplete} disabled={totalSets===0} style={{width:"100%",padding:15,background:C.blue,color:"#080A0C",border:`1px solid ${C.border}`,borderRadius:10,boxShadow:totalSets>0?"var(--shadow-1)":"none",fontFamily:"var(--font-display)", fontWeight:700,fontSize:17,cursor:totalSets>0?"pointer":"not-allowed",opacity:totalSets>0?1:.4,transition:"all .2s"}}>
           COMPLETE SESSION ({totalSets} sets)
         </button>
       </div>
@@ -1147,10 +1154,10 @@ function MuscleDiagram({ name }) {
     <div style={{ borderRadius:12, marginBottom:14, background:C.up, border:`1px solid ${C.border}`, overflow:"hidden" }}>
       {/* label bar */}
       <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", padding:"8px 14px 6px", background:C.surface }}>
-        <span style={{ fontSize:11, letterSpacing:2, textTransform:"uppercase", color:C.muted }}>
+        <span style={{ fontSize:12, color:C.muted }}>
           {showBack ? "Posterior" : "Anterior"} View
         </span>
-        <span style={{ fontSize:11, letterSpacing:1.5, textTransform:"uppercase", color:C.purple, fontWeight:700 }}>
+        <span style={{ fontSize:12, color:C.purple, fontWeight:700 }}>
           {label}
         </span>
       </div>
@@ -1175,12 +1182,12 @@ function MuscleDiagram({ name }) {
       <div style={{ display:"flex", gap:14, justifyContent:"center", padding:"6px 0 8px", background:C.surface }}>
         <div style={{ display:"flex", alignItems:"center", gap:5 }}>
           <div style={{ width:8, height:8, borderRadius:"50%", background:C.purple }}/>
-          <span style={{ fontSize:11, color:C.muted, letterSpacing:1 }}>PRIMARY</span>
+          <span style={{ fontSize:12, color:C.muted, }}>Primary</span>
         </div>
         {secondaryIds.length > 0 && (
           <div style={{ display:"flex", alignItems:"center", gap:5 }}>
             <div style={{ width:8, height:8, borderRadius:"50%", background:C.purple, opacity:0.45 }}/>
-            <span style={{ fontSize:11, color:C.muted, letterSpacing:1 }}>SECONDARY</span>
+            <span style={{ fontSize:12, color:C.muted, }}>Secondary</span>
           </div>
         )}
       </div>
@@ -1367,31 +1374,31 @@ function WorkoutSession({ dayKey, dayPlan, adaptation, history = [], onComplete,
           <div style={{ marginBottom: 12, padding: "12px 16px", borderRadius: 12, background: `${C.red}12`, border: `1px solid ${C.red}40`, display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12 }}>
             <div>
               <div style={{ fontSize: 13, fontWeight: 600, color: C.red }}>Abandon session?</div>
-              <div style={{ fontSize: 11, color: C.muted, marginTop: 2 }}>{totalSets} set{totalSets !== 1 ? "s" : ""} will not be saved</div>
+              <div style={{ fontSize:12, color: C.muted, marginTop: 2 }}>{totalSets} set{totalSets !== 1 ? "s" : ""} will not be saved</div>
             </div>
             <div style={{ display: "flex", gap: 8, flexShrink: 0 }}>
-              <button onClick={() => setShowAbandonConfirm(false)} style={{ padding: "6px 14px", background: C.up, border: `1px solid ${C.border}`, borderRadius: 8, color: C.text, fontSize: 12, fontWeight: 600, cursor: "pointer" }}>Keep Going</button>
-              <button onClick={onBack} style={{ padding: "6px 14px", background: C.red, border: "none", borderRadius: 8, color: "#fff", fontSize: 12, fontWeight: 600, cursor: "pointer" }}>Abandon</button>
+              <button onClick={() => setShowAbandonConfirm(false)} style={{ padding: "6px 14px", background: C.up, border: `1px solid ${C.border}`, borderRadius: 12, color: C.text, fontSize: 12, fontWeight: 600, cursor: "pointer" }}>Keep Going</button>
+              <button onClick={onBack} style={{ padding: "6px 14px", background: C.red, border: "none", borderRadius: 12, color: "#fff", fontSize: 12, fontWeight: 600, cursor: "pointer" }}>Abandon</button>
             </div>
           </div>
         )}
         <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between" }}>
           <div>
-            <div style={{ fontSize: 11, letterSpacing: 2, textTransform: "uppercase", color: C.accentInk, marginBottom: 4 }}>{dayPlan.tag}</div>
-            <div style={{ fontFamily: "'Bebas Neue',sans-serif", fontSize: 30, letterSpacing: 2, lineHeight: 1 }}>ACTIVE SESSION</div>
+            <div style={{ fontSize:12, color: C.accentInk, marginBottom: 4 }}>{dayPlan.tag}</div>
+            <div style={{ fontFamily:"var(--font-display)", fontWeight:700, fontSize: 30, lineHeight: 1 }}>Active session</div>
           </div>
           <div style={{ textAlign: "right" }}>
-            <div style={{ fontFamily: "'DM Mono',monospace", fontSize: 22, color: C.accentInk }}>{formatTime(timer)}</div>
-            <div style={{ fontSize: 11, color: C.muted, marginTop: 2 }}>{totalSets} sets logged</div>
+            <div style={{ fontFamily:"var(--font-num)", fontVariantNumeric:"tabular-nums", fontSize: 22, color: C.accentInk }}>{formatTime(timer)}</div>
+            <div style={{ fontSize:12, color: C.muted, marginTop: 2 }}>{totalSets} sets logged</div>
           </div>
         </div>
 
         {/* Adaptation signal banner */}
         {adj && adj.signal !== "neutral" && (
-          <div style={{ marginTop: 14, padding: "10px 14px", borderRadius: 10, background: adj.signal === "fatigue" ? "rgba(232,69,69,0.08)" : adj.signal === "progress" ? "rgba(61,220,132,0.08)" : "rgba(245,166,35,0.08)", border: `1px solid ${adj.signal === "fatigue" ? C.red : adj.signal === "progress" ? C.green : C.accent}30`, display: "flex", alignItems: "center", gap: 10 }}>
+          <div style={{ marginTop: 14, padding: "10px 14px", borderRadius: 12, background: adj.signal === "fatigue" ? "rgba(232,69,69,0.08)" : adj.signal === "progress" ? "rgba(61,220,132,0.08)" : "rgba(245,166,35,0.08)", border: `1px solid ${adj.signal === "fatigue" ? C.red : adj.signal === "progress" ? C.green : C.accent}30`, display: "flex", alignItems: "center", gap: 10 }}>
             <span style={{ fontSize: 16, fontWeight: 700, color: adj.signal === "fatigue" ? C.red : adj.signal === "progress" ? C.green : C.accentInk, lineHeight: 1 }}>{adj.signal === "fatigue" ? "↓" : adj.signal === "progress" ? "↑" : "→"}</span>
             <div>
-              <div style={{ fontSize: 11, letterSpacing: 1, textTransform: "uppercase", color: adj.signal === "fatigue" ? C.red : adj.signal === "progress" ? C.green : C.accentInk, marginBottom: 2 }}>Adaptive Adjustment</div>
+              <div style={{ fontSize:12, color: adj.signal === "fatigue" ? C.red : adj.signal === "progress" ? C.green : C.accentInk, marginBottom: 2 }}>Adaptive Adjustment</div>
               <div style={{ fontSize: 12, color: C.faint }}>{adj.note}</div>
             </div>
           </div>
@@ -1400,14 +1407,14 @@ function WorkoutSession({ dayKey, dayPlan, adaptation, history = [], onComplete,
 
       {/* COACH NOTE — from last session of same type */}
       {coachNote?.text && noteVisible && (
-        <div style={{ margin: "0 24px 16px", background: "var(--card)", border: `2px solid var(--accent)`, borderRadius: 10, boxShadow: `3px 3px 0 var(--accent)`, overflow: "hidden", animation: "slideUp .3s ease" }}>
+        <div style={{ margin: "0 24px 16px", background: "var(--card)", border: `2px solid var(--accent)`, borderRadius: 12, boxShadow: "var(--shadow-1)", overflow: "hidden", animation: "slideUp .3s ease" }}>
           <div style={{ padding: "10px 14px", background: `${C.accent}15`, borderBottom: `1px solid ${C.accent}30`, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
             <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ width: 13, height: 13, color: C.accentInk }}>
                 <path d="M13 10V3L4 14h7v7l9-11h-7z"/>
               </svg>
-              <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: 2, textTransform: "uppercase", color: C.accentInk }}>
-                Coach Note · Last {coachNote.dayKey ? coachNote.dayKey.replace(/_/g," ").toUpperCase() : "Session"}
+              <div style={{ fontSize:12, fontWeight: 700, color: C.accentInk }}>
+                Coach Note · Last {coachNote.dayKey ? labelCase(coachNote.dayKey) : "Session"}
               </div>
             </div>
             <button onClick={() => setNoteVisible(false)}
@@ -1439,39 +1446,39 @@ function WorkoutSession({ dayKey, dayPlan, adaptation, history = [], onComplete,
               {/* Exercise header — tap to expand */}
               <div
                 onClick={() => setActiveEx(isOpen ? null : ex.id)}
-                style={{ background: isOpen ? `${C.brutal}12` : C.card||C.surface, border: `2px solid ${C.brutal||C.border}`, borderRadius: 10, padding: "14px 16px", cursor: "pointer", transition: "all 0.15s cubic-bezier(.22,1,.36,1)", boxShadow: isOpen ? `5px 5px 0 ${C.brutal||C.border}` : `4px 4px 0 ${C.brutal||C.border}` }}
-                onMouseOver={e=>{if(!isOpen){e.currentTarget.style.transform="translate(-2px,-2px)";e.currentTarget.style.boxShadow=`6px 6px 0 ${C.brutal||C.border}`;}}}
-                onMouseOut={e=>{e.currentTarget.style.transform="";e.currentTarget.style.boxShadow=isOpen?`5px 5px 0 ${C.brutal||C.border}`:`4px 4px 0 ${C.brutal||C.border}`;}}>
+                style={{ background: isOpen ? `${C.border}12` : C.card||C.surface, border: `1px solid ${C.border}`, borderRadius: 12, padding: "14px 16px", cursor: "pointer", transition: "all 0.15s cubic-bezier(.22,1,.36,1)", boxShadow: isOpen ? "var(--shadow-1)" : "var(--shadow-1)" }}
+                onMouseOver={e=>{if(!isOpen){e.currentTarget.style.transform="translate(-2px,-2px)";e.currentTarget.style.boxShadow="var(--shadow-1)";}}}
+                onMouseOut={e=>{e.currentTarget.style.transform="";e.currentTarget.style.boxShadow=isOpen?"var(--shadow-1)":"var(--shadow-1)";}}>
                 <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
                   <div style={{ flex: 1 }}>
                     <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
-                      <span style={{ fontSize: 11, letterSpacing: 1.5, textTransform: "uppercase", color: C.muted }}>Ex {String(exIdx + 1).padStart(2, "0")} · {ex.category}</span>
+                      <span style={{ fontSize:12, color: C.muted }}>Ex {String(exIdx + 1).padStart(2, "0")} · {ex.category}</span>
                       {completedSetsCount > 0 && (
-                        <span style={{ fontSize: 11, background: `${C.green}20`, color: C.green, padding: "1px 7px", borderRadius: 10, letterSpacing: 1 }}>{completedSetsCount}/{sets.length} sets</span>
+                        <span style={{ fontSize:12, background: `${C.green}20`, color: C.green, padding: "1px 7px", borderRadius: 12, }}>{completedSetsCount}/{sets.length} sets</span>
                       )}
                       {sessionPR && (
-                        <span style={{ fontSize: 11, background: `${C.accent}25`, color: C.accentInk, padding: "1px 7px", borderRadius: 10, letterSpacing: 1, fontWeight: 700 }}>▲ PR</span>
+                        <span style={{ fontSize:12, background: `${C.accent}25`, color: C.accentInk, padding: "1px 7px", borderRadius: 12, fontWeight: 700 }}>▲ PR</span>
                       )}
                     </div>
-                    <div style={{ fontFamily: "'DM Sans',sans-serif", fontSize: 15, fontWeight: 600, color: C.text }}>{ex.name}</div>
+                    <div style={{ fontFamily:"var(--font-text)", fontSize: 15, fontWeight: 600, color: C.text }}>{ex.name}</div>
                     <div style={{ display: "flex", gap: 8, marginTop: 5, flexWrap: "wrap" }}>
-                      <span style={{ fontSize: 11, color: C.faint }}>{sets.length} sets</span>
-                      <span style={{ fontSize: 11, color: C.muted }}>·</span>
-                      <span style={{ fontSize: 11, color: C.faint }}>{ex.repRange} reps</span>
-                      <span style={{ fontSize: 11, color: C.muted }}>·</span>
-                      <span style={{ fontSize: 11, color: C.faint }}>Target SFR {ex.rpe >= 8 ? "3" : ex.rpe >= 7 ? "4" : "5"}</span>
+                      <span style={{ fontSize:12, color: C.faint }}>{sets.length} sets</span>
+                      <span style={{ fontSize:12, color: C.muted }}>·</span>
+                      <span style={{ fontSize:12, color: C.faint }}>{ex.repRange} reps</span>
+                      <span style={{ fontSize:12, color: C.muted }}>·</span>
+                      <span style={{ fontSize:12, color: C.faint }}>Target SFR {ex.rpe >= 8 ? "3" : ex.rpe >= 7 ? "4" : "5"}</span>
                     </div>
                     {prevSummary && !isOpen && (
-                      <div style={{ marginTop: 6, fontSize: 11, color: C.muted, fontFamily: "'DM Mono',monospace" }}>
+                      <div style={{ marginTop: 6, fontSize:12, color: C.muted, fontFamily:"var(--font-num)", fontVariantNumeric:"tabular-nums" }}>
                         <span style={{ color: C.faint, marginRight: 4 }}>{prevDate}:</span>{prevSummary}
                       </div>
                     )}
                   </div>
-                  <div style={{ fontSize: 18, color: isOpen ? C.brutal : C.muted, transition: "transform .2s", transform: isOpen ? "rotate(180deg)" : "none" }}>⌄</div>
+                  <div style={{ fontSize: 18, color: isOpen ? C.text : C.muted, transition: "transform .2s", transform: isOpen ? "rotate(180deg)" : "none" }}>⌄</div>
                 </div>
 
                 {ex.notes && !isOpen && (
-                  <div style={{ fontSize: 11, color: C.muted, marginTop: 6, fontStyle: "italic" }}>{ex.notes}</div>
+                  <div style={{ fontSize:12, color: C.muted, marginTop: 6, fontStyle: "italic" }}>{ex.notes}</div>
                 )}
               </div>
 
@@ -1484,26 +1491,26 @@ function WorkoutSession({ dayKey, dayPlan, adaptation, history = [], onComplete,
 
                   {/* Previous session reference bar */}
                   {prevSummary && (
-                    <div style={{ background: C.up, border: `1px solid ${C.border}`, borderRadius: 8, padding: "8px 12px", marginBottom: 12, display: "flex", alignItems: "center", gap: 8 }}>
-                      <span style={{ fontSize: 11, fontWeight: 700, letterSpacing: 1.5, textTransform: "uppercase", color: C.muted, flexShrink: 0 }}>Last {prevDate}</span>
-                      <span style={{ fontSize: 11, fontFamily: "'DM Mono',monospace", color: C.muted, lineHeight: 1.5 }}>{prevSummary}</span>
+                    <div style={{ background: C.up, border: `1px solid ${C.border}`, borderRadius: 12, padding: "8px 12px", marginBottom: 12, display: "flex", alignItems: "center", gap: 8 }}>
+                      <span style={{ fontSize:12, fontWeight: 700, color: C.muted, flexShrink: 0 }}>Last {prevDate}</span>
+                      <span style={{ fontSize:12, fontFamily:"var(--font-num)", fontVariantNumeric:"tabular-nums", color: C.muted, lineHeight: 1.5 }}>{prevSummary}</span>
                     </div>
                   )}
                   {!prevSummary && prevDate === null && (
-                    <div style={{ fontSize: 11, color: C.faint, fontStyle: "italic", marginBottom: 10 }}>First time logging this exercise — set your baseline.</div>
+                    <div style={{ fontSize:12, color: C.faint, fontStyle: "italic", marginBottom: 10 }}>First time logging this exercise — set your baseline.</div>
                   )}
 
                   {/* Column headers */}
                   <div style={{ display: "grid", gridTemplateColumns: "28px 1fr 1fr 1fr 28px", gap: 10, padding: "4px 0 6px", borderBottom: `1px solid ${C.border}`, marginBottom: 8 }}>
-                    {["#","WEIGHT","REPS","SFR",""].map(h => (
+                    {["#","Weight","Reps","SFR",""].map(h => (
                       <div key={h}
                         onClick={h === "SFR" ? () => setSfrHelpEx(sfrHelpEx === ex.id ? null : ex.id) : undefined}
-                        style={{ fontSize: 11, letterSpacing: 1, textTransform: "uppercase", color: C.muted, textAlign: "center", display: "flex", alignItems: "center", justifyContent: "center", gap: 3, cursor: h === "SFR" ? "pointer" : "default" }}>
-                        {h}{h === "SFR" && <span style={{ fontSize: 11, color: C.faint }}>ⓘ</span>}
+                        style={{ fontSize:12, color: C.muted, textAlign: "center", display: "flex", alignItems: "center", justifyContent: "center", gap: 3, cursor: h === "SFR" ? "pointer" : "default" }}>
+                        {h}{h === "SFR" && <span style={{ fontSize:12, color: C.faint }}>ⓘ</span>}
                       </div>
                     ))}
                   </div>
-                  {(exIdx === 0 || sfrHelpEx === ex.id) && <div style={{ fontSize: 11, color: C.muted, marginBottom: 8, lineHeight: 1.5 }}>SFR = Stimulus to Fatigue Ratio (1–5). 5 = max stimulus, minimal fatigue. 1 = high fatigue, little growth stimulus.</div>}
+                  {(exIdx === 0 || sfrHelpEx === ex.id) && <div style={{ fontSize:12, color: C.muted, marginBottom: 8, lineHeight: 1.5 }}>SFR = Stimulus to Fatigue Ratio (1–5). 5 = max stimulus, minimal fatigue. 1 = high fatigue, little growth stimulus.</div>}
 
                   {sets.map((set, si) => {
                     const done = set.reps && set.weight;
@@ -1516,35 +1523,35 @@ function WorkoutSession({ dayKey, dayPlan, adaptation, history = [], onComplete,
                         {prev && (
                           <div style={{ display: "grid", gridTemplateColumns: "28px 1fr 1fr 1fr 28px", gap: 10, marginBottom: 2 }}>
                             <div/>
-                            <div style={{ fontSize: 11, color: C.faint, fontFamily: "'DM Mono',monospace", textAlign: "center", letterSpacing: .5 }}>{prev.weight || "—"}</div>
-                            <div style={{ fontSize: 11, color: C.faint, fontFamily: "'DM Mono',monospace", textAlign: "center", letterSpacing: .5 }}>{prev.reps || "—"}</div>
-                            <div style={{ fontSize: 11, color: C.faint, fontFamily: "'DM Mono',monospace", textAlign: "center", letterSpacing: .5 }}>{prev.rpe || "—"}</div>
+                            <div style={{ fontSize:12, color: C.faint, fontFamily:"var(--font-num)", fontVariantNumeric:"tabular-nums", textAlign: "center", }}>{prev.weight || "—"}</div>
+                            <div style={{ fontSize:12, color: C.faint, fontFamily:"var(--font-num)", fontVariantNumeric:"tabular-nums", textAlign: "center", }}>{prev.reps || "—"}</div>
+                            <div style={{ fontSize:12, color: C.faint, fontFamily:"var(--font-num)", fontVariantNumeric:"tabular-nums", textAlign: "center", }}>{prev.rpe || "—"}</div>
                             {/* rpe field preserved in data as-is for backwards compat */}
                             <div/>
                           </div>
                         )}
                         <div style={{ display: "grid", gridTemplateColumns: "28px 1fr 1fr 1fr 28px", gap: 10, alignItems: "center" }}>
-                          <div style={{ fontFamily: "'DM Mono',monospace", fontSize: 12, color: isPR ? C.accentInk : done ? C.brutal : C.muted, textAlign: "center" }}>{si + 1}</div>
+                          <div style={{ fontFamily:"var(--font-num)", fontVariantNumeric:"tabular-nums", fontSize: 12, color: isPR ? C.accentInk : done ? C.text : C.muted, textAlign: "center" }}>{si + 1}</div>
                           <input type="number" placeholder={weightPlaceholder} value={set.weight}
                             onChange={e => updateSet(ex.id, si, "weight", e.target.value)}
-                            style={{ background: C.up, border: `2px solid ${isPR ? C.accent : done ? C.brutal : C.border}`, borderRadius: 4, boxShadow: isPR ? `2px 2px 0 ${C.accent}` : done ? `2px 2px 0 ${C.brutal}` : "none", padding: "9px 8px", color: isPR ? C.accentInk : done ? C.text : C.muted, fontSize: 13, fontFamily: "'DM Mono',monospace", textAlign: "center", outline: "none", width: "100%", transition: "all .15s", fontWeight: isPR ? 700 : 400 }} />
+                            style={{ background: C.up, border: `1px solid ${isPR ? C.accent : done ? C.text : C.border}`, borderRadius: 10, boxShadow: isPR ? "var(--shadow-1)" : done ? "var(--shadow-1)" : "none", padding: "9px 8px", color: isPR ? C.accentInk : done ? C.text : C.muted, fontSize: 13, fontFamily:"var(--font-num)", fontVariantNumeric:"tabular-nums", textAlign: "center", outline: "none", width: "100%", transition: "all .15s", fontWeight: isPR ? 700 : 400 }} />
                           <input type="number" placeholder={repsPlaceholder} value={set.reps}
                             onChange={e => updateSet(ex.id, si, "reps", e.target.value)}
-                            style={{ background: C.up, border: `2px solid ${done ? C.brutal : C.border}`, borderRadius: 4, boxShadow: done ? `2px 2px 0 ${C.brutal}` : "none", padding: "9px 8px", color: done ? C.text : C.muted, fontSize: 13, fontFamily: "'DM Mono',monospace", textAlign: "center", outline: "none", width: "100%", transition: "all .15s" }} />
+                            style={{ background: C.up, border: `1px solid ${done ? C.text : C.border}`, borderRadius: 10, boxShadow: done ? "var(--shadow-1)" : "none", padding: "9px 8px", color: done ? C.text : C.muted, fontSize: 13, fontFamily:"var(--font-num)", fontVariantNumeric:"tabular-nums", textAlign: "center", outline: "none", width: "100%", transition: "all .15s" }} />
                           <input type="number" min="1" max="5" step="1" placeholder="SFR"
                             value={set.rpe}
                             onChange={e => updateSet(ex.id, si, "rpe", e.target.value)}
-                            style={{ background: C.up, border: `2px solid ${set.rpe ? sfrColor(set.rpe) : C.border}`, borderRadius: 4, boxShadow: set.rpe ? `2px 2px 0 ${sfrColor(set.rpe)}` : "none", padding: "9px 8px", color: set.rpe ? sfrColor(set.rpe) : C.muted, fontSize: 13, fontFamily: "'DM Mono',monospace", textAlign: "center", outline: "none", width: "100%", transition: "all .15s" }} />
+                            style={{ background: C.up, border: `1px solid ${set.rpe ? sfrColor(set.rpe) : C.border}`, borderRadius: 10, boxShadow: set.rpe ? "var(--shadow-1)" : "none", padding: "9px 8px", color: set.rpe ? sfrColor(set.rpe) : C.muted, fontSize: 13, fontFamily:"var(--font-num)", fontVariantNumeric:"tabular-nums", textAlign: "center", outline: "none", width: "100%", transition: "all .15s" }} />
                           <div style={{ display: "flex", alignItems: "center", justifyContent: "center" }}>
-                            {isPR ? <div style={{ fontSize: 11, color: C.accentInk, fontWeight: 700 }}>▲</div>
-                              : done ? <div style={{ width: 16, height: 16, borderRadius: "50%", background: C.green, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 11 }}>✓</div>
+                            {isPR ? <div style={{ fontSize:12, color: C.accentInk, fontWeight: 700 }}>▲</div>
+                              : done ? <div style={{ width: 16, height: 16, borderRadius: "50%", background: C.green, display: "flex", alignItems: "center", justifyContent: "center", fontSize:12 }}>✓</div>
                               : null}
                           </div>
                         </div>
                         {set.rpe && (
                           <div style={{ display: "grid", gridTemplateColumns: "28px 1fr 1fr 1fr 28px", gap: 10, marginTop: 3 }}>
                             <div/><div/><div/>
-                            <div style={{ fontSize: 11, color: sfrColor(set.rpe), textAlign: "center", fontWeight: 600 }}>{sfrLabel(set.rpe)}</div>
+                            <div style={{ fontSize:12, color: sfrColor(set.rpe), textAlign: "center", fontWeight: 600 }}>{sfrLabel(set.rpe)}</div>
                             <div/>
                           </div>
                         )}
@@ -1555,20 +1562,20 @@ function WorkoutSession({ dayKey, dayPlan, adaptation, history = [], onComplete,
                   {/* Add / Remove set controls */}
                   <div style={{ display: "flex", gap: 8, marginTop: 10 }}>
                     <button onClick={() => addSet(ex.id)}
-                      style={{ flex: 1, minHeight: 44, padding: "8px", background: "transparent", border: `1px solid ${C.border}`, borderRadius: 8, color: C.faint, fontSize: 12, cursor: "pointer", transition: "all .2s" }}
-                      onMouseOver={e => e.target.style.borderColor = C.brutal}
+                      style={{ flex: 1, minHeight: 44, padding: "8px", background: "transparent", border: `1px solid ${C.border}`, borderRadius: 12, color: C.faint, fontSize: 12, cursor: "pointer", transition: "all .2s" }}
+                      onMouseOver={e => e.target.style.borderColor = C.text}
                       onMouseOut={e => e.target.style.borderColor = C.border}>
                       + Add Set
                     </button>
                     {sets.length > 1 && (
                       <button onClick={() => removeSet(ex.id)}
-                        style={{ minHeight: 44, padding: "8px 14px", background: "transparent", border: `1px solid ${C.border}`, borderRadius: 8, color: C.muted, fontSize: 12, cursor: "pointer" }}>
+                        style={{ minHeight: 44, padding: "8px 14px", background: "transparent", border: `1px solid ${C.border}`, borderRadius: 12, color: C.muted, fontSize: 12, cursor: "pointer" }}>
                         – Remove
                       </button>
                     )}
                   </div>
                   {removedSet?.exId === ex.id && (
-                    <div role="status" style={{ marginTop: 8, display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8, padding: "4px 4px 4px 12px", border: `1px solid ${C.border}`, borderRadius: 8, background: C.surface }}>
+                    <div role="status" style={{ marginTop: 8, display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8, padding: "4px 4px 4px 12px", border: `1px solid ${C.border}`, borderRadius: 12, background: C.surface }}>
                       <span style={{ fontSize: 12, color: C.muted }}>Set removed</span>
                       <button onClick={undoRemoveSet}
                         style={{ minHeight: 44, padding: "0 14px", background: "transparent", border: "none", color: C.text, fontSize: 13, fontWeight: 600, cursor: "pointer" }}>
@@ -1578,8 +1585,8 @@ function WorkoutSession({ dayKey, dayPlan, adaptation, history = [], onComplete,
                   )}
 
                   {ex.notes && (
-                    <div style={{ marginTop: 10, fontSize: 11, color: C.muted, fontStyle: "italic", display: "flex", alignItems: "center", gap: 6 }}>
-                      <span style={{color:C.faint,fontSize:11}}>▸</span>{ex.notes}
+                    <div style={{ marginTop: 10, fontSize:12, color: C.muted, fontStyle: "italic", display: "flex", alignItems: "center", gap: 6 }}>
+                      <span style={{color:C.faint,fontSize:12}}>▸</span>{ex.notes}
                     </div>
                   )}
                 </div>
@@ -1594,8 +1601,8 @@ function WorkoutSession({ dayKey, dayPlan, adaptation, history = [], onComplete,
         <button
           onClick={handleComplete}
           disabled={completing || totalSets === 0}
-          style={{ width: "100%", padding: 16, background: completing ? C.green : C.accent, color: "#080A0C", border: "none", borderRadius: 12, fontFamily: "'Bebas Neue',sans-serif", fontSize: 18, letterSpacing: 2, cursor: totalSets > 0 ? "pointer" : "not-allowed", opacity: totalSets > 0 ? 1 : 0.4, transition: "all .3s" }}>
-          {completing ? "SAVING..." : `COMPLETE SESSION (${totalSets} sets logged)`}
+          style={{ width: "100%", padding: 16, background: completing ? C.green : C.accent, color: "#080A0C", border: "none", borderRadius: 12, fontFamily:"var(--font-display)", fontWeight:700, fontSize: 18, cursor: totalSets > 0 ? "pointer" : "not-allowed", opacity: totalSets > 0 ? 1 : 0.4, transition: "all .3s" }}>
+          {completing ? "Saving..." : `COMPLETE SESSION (${totalSets} sets logged)`}
         </button>
       </div>
 
@@ -1604,20 +1611,20 @@ function WorkoutSession({ dayKey, dayPlan, adaptation, history = [], onComplete,
         <div style={{
           position: "fixed", bottom: "calc(96px + env(safe-area-inset-bottom,0px))", left: 16, right: 16, animation: "none",
           background: C.surface, border: `1px solid ${C.border}`,
-          borderRadius: 14, padding: "14px 18px",
+          borderRadius: 16, padding: "14px 18px",
           display: "flex", alignItems: "center", justifyContent: "space-between",
           boxShadow: "0 8px 32px rgba(0,0,0,0.28)",
           animation: "slideUp .22s ease-out",
           zIndex: 200,
         }}>
           <div>
-            <div style={{ fontFamily: "'Bebas Neue',sans-serif", fontSize: 15, letterSpacing: 1, color: C.green }}>SESSION SAVED</div>
-            <div style={{ fontSize: 11, color: C.muted, marginTop: 2 }}>{totalSets} sets logged</div>
+            <div style={{ fontFamily:"var(--font-display)", fontWeight:700, fontSize: 15, color: C.green }}>Session saved</div>
+            <div style={{ fontSize:12, color: C.muted, marginTop: 2 }}>{totalSets} sets logged</div>
           </div>
           <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-            <div style={{ width: 28, height: 28, borderRadius: "50%", border: `2px solid ${C.border}`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 11, fontWeight: 700, color: C.muted, fontVariantNumeric: "tabular-nums" }}>{toastCountdown}</div>
+            <div style={{ width: 28, height: 28, borderRadius: "50%", border: `1px solid ${C.border}`, display: "flex", alignItems: "center", justifyContent: "center", fontSize:12, fontWeight: 700, color: C.muted, fontVariantNumeric: "tabular-nums" }}>{toastCountdown}</div>
             <button onClick={handleUndoComplete}
-              style={{ padding: "6px 16px", background: C.up, border: `1px solid ${C.border}`, borderRadius: 8, color: C.text, fontSize: 13, fontWeight: 600, cursor: "pointer" }}>
+              style={{ padding: "6px 16px", background: C.up, border: `1px solid ${C.border}`, borderRadius: 12, color: C.text, fontSize: 13, fontWeight: 600, cursor: "pointer" }}>
               Undo
             </button>
           </div>
@@ -1688,13 +1695,13 @@ function MiniSessionView({ onExpand, onEnd, endConfirm }) {
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{width:14,height:14}}>
               <path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"/>
             </svg>
-            <span>OPEN</span>
+            <span>Open</span>
           </button>
           <button className="msv-btn msv-btn-end" onClick={onEnd} title="End session"
             style={endConfirm ? {background:"var(--red)",color:"#fff"} : {}}>
             {endConfirm
-              ? <><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{width:14,height:14}}><polyline points="20 6 9 17 4 12"/></svg><span>SURE?</span></>
-              : <><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{width:14,height:14}}><rect x="3" y="3" width="18" height="18" rx="2"/></svg><span>END</span></>
+              ? <><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{width:14,height:14}}><polyline points="20 6 9 17 4 12"/></svg><span>Sure?</span></>
+              : <><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{width:14,height:14}}><rect x="3" y="3" width="18" height="18" rx="2"/></svg><span>End</span></>
             }
           </button>
         </div>
@@ -1847,7 +1854,7 @@ Give post-session feedback: what was solid, anything to flag, and one specific f
   };
 
   if (!loaded) return (
-    <div className="loading"><div style={{ fontFamily: "'Bebas Neue',sans-serif", fontSize: 18, letterSpacing: 2, color: C.muted, animation: "pulse 2s infinite" }}>LOADING PROGRAM...</div></div>
+    <div className="loading"><div style={{ fontFamily:"var(--font-display)", fontWeight:700, fontSize: 18, color: C.muted, animation: "pulse 2s infinite" }}>Loading program...</div></div>
   );
 
   // ── SETUP SCREEN ──
@@ -1856,13 +1863,13 @@ Give post-session feedback: what was solid, anything to flag, and one specific f
       <div className="sh">
         <div>
           <div className="sh-label">Training Setup</div>
-          <div className="sh-title">CHOOSE YOUR SPLIT</div>
+          <div className="sh-title">Choose your split</div>
         </div>
         {tState && (
           <button onClick={() => setSetupMode(false)}
-            style={{ background:"var(--card)", border:"2px solid var(--brutal)", borderRadius:6, boxShadow:"2px 2px 0 var(--brutal)", padding:"6px 14px", cursor:"pointer", fontFamily:"'Bebas Neue',sans-serif", fontSize:13, letterSpacing:1.5, color:"var(--text)", transition:"all .1s" }}
-            onMouseOver={e=>{e.currentTarget.style.transform="translate(-1px,-1px)";e.currentTarget.style.boxShadow="3px 3px 0 var(--brutal)"}}
-            onMouseOut={e=>{e.currentTarget.style.transform="";e.currentTarget.style.boxShadow="2px 2px 0 var(--brutal)"}}>
+            style={{ background:"var(--card)", border:"1px solid var(--border)", borderRadius:10, boxShadow:"var(--shadow-1)", padding:"6px 14px", cursor:"pointer", fontFamily:"var(--font-display)", fontWeight:700, fontSize:13, color:"var(--text)", transition:"all .1s" }}
+            onMouseOver={e=>{e.currentTarget.style.transform="translate(-1px,-1px)";e.currentTarget.style.boxShadow="var(--shadow-1)"}}
+            onMouseOut={e=>{e.currentTarget.style.transform="";e.currentTarget.style.boxShadow="var(--shadow-1)"}}>
             ← BACK
           </button>
         )}
@@ -1875,28 +1882,28 @@ Give post-session feedback: what was solid, anything to flag, and one specific f
 
         {Object.values(SPLITS).map(sp => (
           <div key={sp.id} onClick={() => setSelectedSplit(sp.id)}
-            style={{ marginBottom: 12, background: selectedSplit === sp.id ? `${C.accent}18` : C.card||C.surface, border: `2px solid ${selectedSplit === sp.id ? C.accent : C.brutal||C.border}`, borderRadius: 10, padding: "16px 18px", cursor: "pointer", transition: "all .15s cubic-bezier(.22,1,.36,1)", position: "relative", boxShadow: selectedSplit === sp.id ? `4px 4px 0 ${C.accent}` : `4px 4px 0 ${C.brutal||C.border}` }}
-            onMouseOver={e=>{e.currentTarget.style.transform="translate(-2px,-2px)";e.currentTarget.style.boxShadow=selectedSplit===sp.id?`6px 6px 0 ${C.accent}`:`6px 6px 0 ${C.brutal||C.border}`;}}
-            onMouseOut={e=>{e.currentTarget.style.transform="";e.currentTarget.style.boxShadow=selectedSplit===sp.id?`4px 4px 0 ${C.accent}`:`4px 4px 0 ${C.brutal||C.border}`;}}>
-            {selectedSplit === sp.id && <div style={{ position: "absolute", top: 10, right: 14, width: 18, height: 18, borderRadius: "50%", background: C.accent, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 11, color: "#080A0C", fontWeight: 700 }}>✓</div>}
+            style={{ marginBottom: 12, background: selectedSplit === sp.id ? `${C.accent}18` : C.card||C.surface, border: `1px solid ${selectedSplit === sp.id ? C.accent : C.border}`, borderRadius: 12, padding: "16px 18px", cursor: "pointer", transition: "all .15s cubic-bezier(.22,1,.36,1)", position: "relative", boxShadow: selectedSplit === sp.id ? "var(--shadow-1)" : "var(--shadow-1)" }}
+            onMouseOver={e=>{e.currentTarget.style.transform="translate(-2px,-2px)";e.currentTarget.style.boxShadow=selectedSplit===sp.id?"var(--shadow-1)":"var(--shadow-1)";}}
+            onMouseOut={e=>{e.currentTarget.style.transform="";e.currentTarget.style.boxShadow=selectedSplit===sp.id?"var(--shadow-1)":"var(--shadow-1)";}}>
+            {selectedSplit === sp.id && <div style={{ position: "absolute", top: 10, right: 14, width: 18, height: 18, borderRadius: "50%", background: C.accent, display: "flex", alignItems: "center", justifyContent: "center", fontSize:12, color: "#080A0C", fontWeight: 700 }}>✓</div>}
             <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 8 }}>
-              <span style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize: 13, letterSpacing: 1.5, color: selectedSplit===sp.id?C.accentInk:C.muted, background: C.up, borderRadius: 6, padding:"3px 8px" }}>{sp.abbr}</span>
+              <span style={{ fontFamily:"var(--font-display)", fontWeight:700, fontSize: 13, color: selectedSplit===sp.id?C.accentInk:C.muted, background: C.up, borderRadius: 10, padding:"3px 8px" }}>{sp.abbr}</span>
               <div>
-                <div style={{ fontFamily: "'Bebas Neue',sans-serif", fontSize: 18, letterSpacing: 1, color: selectedSplit === sp.id ? C.accentInk : C.text }}>{sp.label}</div>
-                <div style={{ fontSize: 11, color: C.muted, letterSpacing: 1 }}>{sp.frequency} days/week</div>
+                <div style={{ fontFamily:"var(--font-display)", fontWeight:700, fontSize: 18, color: selectedSplit === sp.id ? C.accentInk : C.text }}>{sp.label}</div>
+                <div style={{ fontSize:12, color: C.muted, }}>{sp.frequency} days/week</div>
               </div>
             </div>
             <div style={{ fontSize: 13, color: C.faint, lineHeight: 1.5, marginBottom: 10 }}>{sp.desc}</div>
             <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
               {sp.schedule.map(d => (
-                <span key={d.key} style={{ fontSize: 11, letterSpacing: 1, textTransform: "uppercase", background: C.up, border: `1px solid ${C.border}`, color: C.faint, padding: "3px 10px", borderRadius: 6 }}>{d.tag}</span>
+                <span key={d.key} style={{ fontSize:12, background: C.up, border: `1px solid ${C.border}`, color: C.faint, padding: "3px 10px", borderRadius: 10 }}>{d.tag}</span>
               ))}
             </div>
           </div>
         ))}
 
         <div style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 12, padding: "12px 14px", marginBottom: 20 }}>
-          <div style={{ fontSize: 11, letterSpacing: 2, textTransform: "uppercase", color: C.accentInk, marginBottom: 6 }}>Program inputs</div>
+          <div style={{ fontSize:12, color: C.accentInk, marginBottom: 6 }}>Program inputs</div>
           {[
             { label: "Experience", value: user.level || "Intermediate" },
             { label: "Goal", value: user.goal || "Hypertrophy" },
@@ -1904,12 +1911,12 @@ Give post-session feedback: what was solid, anything to flag, and one specific f
           ].map(r => (
             <div key={r.label} style={{ display: "flex", justifyContent: "space-between", marginBottom: 4 }}>
               <span style={{ fontSize: 12, color: C.muted }}>{r.label}</span>
-              <span style={{ fontSize: 12, color: C.faint, fontFamily: "'DM Mono',monospace", textTransform: "capitalize" }}>{r.value}</span>
+              <span style={{ fontSize: 12, color: C.faint, fontFamily:"var(--font-num)", fontVariantNumeric:"tabular-nums", textTransform: "capitalize" }}>{r.value}</span>
             </div>
           ))}
         </div>
 
-        <CubeButton onClick={handleSplitSetup} style={{width:"100%",textAlign:"center"}}>GENERATE MY PROGRAM ▶</CubeButton>
+        <CubeButton onClick={handleSplitSetup} style={{width:"100%",textAlign:"center"}}>Generate my program</CubeButton>
       </div>
     </div>
   );
@@ -1920,7 +1927,7 @@ Give post-session feedback: what was solid, anything to flag, and one specific f
     if (session?.startedAt) {
       return (
         <div className="loading">
-          <div style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:18, letterSpacing:2, color:C.muted, animation:"pulse 2s infinite" }}>
+          <div style={{ fontFamily:"var(--font-display)", fontWeight:700, fontSize:18, color:C.muted, animation:"pulse 2s infinite" }}>
             RESTORING SESSION...
           </div>
         </div>
@@ -1941,13 +1948,13 @@ Give post-session feedback: what was solid, anything to flag, and one specific f
   // ── SPLIT CARDS HOME VIEW ──────────────────────────────────────────────────
   if (!splitView && !session) {
     const CARD_CONFIG = [
-      { id:"ppl",    name:"PUSH · PULL · LEGS", abbr:"PPL",   freq:"6 DAYS / WEEK", color:C.accentInk,
+      { id:"ppl",    name:"Push · pull · legs", abbr:"PPL",   freq:"6 days / week", color:C.accentInk,
         desc:"Max frequency. Each muscle hit twice weekly. Built for intermediate to advanced athletes." },
-      { id:"ul",     name:"UPPER / LOWER",      abbr:"U/L",   freq:"4 DAYS / WEEK", color:C.blue,
+      { id:"ul",     name:"Upper / lower",      abbr:"U/L",   freq:"4 days / week", color:C.blue,
         desc:"High frequency, manageable volume. Ideal for all experience levels and busy schedules." },
-      { id:"pplup",  name:"ARNOLD SPLIT",       abbr:"PPL+U", freq:"5 DAYS / WEEK", color:C.green,
+      { id:"pplup",  name:"Arnold split",       abbr:"PPL+U", freq:"5 days / week", color:C.green,
         desc:"5-day hybrid with dedicated upper-body day for enhanced arm and shoulder development." },
-      { id:"custom", name:"CUSTOM SESSION",     abbr:"FREE",  freq:"ANYTIME",       color:C.purple,
+      { id:"custom", name:"Custom session",     abbr:"Free",  freq:"Anytime",       color:C.purple,
         desc:"Log any exercise, any combination. Perfect for one-off sessions and deload days." },
     ];
     return (
@@ -1955,14 +1962,14 @@ Give post-session feedback: what was solid, anything to flag, and one specific f
         <div className="sh">
           <div>
             <div className="sh-greeting">Your training</div>
-            <div className="sh-title">TRAINING</div>
+            <div className="sh-title">Training</div>
           </div>
           {tState && (
             <div style={{display:"flex",gap:6}}>
               <button onClick={()=>setShowChart(!showChart)}
-                style={{display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:3,padding:"6px 10px",borderRadius:10,background:showChart?`${C.purple}18`:C.surface,border:`1px solid ${showChart?C.purple:C.border}`,color:showChart?C.purple:C.muted,cursor:"pointer",transition:"all .2s",minWidth:48}}>
+                style={{display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:3,padding:"6px 10px",borderRadius:12,background:showChart?`${C.purple}18`:C.surface,border:`1px solid ${showChart?C.purple:C.border}`,color:showChart?C.purple:C.muted,cursor:"pointer",transition:"all .2s",minWidth:48}}>
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" style={{width:14,height:14}}><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
-                <span style={{fontSize:11,fontWeight:600,letterSpacing:.5,textTransform:"uppercase"}}>Balance</span>
+                <span style={{fontSize:12,fontWeight:600,}}>Balance</span>
               </button>
             </div>
           )}
@@ -1973,18 +1980,18 @@ Give post-session feedback: what was solid, anything to flag, and one specific f
           const mv = computeMuscleVolume(tState.history || [], 7);
           const al = generateMuscleAlerts(mv, user.level || "intermediate", C);
           return (
-            <div style={{margin:"0 24px 20px",background:C.card||C.surface,border:`2px solid ${C.brutal||C.border}`,borderRadius:10,overflow:"hidden",boxShadow:`4px 4px 0 ${C.brutal||C.border}`,animation:"slideUp .3s ease"}}>
+            <div style={{margin:"0 24px 20px",background:C.card||C.surface,border:`1px solid ${C.border}`,borderRadius:12,overflow:"hidden",boxShadow:"var(--shadow-1)",animation:"slideUp .3s ease"}}>
               <div style={{padding:"14px 18px 8px",display:"flex",alignItems:"center",justifyContent:"space-between"}}>
-                <div style={{fontSize:11,letterSpacing:2,textTransform:"uppercase",color:C.purple}}>● Muscle Balance</div>
-                <div style={{fontSize:11,color:C.faint}}>7-day volume</div>
+                <div style={{fontSize:12,color:C.purple}}>● Muscle Balance</div>
+                <div style={{fontSize:12,color:C.faint}}>7-day volume</div>
               </div>
               <HimboStatChart muscleVol={mv} level={user.level||"intermediate"}/>
               {al.length > 0 && (
                 <div style={{padding:"0 18px 14px"}}>
                   {al.slice(0,3).map(a=>(
-                    <div key={a.key} style={{display:"flex",gap:8,padding:"7px 10px",background:`${a.color}0D`,border:`1px solid ${a.color}30`,borderRadius:7,marginBottom:5,alignItems:"flex-start"}}>
+                    <div key={a.key} style={{display:"flex",gap:8,padding:"7px 10px",background:`${a.color}0D`,border:`1px solid ${a.color}30`,borderRadius:12,marginBottom:5,alignItems:"flex-start"}}>
                       <span style={{width:7,height:7,borderRadius:"50%",background:a.severity==="critical"?C.red:C.accent,display:"inline-block",flexShrink:0,marginTop:3}}/>
-                      <span style={{fontSize:11,color:C.faint,lineHeight:1.4}}>{a.msg}</span>
+                      <span style={{fontSize:12,color:C.faint,lineHeight:1.4}}>{a.msg}</span>
                     </div>
                   ))}
                 </div>
@@ -2003,10 +2010,10 @@ Give post-session feedback: what was solid, anything to flag, and one specific f
                 onClick={() => handleSplitCardPress(card.id)}
                 style={{
                   marginBottom: 14,
-                  borderRadius: 14,
+                  borderRadius: 16,
                   overflow: "hidden",
-                  border: "2px solid var(--brutal)",
-                  boxShadow: "var(--depth-shadow), var(--inner-light), 4px 4px 0 var(--brutal)",
+                  border: "1px solid var(--border)",
+                  boxShadow: "var(--shadow-1)",
                   cursor: "pointer",
                   transition: "transform .15s cubic-bezier(.16,1,.3,1), box-shadow .15s",
                   animation: `screenIn .44s cubic-bezier(.16,1,.3,1) ${idx * 0.07 + 0.04}s both`,
@@ -2018,17 +2025,17 @@ Give post-session feedback: what was solid, anything to flag, and one specific f
                   {/* Top row: abbr + freq + active badge */}
                   <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:10}}>
                     <div style={{display:"flex",alignItems:"center",gap:8}}>
-                      <span style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:11,letterSpacing:2,color:card.color,background:`color-mix(in srgb,${card.color} 14%,transparent)`,padding:"3px 9px",borderRadius:5}}>
+                      <span style={{fontFamily:"var(--font-display)", fontWeight:700,fontSize:12,color:card.color,background:`color-mix(in srgb,${card.color} 14%,transparent)`,padding:"3px 9px",borderRadius:10}}>
                         {card.abbr}
                       </span>
-                      <span style={{fontSize:11,color:"var(--muted)",letterSpacing:.5}}>{card.freq}</span>
+                      <span style={{fontSize:12,color:"var(--muted)",}}>{card.freq}</span>
                     </div>
                     {isActive && (
-                      <span style={{fontSize:11,letterSpacing:2,textTransform:"uppercase",color:"var(--green)",fontWeight:700,background:"rgba(61,220,132,.12)",padding:"2px 8px",borderRadius:4,border:"1px solid rgba(61,220,132,.3)"}}>ACTIVE</span>
+                      <span style={{fontSize:12,color:"var(--green)",fontWeight:700,background:"rgba(61,220,132,.12)",padding:"2px 8px",borderRadius:10,border:"1px solid rgba(61,220,132,.3)"}}>Active</span>
                     )}
                   </div>
                   {/* Name */}
-                  <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:28,letterSpacing:1.5,color:"var(--text)",lineHeight:1,marginBottom:8}}>
+                  <div style={{fontFamily:"var(--font-display)", fontWeight:700,fontSize:28,color:"var(--text)",lineHeight:1,marginBottom:8}}>
                     {card.name}
                   </div>
                   {/* Description */}
@@ -2039,7 +2046,7 @@ Give post-session feedback: what was solid, anything to flag, and one specific f
                   {splitSchedule.length > 0 && (
                     <div style={{display:"flex",gap:5,flexWrap:"wrap",marginBottom:10}}>
                       {splitSchedule.map(d => (
-                        <span key={d.key} style={{fontSize:11,letterSpacing:1,textTransform:"uppercase",background:"var(--up)",border:"1px solid var(--border)",color:"var(--muted)",padding:"3px 9px",borderRadius:5}}>
+                        <span key={d.key} style={{fontSize:12,background:"var(--up)",border:"1px solid var(--border)",color:"var(--muted)",padding:"3px 9px",borderRadius:10}}>
                           {d.tag}
                         </span>
                       ))}
@@ -2047,8 +2054,8 @@ Give post-session feedback: what was solid, anything to flag, and one specific f
                   )}
                   {/* CTA */}
                   <div style={{display:"flex",justifyContent:"flex-end",alignItems:"center",gap:6}}>
-                    <span style={{fontSize:11,fontFamily:"'Bebas Neue',sans-serif",letterSpacing:1.5,color:"var(--text)"}}>
-                      {card.id === "custom" ? "START SESSION →" : "VIEW PROGRAM →"}
+                    <span style={{fontSize:12,fontFamily:"var(--font-display)", fontWeight:700,color:"var(--text)"}}>
+                      {card.id === "custom" ? "Start session" : "View program"}
                     </span>
                   </div>
                 </div>
@@ -2085,12 +2092,12 @@ Give post-session feedback: what was solid, anything to flag, and one specific f
       <div className="sh">
         <div style={{display:"flex",alignItems:"center",gap:12}}>
           <button onClick={()=>setSplitView(null)}
-            style={{background:"none",border:"none",cursor:"pointer",color:"var(--muted)",fontSize:13,fontFamily:"'DM Sans',sans-serif",padding:0,display:"flex",alignItems:"center",gap:4}}>
+            style={{background:"none",border:"none",cursor:"pointer",color:"var(--muted)",fontSize:13,fontFamily:"var(--font-text)",padding:0,display:"flex",alignItems:"center",gap:4}}>
             ← Back
           </button>
           <div>
             <div className="sh-greeting">{splitDef.abbr}</div>
-            <div className="sh-title">{splitDef.label.split("/")[0].trim().toUpperCase()}</div>
+            <div className="sh-title">{splitDef.label.split("/")[0].trim()}</div>
           </div>
         </div>
         <div style={{ display: "flex", gap: 6 }}>
@@ -2101,9 +2108,9 @@ Give post-session feedback: what was solid, anything to flag, and one specific f
               icon:<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" style={{width:14,height:14}}><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg> },
           ].map(btn => (
             <button key={btn.label} onClick={btn.onClick}
-              style={{ display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:3,padding:"6px 10px",borderRadius:10,background:btn.active?`${btn.color}18`:C.surface,border:`1px solid ${btn.active?btn.color:C.border}`,color:btn.active?btn.color:C.muted,cursor:"pointer",transition:"all .2s",minWidth:48 }}>
+              style={{ display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:3,padding:"6px 10px",borderRadius:12,background:btn.active?`${btn.color}18`:C.surface,border:`1px solid ${btn.active?btn.color:C.border}`,color:btn.active?btn.color:C.muted,cursor:"pointer",transition:"all .2s",minWidth:48 }}>
               {btn.icon}
-              <span style={{fontSize:11,fontWeight:600,letterSpacing:.5,textTransform:"uppercase"}}>{btn.label}</span>
+              <span style={{fontSize:12,fontWeight:600,}}>{btn.label}</span>
             </button>
           ))}
         </div>
@@ -2111,15 +2118,15 @@ Give post-session feedback: what was solid, anything to flag, and one specific f
 
       {/* POST-SESSION AI FEEDBACK CARD */}
       {sessionFeedback && (
-        <div style={{ margin:"0 24px 20px", background:C.card||C.surface, border:`2px solid ${C.brutal||C.accent}`, borderRadius:10, overflow:"hidden", boxShadow:`4px 4px 0 ${C.brutal||C.accent}`, animation:"slideUp .3s ease" }}>
+        <div style={{ margin:"0 24px 20px", background:C.card||C.surface, border:`1px solid ${C.border}`, borderRadius:12, overflow:"hidden", boxShadow:"var(--shadow-1)", animation:"slideUp .3s ease" }}>
           <div style={{ padding:"14px 16px 12px", display:"flex", alignItems:"center", justifyContent:"space-between", borderBottom:`1px solid ${C.border}` }}>
             <div style={{ display:"flex", alignItems:"center", gap:8 }}>
               <div style={{ width:28, height:28, borderRadius:"50%", background:`${C.accent}18`, border:`1px solid ${C.accent}40`, display:"flex", alignItems:"center", justifyContent:"center" }}>
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{width:13,height:13,color:C.accentInk}}><path d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
               </div>
               <div>
-                <div style={{ fontSize:11, letterSpacing:2, textTransform:"uppercase", color:C.accentInk }}>APEX COACH</div>
-                <div style={{ fontSize:11, fontWeight:600, color:C.text }}>Post-Session Analysis</div>
+                <div style={{ fontSize:12, color:C.accentInk }}>APEX coach</div>
+                <div style={{ fontSize:12, fontWeight:600, color:C.text }}>Post-Session Analysis</div>
               </div>
             </div>
             <button onClick={() => setSessionFeedback(null)}
@@ -2138,7 +2145,7 @@ Give post-session feedback: what was solid, anything to flag, and one specific f
                 <div style={{ fontSize:13, color:C.faint, lineHeight:1.65, whiteSpace:"pre-wrap" }}>{sessionFeedback.text}</div>
                 {onNavigate && (
                   <button onClick={() => onNavigate("coach")}
-                    style={{ marginTop:14, display:"flex", alignItems:"center", gap:6, background:`${C.accent}15`, border:`1px solid ${C.accent}40`, borderRadius:8, padding:"8px 14px", color:C.accentInk, fontSize:12, fontWeight:600, cursor:"pointer", letterSpacing:.5 }}>
+                    style={{ marginTop:14, display:"flex", alignItems:"center", gap:6, background:`${C.accent}15`, border:`1px solid ${C.accent}40`, borderRadius:12, padding:"8px 14px", color:C.accentInk, fontSize:12, fontWeight:600, cursor:"pointer", }}>
                     Continue in Coach
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{width:12,height:12}}><path d="M5 12h14M12 5l7 7-7 7"/></svg>
                   </button>
@@ -2151,25 +2158,25 @@ Give post-session feedback: what was solid, anything to flag, and one specific f
 
       {/* HIMBO STAT CHART */}
       {showChart && (
-        <div style={{ margin:"0 24px 20px",background:C.card||C.surface,border:`2px solid ${C.brutal||C.border}`,borderRadius:10,overflow:"hidden",boxShadow:`4px 4px 0 ${C.brutal||C.border}`,animation:"slideUp .3s ease" }}>
+        <div style={{ margin:"0 24px 20px",background:C.card||C.surface,border:`1px solid ${C.border}`,borderRadius:12,overflow:"hidden",boxShadow:"var(--shadow-1)",animation:"slideUp .3s ease" }}>
           <div style={{ padding:"16px 18px 10px",display:"flex",alignItems:"center",justifyContent:"space-between" }}>
-            <div><div style={{fontSize:11,letterSpacing:2,textTransform:"uppercase",color:C.purple}}>● Physique Balance</div><div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:20,letterSpacing:1}}>MUSCLE BALANCE CHART</div></div>
-            <div style={{fontSize:11,color:C.faint}}>Drag · Pinch to zoom</div>
+            <div><div style={{fontSize:12,color:C.purple}}>● Physique Balance</div><div style={{fontFamily:"var(--font-display)", fontWeight:700,fontSize:20,}}>Muscle balance chart</div></div>
+            <div style={{fontSize:12,color:C.faint}}>Drag · Pinch to zoom</div>
           </div>
           <HimboStatChart muscleVol={muscleVol} level={user.level||"intermediate"}/>
           <div style={{padding:"10px 18px 12px",display:"flex",gap:14,justifyContent:"center"}}>
-            {[{color:C.red,label:"Neglected"},{color:"#FBBF24",label:"Building"},{color:C.green,label:"Optimal"},{color:C.blue,label:"MRV Risk"}].map(l=>(
+            {[{color:C.red,label:"Neglected"},{color:"#FBBF24",label:"Building"},{color:C.green,label:"Optimal"},{color:C.blue,label:"MRV risk"}].map(l=>(
               <div key={l.label} style={{display:"flex",alignItems:"center",gap:5}}>
                 <div style={{width:8,height:8,borderRadius:"50%",background:l.color}}/>
-                <span style={{fontSize:11,color:C.muted}}>{l.label}</span>
+                <span style={{fontSize:12,color:C.muted}}>{l.label}</span>
               </div>
             ))}
           </div>
           {alerts.length>0&&(
             <div style={{padding:"0 18px 16px"}}>
-              <div style={{fontSize:11,letterSpacing:1,textTransform:"uppercase",color:C.muted,marginBottom:8}}>Balance Alerts</div>
+              <div style={{fontSize:12,color:C.muted,marginBottom:8}}>Balance Alerts</div>
               {alerts.slice(0,4).map(a=>(
-                <div key={a.key} style={{display:"flex",gap:10,padding:"8px 12px",background:`${a.color}0D`,border:`1px solid ${a.color}30`,borderRadius:8,marginBottom:6,alignItems:"flex-start"}}>
+                <div key={a.key} style={{display:"flex",gap:10,padding:"8px 12px",background:`${a.color}0D`,border:`1px solid ${a.color}30`,borderRadius:12,marginBottom:6,alignItems:"flex-start"}}>
                   <span style={{width:8,height:8,borderRadius:"50%",background:a.severity==="critical"?C.red:a.severity==="overreach"?C.blue:C.accent,display:"inline-block",flexShrink:0,marginTop:3}}/>
                   <span style={{fontSize:12,color:C.faint,lineHeight:1.4}}>{a.msg}</span>
                 </div>
@@ -2181,59 +2188,59 @@ Give post-session feedback: what was solid, anything to flag, and one specific f
 
       {/* STATS PANEL */}
       {showStats && (
-        <div style={{ margin: "0 24px 16px", background: C.card||C.surface, border: `2px solid ${C.brutal||C.border}`, borderRadius: 10, padding: 18, boxShadow:`4px 4px 0 ${C.brutal||C.border}`, animation: "slideUp .3s ease" }}>
-          <div style={{ fontSize: 11, letterSpacing: 2, textTransform: "uppercase", color: C.accentInk, marginBottom: 12 }}>● Performance Overview</div>
+        <div style={{ margin: "0 24px 16px", background: C.card||C.surface, border: `1px solid ${C.border}`, borderRadius: 12, padding: 18, boxShadow:"var(--shadow-1)", animation: "slideUp .3s ease" }}>
+          <div style={{ fontSize:12, color: C.accentInk, marginBottom: 12 }}>● Performance Overview</div>
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 10, marginBottom: 14 }}>
             {[
               { label: "Sessions", val: tState.history?.length || 0, unit: "total" },
               { label: "7D Volume", val: totalVolume > 1000 ? `${(totalVolume / 1000).toFixed(1)}k` : totalVolume, unit: "lbs" },
               { label: "Signal", val: adaptation.signal === "progress" ? "↑" : adaptation.signal === "fatigue" ? "↓" : "→", unit: adaptation.signal || "neutral" },
             ].map(s => (
-              <div key={s.label} style={{ background: C.up, borderRadius: 10, padding: "10px 8px", textAlign: "center" }}>
-                <div style={{ fontFamily: "'Bebas Neue',sans-serif", fontSize: 22, color: C.text }}>{s.val}</div>
-                <div style={{ fontSize: 11, color: C.muted, textTransform: "uppercase", letterSpacing: 1 }}>{s.label}</div>
-                <div style={{ fontSize: 11, color: C.muted }}>{s.unit}</div>
+              <div key={s.label} style={{ background: C.up, borderRadius: 12, padding: "10px 8px", textAlign: "center" }}>
+                <div style={{ fontFamily:"var(--font-display)", fontWeight:700, fontSize: 22, color: C.text }}>{s.val}</div>
+                <div style={{ fontSize:12, color: C.muted, }}>{s.label}</div>
+                <div style={{ fontSize:12, color: C.muted }}>{s.unit}</div>
               </div>
             ))}
           </div>
           {adaptation.note && (
-            <div style={{ fontSize: 12, color: C.faint, lineHeight: 1.5, padding: "10px 12px", background: C.up, borderRadius: 8 }}>
+            <div style={{ fontSize: 12, color: C.faint, lineHeight: 1.5, padding: "10px 12px", background: C.up, borderRadius: 12 }}>
               <span style={{ color: C.accentInk }}>Engine: </span>{adaptation.note}
             </div>
           )}
           {/* Full session history */}
           {(tState.history || []).length > 0 && (
             <div style={{ marginTop: 14 }}>
-              <div style={{ fontSize: 11, letterSpacing: 2, textTransform: "uppercase", color: C.muted, marginBottom: 10 }}>Workout History</div>
+              <div style={{ fontSize:12, color: C.muted, marginBottom: 10 }}>Workout History</div>
               {[...(tState.history || [])].reverse().map((sess, i) => {
                 const setsLogged = (sess.completedExercises || []).reduce((s, ex) => s + (ex.loggedSets?.filter(x => x.reps && x.weight)?.length || 0), 0);
                 const volLoad    = (sess.completedExercises || []).reduce((s, ex) => s + (ex.loggedSets || []).reduce((s2, set) => s2 + (set.reps||0)*(set.weight||0), 0), 0);
                 const mins       = Math.floor((sess.duration || 0) / 60);
                 const isOpen     = expandedSession === i;
-                const dayLabel   = sess.isCustom ? "Custom" : (sess.dayKey || "Session").replace(/_/g," ").toUpperCase();
+                const dayLabel   = sess.isCustom ? "Custom" : labelCase(sess.dayKey || "Session");
                 return (
                   <div key={sess.ts} style={{ marginBottom: 8 }}>
                     {/* Session row — tap to expand */}
                     <div onClick={() => setExpandedSession(isOpen ? null : i)}
-                      style={{ display:"flex", alignItems:"center", justifyContent:"space-between", padding:"12px 14px", background: isOpen ? `${C.accent}12` : C.up, border:`2px solid ${isOpen ? C.accent : C.brutal||C.border}`, borderRadius: isOpen ? "8px 8px 0 0" : 8, cursor:"pointer", boxShadow: isOpen ? `3px 3px 0 ${C.accent}` : `3px 3px 0 ${C.brutal||C.border}`, transition:"all .15s" }}>
+                      style={{ display:"flex", alignItems:"center", justifyContent:"space-between", padding:"12px 14px", background: isOpen ? `${C.accent}12` : C.up, border:`1px solid ${isOpen ? C.accent : C.border}`, borderRadius: isOpen ? "var(--shadow-1)" : 8, cursor:"pointer", boxShadow: isOpen ? "var(--shadow-1)" : "var(--shadow-1)", transition:"all .15s" }}>
                       <div>
-                        <div style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:16, letterSpacing:1, color: isOpen ? C.accentInk : C.text }}>{dayLabel}</div>
-                        <div style={{ fontSize:11, color:C.muted, marginTop:1 }}>
+                        <div style={{ fontFamily:"var(--font-display)", fontWeight:700, fontSize:16, color: isOpen ? C.accentInk : C.text }}>{dayLabel}</div>
+                        <div style={{ fontSize:12, color:C.muted, marginTop:1 }}>
                           {new Date(sess.ts).toLocaleDateString("en-US",{weekday:"short",month:"short",day:"numeric"})}
                           {mins > 0 && ` · ${mins} min`}
                         </div>
                       </div>
                       <div style={{ display:"flex", alignItems:"center", gap:12 }}>
                         <div style={{ textAlign:"right" }}>
-                          <div style={{ fontFamily:"'DM Mono',monospace", fontSize:12, color:C.accentInk }}>{volLoad > 0 ? `${(volLoad/1000).toFixed(1)}k lbs` : `${setsLogged} sets`}</div>
-                          <div style={{ fontSize:11, color:C.muted }}>{setsLogged} sets logged</div>
+                          <div style={{ fontFamily:"var(--font-num)", fontVariantNumeric:"tabular-nums", fontSize:12, color:C.accentInk }}>{volLoad > 0 ? `${(volLoad/1000).toFixed(1)}k lbs` : `${setsLogged} sets`}</div>
+                          <div style={{ fontSize:12, color:C.muted }}>{setsLogged} sets logged</div>
                         </div>
                         <div style={{ fontSize:14, color: isOpen ? C.accentInk : C.muted, transition:"transform .2s", transform: isOpen ? "rotate(180deg)" : "none" }}>⌄</div>
                       </div>
                     </div>
                     {/* Expanded exercise + set detail */}
                     {isOpen && (
-                      <div style={{ background:C.surface, border:`2px solid ${C.accent}`, borderTop:"none", borderRadius:"0 0 8px 8px", padding:"12px 14px", animation:"slideUp .2s ease" }}>
+                      <div style={{ background:C.surface, border:`1px solid ${C.accent}`, borderTop:"none", borderRadius:"0 0 8px 8px", padding:"12px 14px", animation:"slideUp .2s ease" }}>
                         {(sess.completedExercises || []).filter(ex => (ex.loggedSets||[]).some(s=>s.reps&&s.weight)).map((ex, ei) => {
                           const workSets = (ex.loggedSets||[]).filter(s=>s.reps&&s.weight);
                           const topSet   = workSets.reduce((best, s) => parseFloat(s.weight)>parseFloat(best.weight||0)?s:best, {});
@@ -2241,13 +2248,13 @@ Give post-session feedback: what was solid, anything to flag, and one specific f
                             <div key={ei} style={{ marginBottom: ei < sess.completedExercises.length-1 ? 14 : 0 }}>
                               <div style={{ display:"flex", alignItems:"baseline", justifyContent:"space-between", marginBottom:6 }}>
                                 <div style={{ fontSize:12, fontWeight:600, color:C.text }}>{ex.name}</div>
-                                <div style={{ fontSize:11, color:C.accentInk, fontFamily:"'DM Mono',monospace" }}>
+                                <div style={{ fontSize:12, color:C.accentInk, fontFamily:"var(--font-num)", fontVariantNumeric:"tabular-nums" }}>
                                   {topSet.weight && `Top: ${topSet.weight} × ${topSet.reps}`}
                                 </div>
                               </div>
                               <div style={{ display:"flex", flexWrap:"wrap", gap:4 }}>
                                 {workSets.map((set, si) => (
-                                  <div key={si} style={{ fontSize:11, fontFamily:"'DM Mono',monospace", background:`${C.accent}12`, border:`1px solid ${C.accent}30`, borderRadius:4, padding:"3px 8px", color:C.faint }}>
+                                  <div key={si} style={{ fontSize:12, fontFamily:"var(--font-num)", fontVariantNumeric:"tabular-nums", background:`${C.accent}12`, border:`1px solid ${C.accent}30`, borderRadius:10, padding:"3px 8px", color:C.faint }}>
                                     {set.weight}×{set.reps}{set.rpe ? ` @${set.rpe}` : ""}
                                   </div>
                                 ))}
@@ -2273,7 +2280,7 @@ Give post-session feedback: what was solid, anything to flag, and one specific f
         <div style={{ margin: "0 24px 16px", padding: "12px 16px", borderRadius: 12, background: adaptation.signal === "fatigue" ? "rgba(232,69,69,0.07)" : adaptation.signal === "progress" ? "rgba(61,220,132,0.07)" : "rgba(245,166,35,0.07)", border: `1px solid ${adaptation.signal === "fatigue" ? C.red : adaptation.signal === "progress" ? C.green : C.accent}30`, display: "flex", gap: 12, alignItems: "center" }}>
           <span style={{ fontSize: 18, fontWeight: 600, color: adaptation.signal === "fatigue" ? C.red : adaptation.signal === "progress" ? C.green : C.accentInk, lineHeight: 1 }}>{adaptation.signal === "fatigue" ? "↓" : adaptation.signal === "progress" ? "↑" : "→"}</span>
           <div>
-            <div style={{ fontSize: 11, letterSpacing: 1, textTransform: "uppercase", color: adaptation.signal === "fatigue" ? C.red : adaptation.signal === "progress" ? C.green : C.accentInk, marginBottom: 2 }}>
+            <div style={{ fontSize:12, color: adaptation.signal === "fatigue" ? C.red : adaptation.signal === "progress" ? C.green : C.accentInk, marginBottom: 2 }}>
               {adaptation.signal === "fatigue" ? "Volume Reduction Triggered" : adaptation.signal === "progress" ? "Progression Detected" : "Volume Plateau"}
             </div>
             <div style={{ fontSize: 12, color: C.faint }}>{adaptation.note}</div>
@@ -2290,11 +2297,11 @@ Give post-session feedback: what was solid, anything to flag, and one specific f
             <div key={d.key} className={`dchip ${activeDay === i ? "on" : ""}`}
               onClick={() => { setActiveDay(i); setShowPath(false); }}
               style={{ minWidth: 64, position: "relative" }}>
-              <div style={{ fontSize:11,color:activeDay===i?"#080A0C":C.muted,letterSpacing:1,textAlign:"center",marginBottom:2,textTransform:"uppercase" }}>{d.tag.split(" ")[0]}</div>
-              <div style={{ fontFamily:"'Bebas Neue',sans-serif",fontSize:13,letterSpacing:1,color:activeDay===i?"#080A0C":C.text,textAlign:"center" }}>{d.tag.split(" ")[1]||""}</div>
-              {sessionsForDay.length>0&&<span aria-label="Completed before" title="Completed before" style={{position:"absolute",top:2,right:5,fontSize:11,lineHeight:1,fontWeight:700,color:activeDay===i?"#080A0C":C.green}}>✓</span>}
-              {dayAdj?.signal==="progress"&&<span aria-label="Volume increased" title="Volume increased" style={{position:"absolute",bottom:2,right:4,fontSize:11,lineHeight:1,color:activeDay===i?"#080A0C":C.green}}>▲</span>}
-              {dayAdj?.signal==="fatigue"&&<span aria-label="Volume reduced for recovery" title="Volume reduced for recovery" style={{position:"absolute",bottom:2,right:4,fontSize:11,lineHeight:1,color:activeDay===i?"#080A0C":C.red}}>▼</span>}
+              <div style={{ fontSize:12,color:activeDay===i?"#080A0C":C.muted,textAlign:"center",marginBottom:2,}}>{d.tag.split(" ")[0]}</div>
+              <div style={{ fontFamily:"var(--font-display)", fontWeight:700,fontSize:13,color:activeDay===i?"#080A0C":C.text,textAlign:"center" }}>{d.tag.split(" ")[1]||""}</div>
+              {sessionsForDay.length>0&&<span aria-label="Completed before" title="Completed before" style={{position:"absolute",top:2,right:5,fontSize:12,lineHeight:1,fontWeight:700,color:activeDay===i?"#080A0C":C.green}}>✓</span>}
+              {dayAdj?.signal==="progress"&&<span aria-label="Volume increased" title="Volume increased" style={{position:"absolute",bottom:2,right:4,fontSize:12,lineHeight:1,color:activeDay===i?"#080A0C":C.green}}>▲</span>}
+              {dayAdj?.signal==="fatigue"&&<span aria-label="Volume reduced for recovery" title="Volume reduced for recovery" style={{position:"absolute",bottom:2,right:4,fontSize:12,lineHeight:1,color:activeDay===i?"#080A0C":C.red}}>▼</span>}
             </div>
           );
         })}
@@ -2303,7 +2310,7 @@ Give post-session feedback: what was solid, anything to flag, and one specific f
       {/* FIRST-SESSION ORIENTATION */}
       {(tState.history || []).length === 0 && (
         <div style={{ margin: "0 24px 16px", padding: "12px 16px", borderRadius: 12, background: `${C.accent}0C`, border: `1px solid ${C.accent}28` }}>
-          <div style={{ fontSize: 11, letterSpacing: 1.5, textTransform: "uppercase", color: C.accentInk, marginBottom: 4 }}>Getting Started</div>
+          <div style={{ fontSize:12, color: C.accentInk, marginBottom: 4 }}>Getting Started</div>
           <div style={{ fontSize: 12, color: C.faint, lineHeight: 1.6 }}>Select a day below and tap <strong style={{color:C.text}}>Start Session</strong> to begin logging. After 2 sessions APEX will start adapting your program automatically.</div>
         </div>
       )}
@@ -2314,12 +2321,12 @@ Give post-session feedback: what was solid, anything to flag, and one specific f
           <div style={{ padding: "0 24px 14px" }}>
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 8 }}>
               <div>
-                <div style={{ fontSize: 11, letterSpacing: 2, textTransform: "uppercase", color: C.accentInk }}>{splitDef.label} · Day {activeDay + 1}</div>
-                <div style={{ fontFamily: "'Bebas Neue',sans-serif", fontSize: 26, letterSpacing: 1 }}>{currentDay.tag.toUpperCase()}</div>
+                <div style={{ fontSize:12, color: C.accentInk }}>{splitDef.label} · Day {activeDay + 1}</div>
+                <div style={{ fontFamily:"var(--font-display)", fontWeight:700, fontSize: 26, }}>{currentDay.tag}</div>
               </div>
               <div style={{ textAlign: "right" }}>
-                <div style={{ fontFamily: "'Bebas Neue',sans-serif", fontSize: 32, color: C.accentInk }}>{dayPlan.exercises.length}</div>
-                <div style={{ fontSize: 11, color: C.muted }}>exercises</div>
+                <div style={{ fontFamily:"var(--font-display)", fontWeight:700, fontSize: 32, color: C.accentInk }}>{dayPlan.exercises.length}</div>
+                <div style={{ fontSize:12, color: C.muted }}>exercises</div>
               </div>
             </div>
             <div style={{ display: "flex", flexWrap: "wrap", gap: 4, marginBottom: 14 }}>
@@ -2335,19 +2342,19 @@ Give post-session feedback: what was solid, anything to flag, and one specific f
               const prevVol = (prev.completedExercises || []).reduce((s, ex) => s + (ex.loggedSets || []).reduce((s2, set) => s2 + (set.reps || 0) * (set.weight || 0), 0), 0);
               const prevSets = (prev.completedExercises || []).reduce((s, ex) => s + (ex.loggedSets?.length || 0), 0);
               return (
-                <div style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 10, padding: "10px 14px", display: "flex", justifyContent: "space-between", marginBottom: 14 }}>
+                <div style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 12, padding: "10px 14px", display: "flex", justifyContent: "space-between", marginBottom: 14 }}>
                   <div>
-                    <div style={{ fontSize: 11, letterSpacing: 1, textTransform: "uppercase", color: C.muted, marginBottom: 2 }}>Last {currentDay.tag}</div>
+                    <div style={{ fontSize:12, color: C.muted, marginBottom: 2 }}>Last {currentDay.tag}</div>
                     <div style={{ fontSize: 12, color: C.faint }}>{new Date(prev.ts).toLocaleDateString("en-US", { month: "short", day: "numeric" })}</div>
                   </div>
                   <div style={{ display: "flex", gap: 16 }}>
                     <div style={{ textAlign: "right" }}>
-                      <div style={{ fontFamily: "'DM Mono',monospace", fontSize: 14, color: C.text }}>{prevSets}</div>
-                      <div style={{ fontSize: 11, color: C.muted }}>sets</div>
+                      <div style={{ fontFamily:"var(--font-num)", fontVariantNumeric:"tabular-nums", fontSize: 14, color: C.text }}>{prevSets}</div>
+                      <div style={{ fontSize:12, color: C.muted }}>sets</div>
                     </div>
                     <div style={{ textAlign: "right" }}>
-                      <div style={{ fontFamily: "'DM Mono',monospace", fontSize: 14, color: C.accentInk }}>{prevVol > 0 ? `${(prevVol / 1000).toFixed(1)}k` : "—"}</div>
-                      <div style={{ fontSize: 11, color: C.muted }}>lbs vol</div>
+                      <div style={{ fontFamily:"var(--font-num)", fontVariantNumeric:"tabular-nums", fontSize: 14, color: C.accentInk }}>{prevVol > 0 ? `${(prevVol / 1000).toFixed(1)}k` : "—"}</div>
+                      <div style={{ fontSize:12, color: C.muted }}>lbs vol</div>
                     </div>
                   </div>
                 </div>
@@ -2363,27 +2370,27 @@ Give post-session feedback: what was solid, anything to flag, and one specific f
               <div key={ex.id} className="ecard">
                 <div className="ec-head">
                   <div>
-                    <div style={{ fontSize: 11, color: C.muted, letterSpacing: 1.5, textTransform: "uppercase", marginBottom: 3, display: "flex", alignItems: "center", gap: 6 }}>
+                    <div style={{ fontSize:12, color: C.muted, marginBottom: 3, display: "flex", alignItems: "center", gap: 6 }}>
                       {String(i + 1).padStart(2, "0")} · {ex.category}
                       {isAdj && (
-                        <span style={{ fontSize: 11, color: adj.setDelta > 0 ? C.green : C.red, background: adj.setDelta > 0 ? `${C.green}15` : `${C.red}15`, padding: "1px 6px", borderRadius: 4 }}>
+                        <span style={{ fontSize:12, color: adj.setDelta > 0 ? C.green : C.red, background: adj.setDelta > 0 ? `${C.green}15` : `${C.red}15`, padding: "1px 6px", borderRadius: 10 }}>
                           {adj.setDelta > 0 ? "▲" : "▼"} adapted
                         </span>
                       )}
                     </div>
                     <div className="ec-name">{ex.name}</div>
                     <div style={{ display: "flex", gap: 10, marginTop: 6 }}>
-                      <span style={{ fontSize: 11, fontFamily: "'DM Mono',monospace", color: C.faint }}>{ex.repRange} reps</span>
-                      <span style={{ fontSize: 11, color: C.muted }}>·</span>
-                      <span style={{ fontSize: 11, fontFamily: "'DM Mono',monospace", color: C.faint }}>RPE {ex.rpe}</span>
+                      <span style={{ fontSize:12, fontFamily:"var(--font-num)", fontVariantNumeric:"tabular-nums", color: C.faint }}>{ex.repRange} reps</span>
+                      <span style={{ fontSize:12, color: C.muted }}>·</span>
+                      <span style={{ fontSize:12, fontFamily:"var(--font-num)", fontVariantNumeric:"tabular-nums", color: C.faint }}>RPE {ex.rpe}</span>
                     </div>
-                    {ex.notes && <div style={{ fontSize: 11, color: C.muted, marginTop: 4, fontStyle: "italic" }}>{ex.notes}</div>}
+                    {ex.notes && <div style={{ fontSize:12, color: C.muted, marginTop: 4, fontStyle: "italic" }}>{ex.notes}</div>}
                   </div>
                   <div style={{ textAlign: "right" }}>
                     <div className="ec-num" style={{ color: isAdj ? (adj.setDelta > 0 ? C.green : C.red) : C.accentInk }}>{adjSets}</div>
-                    <div style={{ fontSize: 11, color: C.muted }}>sets</div>
+                    <div style={{ fontSize:12, color: C.muted }}>sets</div>
                     {isAdj && ex.sets !== adjSets && (
-                      <div style={{ fontSize: 11, color: C.muted, textDecoration: "line-through" }}>{ex.sets}</div>
+                      <div style={{ fontSize:12, color: C.muted, textDecoration: "line-through" }}>{ex.sets}</div>
                     )}
                   </div>
                 </div>
@@ -2412,9 +2419,9 @@ Give post-session feedback: what was solid, anything to flag, and one specific f
             </div>
           ) : (
             <div style={{margin:"8px 24px 0",display:"grid",gridTemplateColumns:"1fr auto",gap:10}}>
-              <CubeButton onClick={()=>setShowPath(true)}>START {currentDay.tag.toUpperCase()} ▶</CubeButton>
+              <CubeButton onClick={()=>setShowPath(true)}>Start {currentDay.tag}</CubeButton>
               <button onClick={()=>startSession("custom",{exercises:[],loggedSets:{}})}
-                style={{padding:"0 16px",background:`${C.blue}15`,border:`1px solid ${C.blue}50`,borderRadius:12,color:C.blue,fontFamily:"'Bebas Neue',sans-serif",fontSize:14,letterSpacing:1,cursor:"pointer",whiteSpace:"nowrap"}}>
+                style={{padding:"0 16px",background:`${C.blue}15`,border:`1px solid ${C.blue}50`,borderRadius:12,color:C.blue,fontFamily:"var(--font-display)", fontWeight:700,fontSize:14,cursor:"pointer",whiteSpace:"nowrap"}}>
                 + CUSTOM
               </button>
             </div>
@@ -2837,19 +2844,19 @@ function MealLogModal({ onSave, onClose, existingLog }) {
 
   return (
     <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.85)", zIndex: 200, display: "flex", flexDirection: "column", justifyContent: "flex-end" }}>
-      <div style={{ background: C.surface, borderRadius: "20px 20px 0 0", maxHeight: "92vh", overflowY: "auto", padding: "0 0 40px" }}>
+      <div style={{ background: C.surface, borderRadius: "var(--shadow-1)", maxHeight: "92vh", overflowY: "auto", padding: "0 0 40px" }}>
 
         {/* Handle */}
         <div style={{ display: "flex", justifyContent: "center", padding: "12px 0 0" }}>
-          <div style={{ width: 40, height: 4, borderRadius: 2, background: C.border }} />
+          <div style={{ width: 40, height: 4, borderRadius: 10, background: C.border }} />
         </div>
 
         {/* Header */}
         <div style={{ padding: "16px 24px 12px", display: "flex", alignItems: "center", justifyContent: "space-between", borderBottom: `1px solid ${C.border}` }}>
           <div>
-            <div style={{ fontSize: 11, letterSpacing: 2, textTransform: "uppercase", color: C.green }}>● Log Meal</div>
-            <div style={{ fontFamily: "'Bebas Neue',sans-serif", fontSize: 22, letterSpacing: 1 }}>
-              {step === "parsing" ? "ANALYZING..." : step === "review" ? "REVIEW & SAVE" : "WHAT DID YOU EAT?"}
+            <div style={{ fontSize:12, color: C.green }}>● Log Meal</div>
+            <div style={{ fontFamily:"var(--font-display)", fontWeight:700, fontSize: 22, }}>
+              {step === "parsing" ? "Analyzing..." : step === "review" ? "Review & save" : "What did you eat?"}
             </div>
           </div>
           <button onClick={onClose} style={{ background: "none", border: "none", color: C.muted, fontSize: 22, cursor: "pointer" }}>✕</button>
@@ -2862,7 +2869,7 @@ function MealLogModal({ onSave, onClose, existingLog }) {
             <div style={{ display: "flex", gap: 8, marginBottom: 18 }}>
               {[{ id: "free", label: "Text" }, { id: "quick", label: "Quick" }, { id: "photo", label: "📷 Photo" }].map(m => (
                 <button key={m.id} onClick={() => { setInputMode(m.id); setError(""); }}
-                  style={{ flex: 1, padding: "10px 6px", background: inputMode === m.id ? (m.id === "photo" ? `${C.accent}18` : `${C.green}15`) : C.up, border: `1px solid ${inputMode === m.id ? (m.id === "photo" ? C.accent : C.green) : C.border}`, borderRadius: 10, color: inputMode === m.id ? (m.id === "photo" ? C.accentInk : C.green) : C.muted, fontSize: 12, cursor: "pointer", fontFamily: "'DM Sans',sans-serif", display: "flex", alignItems: "center", justifyContent: "center", gap: 6 }}>
+                  style={{ flex: 1, padding: "10px 6px", background: inputMode === m.id ? (m.id === "photo" ? `${C.accent}18` : `${C.green}15`) : C.up, border: `1px solid ${inputMode === m.id ? (m.id === "photo" ? C.accent : C.green) : C.border}`, borderRadius: 12, color: inputMode === m.id ? (m.id === "photo" ? C.accentInk : C.green) : C.muted, fontSize: 12, cursor: "pointer", fontFamily:"var(--font-text)", display: "flex", alignItems: "center", justifyContent: "center", gap: 6 }}>
                   {m.label}
                 </button>
               ))}
@@ -2870,11 +2877,11 @@ function MealLogModal({ onSave, onClose, existingLog }) {
 
             {/* Meal name */}
             <div style={{ marginBottom: 14 }}>
-              <div style={{ fontSize: 11, letterSpacing: 1, textTransform: "uppercase", color: C.muted, marginBottom: 8 }}>Meal Type</div>
+              <div style={{ fontSize:12, color: C.muted, marginBottom: 8 }}>Meal Type</div>
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
                 {["Breakfast", "Lunch", "Dinner", "Snack"].map(opt => (
                   <button key={opt} onClick={() => setMealName(mealName === opt ? "" : opt)}
-                    style={{ padding: "12px 8px", background: mealName === opt ? "var(--brutal)" : "var(--card)", border: `2px solid var(--brutal)`, borderRadius: 6, boxShadow: mealName === opt ? "none" : `3px 3px 0 var(--brutal)`, cursor: "pointer", fontFamily: "'Bebas Neue',sans-serif", fontSize: 14, letterSpacing: 1.5, color: mealName === opt ? "var(--card)" : "var(--brutal)", transition: "all .12s", transform: mealName === opt ? "translate(2px,2px)" : "" }}>
+                    style={{ padding: "12px 8px", background: mealName === opt ? "var(--brutal)" : "var(--card)", border: `1px solid var(--border)`, borderRadius: 10, boxShadow: mealName === opt ? "none" : "var(--shadow-1)", cursor: "pointer", fontFamily:"var(--font-display)", fontWeight:700, fontSize: 14, color: mealName === opt ? "var(--card)" : "var(--brutal)", transition: "all .12s", transform: mealName === opt ? "translate(2px,2px)" : "" }}>
                     {opt}
                   </button>
                 ))}
@@ -2884,15 +2891,15 @@ function MealLogModal({ onSave, onClose, existingLog }) {
             {/* Quick refs */}
             {inputMode === "quick" && (
               <div style={{ marginBottom: 14 }}>
-                <div style={{ fontSize: 11, letterSpacing: 1, textTransform: "uppercase", color: C.muted, marginBottom: 8 }}>Common Portions — tap to add</div>
+                <div style={{ fontSize:12, color: C.muted, marginBottom: 8 }}>Common Portions — tap to add</div>
                 <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
                   {QUICK_REFS.map(ref => (
                     <button key={ref.label} onClick={() => addQuickRef(ref)}
-                      style={{ padding: "10px 12px", background: C.up, border: `1px solid ${C.border}`, borderRadius: 10, cursor: "pointer", textAlign: "left", transition: "border-color .2s" }}
+                      style={{ padding: "10px 12px", background: C.up, border: `1px solid ${C.border}`, borderRadius: 12, cursor: "pointer", textAlign: "left", transition: "border-color .2s" }}
                       onMouseOver={e => e.currentTarget.style.borderColor = C.green}
                       onMouseOut={e => e.currentTarget.style.borderColor = C.border}>
                       <div style={{ fontSize: 12, fontWeight: 600, color: C.text }}>{ref.label}</div>
-                      <div style={{ fontSize: 11, color: C.muted, marginTop: 2 }}>{ref.food} · {ref.qty}{ref.unit}</div>
+                      <div style={{ fontSize:12, color: C.muted, marginTop: 2 }}>{ref.food} · {ref.qty}{ref.unit}</div>
                     </button>
                   ))}
                 </div>
@@ -2913,7 +2920,7 @@ function MealLogModal({ onSave, onClose, existingLog }) {
                   <button
                     type="button"
                     onClick={() => photoInputRef.current?.click()}
-                    style={{ width: "100%", background: C.up, border: `2px dashed ${C.border}`, borderRadius: 14, padding: "44px 20px", textAlign: "center", cursor: "pointer", transition: "border-color .2s" }}
+                    style={{ width: "100%", background: C.up, border: `2px dashed ${C.border}`, borderRadius: 16, padding: "44px 20px", textAlign: "center", cursor: "pointer", transition: "border-color .2s" }}
                     onMouseOver={e => e.currentTarget.style.borderColor = C.accent}
                     onMouseOut={e => e.currentTarget.style.borderColor = C.border}>
                     <div style={{ fontSize: 44, marginBottom: 10, lineHeight: 1 }}>📷</div>
@@ -2922,7 +2929,7 @@ function MealLogModal({ onSave, onClose, existingLog }) {
                   </button>
                 ) : (
                   <div>
-                    <div style={{ position: "relative", borderRadius: 14, overflow: "hidden", marginBottom: 12 }}>
+                    <div style={{ position: "relative", borderRadius: 16, overflow: "hidden", marginBottom: 12 }}>
                       <img src={photoPreview} alt="Food" style={{ width: "100%", maxHeight: 260, objectFit: "cover", display: "block" }}/>
                       <button
                         onClick={() => { setPhotoPreview(null); setPhotoBase64(null); }}
@@ -2942,29 +2949,29 @@ function MealLogModal({ onSave, onClose, existingLog }) {
             {inputMode !== "photo" && (
               <>
                 <div style={{ marginBottom: 6 }}>
-                  <div style={{ fontSize: 11, letterSpacing: 1, textTransform: "uppercase", color: C.muted, marginBottom: 6 }}>
+                  <div style={{ fontSize:12, color: C.muted, marginBottom: 6 }}>
                     {inputMode === "free" ? "What did you eat? (be as specific as possible)" : "Your meal (edit as needed)"}
                   </div>
                   <textarea value={rawInput} onChange={e => setRawInput(e.target.value)}
                     placeholder={"Examples:\n• 8oz chicken breast, 1.5 cups white rice, 1 tbsp olive oil\n• Chipotle bowl with chicken, rice, black beans, cheese, salsa\n• 2 scoops whey, 1 banana, handful of oats\n• About 6 oz salmon, sweet potato medium"}
-                    style={{ width: "100%", background: C.up, border: `1px solid ${rawInput ? C.green : C.border}`, borderRadius: 10, padding: "14px", color: C.text, fontSize: 14, fontFamily: "'DM Sans',sans-serif", outline: "none", resize: "none", height: 130, lineHeight: 1.5, transition: "border-color .2s" }} />
+                    style={{ width: "100%", background: C.up, border: `1px solid ${rawInput ? C.green : C.border}`, borderRadius: 12, padding: "14px", color: C.text, fontSize: 14, fontFamily:"var(--font-text)", outline: "none", resize: "none", height: 130, lineHeight: 1.5, transition: "border-color .2s" }} />
                 </div>
-                <div style={{ fontSize: 11, color: C.muted, marginBottom: 16 }}>
+                <div style={{ fontSize:12, color: C.muted, marginBottom: 16 }}>
                   Include amounts: "8oz", "200g", "1 cup", "2 tablespoons", "1 medium", "handful"
                 </div>
               </>
             )}
 
-            {error && <div style={{ padding: "10px 14px", background: `${C.red}12`, border: `1px solid ${C.red}30`, borderRadius: 8, fontSize: 12, color: C.red, marginBottom: 14 }}>{error}</div>}
+            {error && <div style={{ padding: "10px 14px", background: `${C.red}12`, border: `1px solid ${C.red}30`, borderRadius: 12, fontSize: 12, color: C.red, marginBottom: 14 }}>{error}</div>}
 
             {inputMode === "photo" ? (
               <button onClick={handlePhotoAnalyze} disabled={!photoBase64}
-                style={{ width: "100%", padding: 15, background: photoBase64 ? C.accent : C.border, color: photoBase64 ? "#080A0C" : C.muted, border: "none", borderRadius: 12, fontFamily: "'Bebas Neue',sans-serif", fontSize: 17, letterSpacing: 2, cursor: photoBase64 ? "pointer" : "not-allowed", transition: "all .2s" }}>
-                {photoBase64 ? "SCAN PHOTO WITH AI ▶" : "SELECT A PHOTO FIRST"}
+                style={{ width: "100%", padding: 15, background: photoBase64 ? C.accent : C.border, color: photoBase64 ? "#080A0C" : C.muted, border: "none", borderRadius: 12, fontFamily:"var(--font-display)", fontWeight:700, fontSize: 17, cursor: photoBase64 ? "pointer" : "not-allowed", transition: "all .2s" }}>
+                {photoBase64 ? "Scan photo with AI" : "Select a photo first"}
               </button>
             ) : (
               <button onClick={handleParse} disabled={!rawInput.trim()}
-                style={{ width: "100%", padding: 15, background: rawInput.trim() ? C.green : C.border, color: "#080A0C", border: "none", borderRadius: 12, fontFamily: "'Bebas Neue',sans-serif", fontSize: 17, letterSpacing: 2, cursor: rawInput.trim() ? "pointer" : "not-allowed", transition: "all .2s" }}>
+                style={{ width: "100%", padding: 15, background: rawInput.trim() ? C.green : C.border, color: "#080A0C", border: "none", borderRadius: 12, fontFamily:"var(--font-display)", fontWeight:700, fontSize: 17, cursor: rawInput.trim() ? "pointer" : "not-allowed", transition: "all .2s" }}>
                 ANALYZE WITH AI ▶
               </button>
             )}
@@ -2977,7 +2984,7 @@ function MealLogModal({ onSave, onClose, existingLog }) {
             <div style={{ width: 40, height: 40, borderRadius: "50%", background: C.green, display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 20px", animation: "pulse 1.5s infinite" }}>
               <svg viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{width:20,height:20}}><path d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
             </div>
-            <div style={{ fontFamily: "'Bebas Neue',sans-serif", fontSize: 22, letterSpacing: 2, color: C.green, marginBottom: 8 }}>PARSING YOUR MEAL</div>
+            <div style={{ fontFamily:"var(--font-display)", fontWeight:700, fontSize: 22, color: C.green, marginBottom: 8 }}>Parsing your meal</div>
             <div style={{ fontSize: 13, color: C.muted, lineHeight: 1.6 }}>AI is reading your food log and calculating macros...</div>
             <div style={{ display: "flex", justifyContent: "center", gap: 6, marginTop: 24 }}>
               {[0, 1, 2].map(i => <div key={i} style={{ width: 8, height: 8, borderRadius: "50%", background: C.green, animation: `typingBounce 1.2s ease infinite`, animationDelay: `${i * 0.2}s` }} />)}
@@ -2989,27 +2996,27 @@ function MealLogModal({ onSave, onClose, existingLog }) {
         {step === "review" && parsed && (
           <div style={{ padding: "20px 24px" }}>
             {/* Confidence badge */}
-            <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 16, padding: "10px 14px", background: `${confidenceColor[parsed.confidence] || C.accent}10`, border: `1px solid ${confidenceColor[parsed.confidence] || C.accent}30`, borderRadius: 10 }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 16, padding: "10px 14px", background: `${confidenceColor[parsed.confidence] || C.accent}10`, border: `1px solid ${confidenceColor[parsed.confidence] || C.accent}30`, borderRadius: 12 }}>
               <span style={{ width: 10, height: 10, borderRadius: "50%", background: confidenceColor[parsed.confidence] || C.accent, display: "inline-block", flexShrink: 0 }}/>
               <div>
-                <div style={{ fontSize: 11, letterSpacing: 1, textTransform: "uppercase", color: confidenceColor[parsed.confidence] || C.accentInk }}>AI Confidence: {parsed.confidence}</div>
+                <div style={{ fontSize:12, color: confidenceColor[parsed.confidence] || C.accentInk }}>AI Confidence: {parsed.confidence}</div>
                 {parsed.notes && <div style={{ fontSize: 12, color: C.faint, marginTop: 2 }}>{parsed.notes}</div>}
               </div>
             </div>
 
             {/* Macro totals */}
-            <div style={{ background: C.up, borderRadius: 14, padding: "16px", marginBottom: 16 }}>
-              <div style={{ fontSize: 11, letterSpacing: 2, textTransform: "uppercase", color: C.muted, marginBottom: 10 }}>Meal Totals</div>
+            <div style={{ background: C.up, borderRadius: 16, padding: "16px", marginBottom: 16 }}>
+              <div style={{ fontSize:12, color: C.muted, marginBottom: 10 }}>Meal Totals</div>
               <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 8, textAlign: "center" }}>
                 {[
-                  { label: "KCAL", val: Math.round(parsed.totals.calories), color: C.text },
-                  { label: "PROTEIN", val: `${Math.round(parsed.totals.protein_g)}g`, color: C.accentInk },
-                  { label: "CARBS", val: `${Math.round(parsed.totals.carbs_g)}g`, color: C.green },
-                  { label: "FAT", val: `${Math.round(parsed.totals.fat_g)}g`, color: C.blue },
+                  { label: "kcal", val: Math.round(parsed.totals.calories), color: C.text },
+                  { label: "Protein", val: `${Math.round(parsed.totals.protein_g)}g`, color: C.accentInk },
+                  { label: "Carbs", val: `${Math.round(parsed.totals.carbs_g)}g`, color: C.green },
+                  { label: "Fat", val: `${Math.round(parsed.totals.fat_g)}g`, color: C.blue },
                 ].map(m => (
                   <div key={m.label}>
-                    <div style={{ fontFamily: "'Bebas Neue',sans-serif", fontSize: 22, color: m.color, lineHeight: 1 }}>{m.val}</div>
-                    <div style={{ fontSize: 11, color: C.muted, letterSpacing: 1, marginTop: 2 }}>{m.label}</div>
+                    <div style={{ fontFamily:"var(--font-display)", fontWeight:700, fontSize: 22, color: m.color, lineHeight: 1 }}>{m.val}</div>
+                    <div style={{ fontSize:12, color: C.muted, marginTop: 2 }}>{m.label}</div>
                   </div>
                 ))}
               </div>
@@ -3017,16 +3024,16 @@ function MealLogModal({ onSave, onClose, existingLog }) {
 
             {/* Item breakdown */}
             <div style={{ marginBottom: 16 }}>
-              <div style={{ fontSize: 11, letterSpacing: 2, textTransform: "uppercase", color: C.muted, marginBottom: 8 }}>Item Breakdown</div>
+              <div style={{ fontSize:12, color: C.muted, marginBottom: 8 }}>Item Breakdown</div>
               {parsed.items.map((item, i) => (
                 <div key={i} style={{ padding: "10px 0", borderBottom: `1px solid ${C.border}`, display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
                   <div>
                     <div style={{ fontSize: 13, fontWeight: 600, color: C.text }}>{item.food}</div>
-                    <div style={{ fontSize: 11, color: C.muted, marginTop: 2 }}>{item.qty} {item.unit} · {item.qty_g}g</div>
+                    <div style={{ fontSize:12, color: C.muted, marginTop: 2 }}>{item.qty} {item.unit} · {item.qty_g}g</div>
                   </div>
                   <div style={{ textAlign: "right", flexShrink: 0 }}>
-                    <div style={{ fontFamily: "'DM Mono',monospace", fontSize: 12, color: C.text }}>{Math.round(item.calories)} kcal</div>
-                    <div style={{ fontSize: 11, color: C.muted, marginTop: 2 }}>
+                    <div style={{ fontFamily:"var(--font-num)", fontVariantNumeric:"tabular-nums", fontSize: 12, color: C.text }}>{Math.round(item.calories)} kcal</div>
+                    <div style={{ fontSize:12, color: C.muted, marginTop: 2 }}>
                       <span style={{ color: C.accentInk }}>P:{Math.round(item.protein_g)}</span>
                       {" · "}
                       <span style={{ color: C.green }}>C:{Math.round(item.carbs_g)}</span>
@@ -3040,13 +3047,13 @@ function MealLogModal({ onSave, onClose, existingLog }) {
 
             {/* Edit raw input */}
             <div style={{ marginBottom: 16 }}>
-              <button onClick={() => setStep("input")} style={{ width: "100%", padding: "10px", background: "transparent", border: `1px solid ${C.border}`, borderRadius: 10, color: C.muted, fontSize: 12, cursor: "pointer" }}>
+              <button onClick={() => setStep("input")} style={{ width: "100%", padding: "10px", background: "transparent", border: `1px solid ${C.border}`, borderRadius: 12, color: C.muted, fontSize: 12, cursor: "pointer" }}>
                 ← Edit Meal Input
               </button>
             </div>
 
             <button onClick={handleSave}
-              style={{ width: "100%", padding: 15, background: C.green, color: "#080A0C", border: "none", borderRadius: 12, fontFamily: "'Bebas Neue',sans-serif", fontSize: 17, letterSpacing: 2, cursor: "pointer" }}>
+              style={{ width: "100%", padding: 15, background: C.green, color: "#080A0C", border: "none", borderRadius: 12, fontFamily:"var(--font-display)", fontWeight:700, fontSize: 17, cursor: "pointer" }}>
               SAVE MEAL ✓
             </button>
           </div>
@@ -3065,14 +3072,14 @@ function MacroProgressBar({ label, consumed, target, color }) {
   return (
     <div style={{ marginBottom: 10 }}>
       <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 5 }}>
-        <span style={{ fontSize: 11, color: C.muted, letterSpacing: 1, textTransform: "uppercase" }}>{label}</span>
-        <span style={{ fontFamily: "'DM Mono',monospace", fontSize: 11, color: over ? C.red : C.faint }}>
+        <span style={{ fontSize:12, color: C.muted, }}>{label}</span>
+        <span style={{ fontFamily:"var(--font-num)", fontVariantNumeric:"tabular-nums", fontSize:12, color: over ? C.red : C.faint }}>
           {Math.round(consumed)}g / {target}g
           {over && <span style={{ color: C.red, marginLeft: 4 }}>↑</span>}
         </span>
       </div>
-      <div style={{ height: 6, background: C.up, borderRadius: 3, overflow: "hidden" }}>
-        <div style={{ height: "100%", width: `${displayPct * 100}%`, background: over ? C.red : color, borderRadius: 3, transition: "width .8s ease" }} />
+      <div style={{ height: 6, background: C.up, borderRadius: 10, overflow: "hidden" }}>
+        <div style={{ height: "100%", width: `${displayPct * 100}%`, background: over ? C.red : color, borderRadius: 10, transition: "width .8s ease" }} />
       </div>
     </div>
   );
@@ -3213,7 +3220,7 @@ function NutritionScreen({ user }) {
   ];
 
   if (!loaded) return (
-    <div className="loading"><div style={{ fontFamily: "'Bebas Neue',sans-serif", fontSize: 18, letterSpacing: 2, color: C.muted, animation: "pulse 2s infinite" }}>LOADING NUTRITION...</div></div>
+    <div className="loading"><div style={{ fontFamily:"var(--font-display)", fontWeight:700, fontSize: 18, color: C.muted, animation: "pulse 2s infinite" }}>Loading nutrition...</div></div>
   );
 
   return (
@@ -3222,13 +3229,13 @@ function NutritionScreen({ user }) {
       <div className="sh">
         <div>
           <div className="sh-label">Today's</div>
-          <div className="sh-title">NUTRITION</div>
+          <div className="sh-title">Nutrition</div>
         </div>
         <div style={{ display: "flex", gap: 8 }}>
           <button onClick={() => { setTempTargets({ ...targets }); setShowTargetEditor(!showTargetEditor); }}
-            style={{ display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:3,padding:"6px 10px",borderRadius:10,background:showTargetEditor?`${C.accent}18`:C.surface,border:`1px solid ${showTargetEditor?C.accent:C.border}`,color:showTargetEditor?C.accentInk:C.muted,cursor:"pointer",transition:"all .2s",minWidth:48 }}>
+            style={{ display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:3,padding:"6px 10px",borderRadius:12,background:showTargetEditor?`${C.accent}18`:C.surface,border:`1px solid ${showTargetEditor?C.accent:C.border}`,color:showTargetEditor?C.accentInk:C.muted,cursor:"pointer",transition:"all .2s",minWidth:48 }}>
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" style={{width:14,height:14}}><circle cx="12" cy="12" r="3"/><path d="M12 1v4M12 19v4M4.22 4.22l2.83 2.83M16.95 16.95l2.83 2.83M1 12h4M19 12h4M4.22 19.78l2.83-2.83M16.95 7.05l2.83-2.83"/></svg>
-            <span style={{fontSize:11,fontWeight:600,letterSpacing:.5,textTransform:"uppercase"}}>Targets</span>
+            <span style={{fontSize:12,fontWeight:600,}}>Targets</span>
           </button>
         </div>
       </div>
@@ -3236,7 +3243,7 @@ function NutritionScreen({ user }) {
       {/* TARGET EDITOR */}
       {showTargetEditor && tempTargets && (
         <div className="nut-card" style={{animation:"slideUp .3s ease"}}>
-          <div style={{ fontSize: 11, letterSpacing: 2, textTransform: "uppercase", color: C.accentInk, marginBottom: 14 }}>
+          <div style={{ fontSize:12, color: C.accentInk, marginBottom: 14 }}>
             ● Daily Macro Targets
             {targets.source && <span style={{ color: C.muted, marginLeft: 8 }}>auto-set from {targets.source}</span>}
           </div>
@@ -3248,24 +3255,24 @@ function NutritionScreen({ user }) {
               { key: "f", label: "Fat", unit: "g" },
             ].map(t => (
               <div key={t.key}>
-                <div style={{ fontSize: 11, color: C.muted, letterSpacing: 1, textTransform: "uppercase", marginBottom: 4 }}>{t.label}</div>
+                <div style={{ fontSize:12, color: C.muted, marginBottom: 4 }}>{t.label}</div>
                 <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
                   <input type="number" value={tempTargets[t.key]} onChange={e => setTempTargets(prev => ({ ...prev, [t.key]: parseInt(e.target.value) || 0 }))}
-                    style={{ flex: 1, background: C.up, border: `1px solid ${C.border}`, borderRadius: 8, padding: "10px 10px", color: C.text, fontSize: 14, fontFamily: "'DM Mono',monospace", outline: "none" }} />
-                  <span style={{ fontSize: 11, color: C.muted, flexShrink: 0 }}>{t.unit}</span>
+                    style={{ flex: 1, background: C.up, border: `1px solid ${C.border}`, borderRadius: 12, padding: "10px 10px", color: C.text, fontSize: 14, fontFamily:"var(--font-num)", fontVariantNumeric:"tabular-nums", outline: "none" }} />
+                  <span style={{ fontSize:12, color: C.muted, flexShrink: 0 }}>{t.unit}</span>
                 </div>
               </div>
             ))}
           </div>
-          <CubeButton onClick={handleSaveTargets} style={{width:"100%"}}>SAVE TARGETS</CubeButton>
+          <CubeButton onClick={handleSaveTargets} style={{width:"100%"}}>Save targets</CubeButton>
         </div>
       )}
 
       {/* MODE TOGGLE */}
       <div className="nut-mode-grid">
         {[
-          { id: "track", tag: "LOG", label: "Track Mode", desc: "Log your own meals" },
-          { id: "plan",  tag: "PLAN", label: "Meal Plan",  desc: "Follow app plan" },
+          { id: "track", tag: "Log", label: "Track Mode", desc: "Log your own meals" },
+          { id: "plan",  tag: "Plan", label: "Meal Plan",  desc: "Follow app plan" },
         ].map(m => (
           <div key={m.id} onClick={() => setMode(m.id)} className={`nut-mode-card${mode===m.id?" active":""}`}>
             <div className="nut-mode-tag">{m.tag}</div>
@@ -3278,15 +3285,14 @@ function NutritionScreen({ user }) {
       {/* DAILY PROGRESS RING + SUMMARY */}
       <div className="nut-card">
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 14 }}>
-          <div style={{ fontSize: 11, letterSpacing: 2, textTransform: "uppercase", color: C.muted }}>● Today's Intake vs Target</div>
+          <div style={{ fontSize:12, color: C.muted }}>● Today's Intake vs Target</div>
           {targets.cyclingActive && (
-            <div style={{ display: "flex", gap: 4, background: C.up, borderRadius: 8, padding: 3 }}>
-              {[{id:"train",label:"TRAIN"},{id:"rest",label:"REST"}].map(opt => {
+            <div style={{ display: "flex", gap: 4, background: C.up, borderRadius: 12, padding: 3 }}>
+              {[{id:"train",label:"Train"},{id:"rest",label:"Rest"}].map(opt => {
                 const active = opt.id === "train" ? isTrainDay : !isTrainDay;
                 return (
                   <button key={opt.id} onClick={() => setDayTypeOverride(dayTypeOverride === opt.id ? null : opt.id)}
-                    style={{ padding:"4px 10px", borderRadius:6, border:"none", cursor:"pointer", fontSize:11, fontFamily:"'Bebas Neue',sans-serif", letterSpacing:1.5,
-                      background: active ? C.accent : "transparent",
+                    style={{ padding:"4px 10px", borderRadius:10, border:"none", cursor:"pointer", fontSize:12, fontFamily:"var(--font-display)", fontWeight:700, background: active ? C.accent : "transparent",
                       color: active ? "#080A0C" : C.muted,
                       transition:"all .15s" }}>
                     {opt.label}
@@ -3307,9 +3313,9 @@ function NutritionScreen({ user }) {
                 strokeDasharray={`${calPct * 2 * Math.PI * 38} ${2 * Math.PI * 38}`}
                 strokeLinecap="round" strokeDashoffset={2 * Math.PI * 38 * 0.25}
                 style={{ transition: "stroke-dasharray 1s ease", filter: `drop-shadow(0 0 6px ${calPct >= 1 ? C.red : C.green}80)` }} />
-              <text x={48} y={44} textAnchor="middle" fill={C.text} fontSize="13" fontFamily="Bebas Neue,sans-serif" letterSpacing="1">{Math.round(todayTotals.calories)}</text>
-              <text x={48} y={57} textAnchor="middle" fill={C.muted} fontSize="8" fontFamily="DM Sans,sans-serif">/ {activeTargets.cal}</text>
-              <text x={48} y={68} textAnchor="middle" fill={C.muted} fontSize="7" fontFamily="DM Sans,sans-serif">KCAL</text>
+              <text x={48} y={44} textAnchor="middle" fill={C.text} fontSize="13" fontFamily="system-ui,-apple-system,sans-serif" fontWeight="700">{Math.round(todayTotals.calories)}</text>
+              <text x={48} y={57} textAnchor="middle" fill={C.muted} fontSize="8" fontFamily="system-ui,-apple-system,sans-serif">/ {activeTargets.cal}</text>
+              <text x={48} y={68} textAnchor="middle" fill={C.muted} fontSize="7" fontFamily="system-ui,-apple-system,sans-serif">kcal</text>
             </svg>
           </div>
           {/* Macro bars */}
@@ -3323,15 +3329,15 @@ function NutritionScreen({ user }) {
         {/* Remaining macros */}
         <div style={{ display: "grid", gridTemplateColumns: "repeat(4,1fr)", gap: 8, paddingTop: 12, borderTop: `1px solid ${C.border}` }}>
           {[
-            { label: "LEFT", val: Math.max(0, Math.round(activeTargets.cal - todayTotals.calories)), unit: "kcal", color: C.text },
-            { label: "PROTEIN", val: Math.max(0, Math.round(activeTargets.p - todayTotals.protein_g)), unit: "g", color: C.accentInk },
-            { label: "CARBS", val: Math.max(0, Math.round(activeTargets.c - todayTotals.carbs_g)), unit: "g", color: C.green },
-            { label: "FAT", val: Math.max(0, Math.round(activeTargets.f - todayTotals.fat_g)), unit: "g", color: C.blue },
+            { label: "Left", val: Math.max(0, Math.round(activeTargets.cal - todayTotals.calories)), unit: "kcal", color: C.text },
+            { label: "Protein", val: Math.max(0, Math.round(activeTargets.p - todayTotals.protein_g)), unit: "g", color: C.accentInk },
+            { label: "Carbs", val: Math.max(0, Math.round(activeTargets.c - todayTotals.carbs_g)), unit: "g", color: C.green },
+            { label: "Fat", val: Math.max(0, Math.round(activeTargets.f - todayTotals.fat_g)), unit: "g", color: C.blue },
           ].map(r => (
             <div key={r.label} style={{ textAlign: "center" }}>
-              <div style={{ fontFamily: "'Bebas Neue',sans-serif", fontSize: 18, color: r.val === 0 ? C.muted : r.color, lineHeight: 1 }}>{r.val}</div>
-              <div style={{ fontSize: 11, color: C.muted, letterSpacing: 1, textTransform: "uppercase", marginTop: 2 }}>{r.unit} rem</div>
-              <div style={{ fontSize: 11, color: C.muted }}>{r.label}</div>
+              <div style={{ fontFamily:"var(--font-display)", fontWeight:700, fontSize: 18, color: r.val === 0 ? C.muted : r.color, lineHeight: 1 }}>{r.val}</div>
+              <div style={{ fontSize:12, color: C.muted, marginTop: 2 }}>{r.unit} rem</div>
+              <div style={{ fontSize:12, color: C.muted }}>{r.label}</div>
             </div>
           ))}
         </div>
@@ -3341,7 +3347,7 @@ function NutritionScreen({ user }) {
       {feedback.length > 0 && (
         <div style={{ margin: "0 24px 14px" }}>
           {feedback.map((fb, i) => (
-            <div key={i} style={{ display:"flex",gap:10,padding:"12px 16px",background:"var(--card)",border:`2px solid ${fbColors[fb.type]||"var(--brutal)"}`,borderRadius:10,boxShadow:`3px 3px 0 ${fbColors[fb.type]||"var(--brutal)"}`,marginBottom:8,alignItems:"flex-start" }}>
+            <div key={i} style={{ display:"flex",gap:10,padding:"12px 16px",background:"var(--card)",border:`1px solid ${fbColors[fb.type]||"var(--border)"}`,borderRadius:12,boxShadow:"var(--shadow-1)",marginBottom:8,alignItems:"flex-start" }}>
               <span style={{ fontSize:13,fontWeight:700,flexShrink:0,color:fbColors[fb.type]||C.accentInk,lineHeight:1.2 }}>{fbIcons[fb.type]||"·"}</span>
               <span style={{ fontSize:12,color:"var(--muted)",lineHeight:1.5 }}>{fb.text}</span>
             </div>
@@ -3353,8 +3359,8 @@ function NutritionScreen({ user }) {
       {mode === "track" && (
         <>
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0 24px", marginBottom: 12 }}>
-            <div className="stitle" style={{ padding: 0, margin: 0 }}>TODAY'S MEALS</div>
-            <CubeButton small onClick={() => { setEditingLog(null); setShowLog(true); }}>+ LOG MEAL</CubeButton>
+            <div className="stitle" style={{ padding: 0, margin: 0 }}>Today's meals</div>
+            <CubeButton small onClick={() => { setEditingLog(null); setShowLog(true); }}>+ Log meal</CubeButton>
           </div>
 
           {/* RECENT MEALS QUICK-ADD */}
@@ -3369,7 +3375,7 @@ function NutritionScreen({ user }) {
             if (recentMeals.length === 0) return null;
             return (
               <div style={{ padding: "0 24px", marginBottom: 14 }}>
-                <div style={{ fontSize: 11, letterSpacing: 1.5, textTransform: "uppercase", color: C.muted, marginBottom: 8 }}>Recent — tap to re-log</div>
+                <div style={{ fontSize:12, color: C.muted, marginBottom: 8 }}>Recent — tap to re-log</div>
                 <div style={{ display: "flex", gap: 8, overflowX: "auto", paddingBottom: 2 }}>
                   {recentMeals.map(m => (
                     <button key={m.id} onClick={async () => {
@@ -3386,7 +3392,7 @@ function NutritionScreen({ user }) {
                       onMouseOver={e => e.currentTarget.style.borderColor = C.green}
                       onMouseOut={e => e.currentTarget.style.borderColor = C.border}>
                       <div style={{ fontSize: 12, fontWeight: 600, color: C.text, whiteSpace: "nowrap" }}>{m.mealName}</div>
-                      <div style={{ fontSize: 11, color: C.muted, marginTop: 1 }}>{Math.round(m.totals?.calories || 0)} kcal</div>
+                      <div style={{ fontSize:12, color: C.muted, marginTop: 1 }}>{Math.round(m.totals?.calories || 0)} kcal</div>
                     </button>
                   ))}
                 </div>
@@ -3396,10 +3402,10 @@ function NutritionScreen({ user }) {
 
           {todayLogs.length === 0 ? (
             <div className="nut-card" style={{textAlign:"center",padding:"40px 20px"}}>
-              <div style={{ width:48,height:48,borderRadius:8,background:"var(--up)",border:"2px solid var(--brutal)",display:"flex",alignItems:"center",justifyContent:"center",margin:"0 auto 16px",color:"var(--muted)" }}><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" style={{width:24,height:24}}><path d="M3 11l19-9-9 19-2-8-8-2z"/></svg></div>
-              <div style={{ fontFamily:"'Bebas Neue',sans-serif",fontSize:22,letterSpacing:2,color:"var(--text)",marginBottom:8 }}>NO MEALS LOGGED YET</div>
+              <div style={{ width:48,height:48,borderRadius:12,background:"var(--up)",border:"1px solid var(--border)",display:"flex",alignItems:"center",justifyContent:"center",margin:"0 auto 16px",color:"var(--muted)" }}><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" style={{width:24,height:24}}><path d="M3 11l19-9-9 19-2-8-8-2z"/></svg></div>
+              <div style={{ fontFamily:"var(--font-display)", fontWeight:700,fontSize:22,color:"var(--text)",marginBottom:8 }}>No meals logged yet</div>
               <div style={{ fontSize:13,color:"var(--muted)",lineHeight:1.6,marginBottom:20 }}>Log your first meal and AI will calculate your macros automatically. Be as specific or as general as you want.</div>
-              <CubeButton onClick={() => { setEditingLog(null); setShowLog(true); }}>LOG FIRST MEAL ▶</CubeButton>
+              <CubeButton onClick={() => { setEditingLog(null); setShowLog(true); }}>Log first meal</CubeButton>
             </div>
           ) : (
             todayLogs.map((log, i) => (
@@ -3413,9 +3419,9 @@ function NutritionScreen({ user }) {
                     <div className="mc-kcal">{Math.round(log.totals?.calories || 0)} kcal</div>
                     <div style={{ display: "flex", gap: 6, marginTop: 4 }}>
                       <button onClick={() => { setEditingLog(log); setShowLog(true); }}
-                        style={{ fontSize: 11, padding: "2px 8px", background: `${C.accent}15`, border: `1px solid ${C.accent}30`, borderRadius: 4, color: C.accentInk, cursor: "pointer" }}>Edit</button>
+                        style={{ fontSize:12, padding: "2px 8px", background: `${C.accent}15`, border: `1px solid ${C.accent}30`, borderRadius: 10, color: C.accentInk, cursor: "pointer" }}>Edit</button>
                       <button onClick={() => setPendingDelete(log.id)}
-                        style={{ fontSize: 11, padding: "2px 8px", background: `${C.red}15`, border: `1px solid ${C.red}30`, borderRadius: 4, color: C.red, cursor: "pointer" }}>Remove</button>
+                        style={{ fontSize:12, padding: "2px 8px", background: `${C.red}15`, border: `1px solid ${C.red}30`, borderRadius: 10, color: C.red, cursor: "pointer" }}>Remove</button>
                     </div>
                   </div>
                 </div>
@@ -3429,22 +3435,22 @@ function NutritionScreen({ user }) {
                     { l: "C", v: Math.round(log.totals?.carbs_g || 0), cl: C.green },
                     { l: "F", v: Math.round(log.totals?.fat_g || 0), cl: C.blue },
                   ].map(m => (
-                    <span key={m.l} style={{ fontSize: 11, fontFamily: "'DM Mono',monospace", color: m.cl, background: `${m.cl}15`, padding: "2px 8px", borderRadius: 4 }}>{m.l}: {m.v}g</span>
+                    <span key={m.l} style={{ fontSize:12, fontFamily:"var(--font-num)", fontVariantNumeric:"tabular-nums", color: m.cl, background: `${m.cl}15`, padding: "2px 8px", borderRadius: 10 }}>{m.l}: {m.v}g</span>
                   ))}
                   {log.confidence && (
-                    <span style={{ fontSize: 11, color: confidenceColor[log.confidence] || C.muted, background: `${confidenceColor[log.confidence] || C.muted}12`, padding: "2px 8px", borderRadius: 4 }}>
+                    <span style={{ fontSize:12, color: confidenceColor[log.confidence] || C.muted, background: `${confidenceColor[log.confidence] || C.muted}12`, padding: "2px 8px", borderRadius: 10 }}>
                       {log.confidence} confidence
                     </span>
                   )}
                 </div>
                 {pendingDelete === log.id && (
-                  <div style={{ marginTop: 10, padding: "10px 12px", background: `${C.red}0D`, border: `1px solid ${C.red}30`, borderRadius: 8, display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10, animation: "slideUp .2s ease-out" }}>
+                  <div style={{ marginTop: 10, padding: "10px 12px", background: `${C.red}0D`, border: `1px solid ${C.red}30`, borderRadius: 12, display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10, animation: "slideUp .2s ease-out" }}>
                     <span style={{ fontSize: 12, color: C.faint }}>Remove <strong style={{ color: C.text }}>{log.mealName}</strong>?</span>
                     <div style={{ display: "flex", gap: 6, flexShrink: 0 }}>
                       <button onClick={() => setPendingDelete(null)}
-                        style={{ fontSize: 11, padding: "4px 10px", background: C.up, border: `1px solid ${C.border}`, borderRadius: 6, color: C.muted, cursor: "pointer" }}>Cancel</button>
+                        style={{ fontSize:12, padding: "4px 10px", background: C.up, border: `1px solid ${C.border}`, borderRadius: 10, color: C.muted, cursor: "pointer" }}>Cancel</button>
                       <button onClick={() => { handleDeleteMeal(log); setPendingDelete(null); }}
-                        style={{ fontSize: 11, padding: "4px 10px", background: C.red, border: "none", borderRadius: 6, color: "#FFF", cursor: "pointer", fontWeight: 600 }}>Remove</button>
+                        style={{ fontSize:12, padding: "4px 10px", background: C.red, border: "none", borderRadius: 10, color: "#FFF", cursor: "pointer", fontWeight: 600 }}>Remove</button>
                     </div>
                   </div>
                 )}
@@ -3463,18 +3469,18 @@ function NutritionScreen({ user }) {
             const totW = last7.reduce((a, l) => ({ p: a.p + (l.totals?.protein_g || 0), c: a.c + (l.totals?.carbs_g || 0), f: a.f + (l.totals?.fat_g || 0), cal: a.cal + (l.totals?.calories || 0) }), { p: 0, c: 0, f: 0, cal: 0 });
             return (
               <div className="nut-card" style={{marginTop:4}}>
-                <div style={{ fontSize: 11, letterSpacing: 2, textTransform: "uppercase", color: C.muted, marginBottom: 10 }}>7-Day Averages ({days} days logged)</div>
+                <div style={{ fontSize:12, color: C.muted, marginBottom: 10 }}>7-Day Averages ({days} days logged)</div>
                 <div style={{ display: "grid", gridTemplateColumns: "repeat(4,1fr)", gap: 8, textAlign: "center" }}>
                   {[
-                    { label: "KCAL", val: Math.round(totW.cal / days), color: C.text },
-                    { label: "PROTEIN", val: `${Math.round(totW.p / days)}g`, color: C.accentInk },
-                    { label: "CARBS", val: `${Math.round(totW.c / days)}g`, color: C.green },
-                    { label: "FAT", val: `${Math.round(totW.f / days)}g`, color: C.blue },
+                    { label: "kcal", val: Math.round(totW.cal / days), color: C.text },
+                    { label: "Protein", val: `${Math.round(totW.p / days)}g`, color: C.accentInk },
+                    { label: "Carbs", val: `${Math.round(totW.c / days)}g`, color: C.green },
+                    { label: "Fat", val: `${Math.round(totW.f / days)}g`, color: C.blue },
                   ].map(m => (
                     <div key={m.label}>
-                      <div style={{ fontFamily: "'Bebas Neue',sans-serif", fontSize: 18, color: m.color }}>{m.val}</div>
-                      <div style={{ fontSize: 11, color: C.muted, letterSpacing: 1 }}>{m.label}</div>
-                      <div style={{ fontSize: 11, color: C.muted }}>avg/day</div>
+                      <div style={{ fontFamily:"var(--font-display)", fontWeight:700, fontSize: 18, color: m.color }}>{m.val}</div>
+                      <div style={{ fontSize:12, color: C.muted, }}>{m.label}</div>
+                      <div style={{ fontSize:12, color: C.muted }}>avg/day</div>
                     </div>
                   ))}
                 </div>
@@ -3487,7 +3493,7 @@ function NutritionScreen({ user }) {
       {/* ─── PLAN MODE ─── */}
       {mode === "plan" && (
         <>
-          <div className="stitle">STRUCTURED MEAL PLAN</div>
+          <div className="stitle">Structured meal plan</div>
           <div className="nut-card" style={{fontSize:12,color:"var(--muted)"}}>
             This plan is pre-calculated to your macro targets. Switch to Track Mode to log your actual meals.
           </div>
@@ -3500,7 +3506,7 @@ function NutritionScreen({ user }) {
               <div className="mc-items">{meal.items}</div>
               <div style={{ display: "flex", gap: 6, marginTop: 8 }}>
                 {[{ l: "P", v: meal.p, cl: C.accent }, { l: "C", v: meal.c, cl: C.green }, { l: "F", v: meal.f, cl: C.blue }].map(m => (
-                  <span key={m.l} style={{ fontSize: 11, fontFamily: "'DM Mono',monospace", color: m.cl, background: `${m.cl}15`, padding: "2px 8px", borderRadius: 4 }}>{m.l}: {m.v}g</span>
+                  <span key={m.l} style={{ fontSize:12, fontFamily:"var(--font-num)", fontVariantNumeric:"tabular-nums", color: m.cl, background: `${m.cl}15`, padding: "2px 8px", borderRadius: 10 }}>{m.l}: {m.v}g</span>
                 ))}
               </div>
               <div className="pbar"><div className="pfill" style={{ width: `${(meal.cal / targets.cal) * 100}%`, background: i % 2 === 0 ? C.accent : C.green }} /></div>
@@ -3523,19 +3529,19 @@ function NutritionScreen({ user }) {
         <div style={{
           position:"fixed",bottom:80,left:16,right:16,
           background:C.surface,border:`1px solid ${C.border}`,
-          borderRadius:14,padding:"14px 18px",
+          borderRadius:16,padding:"14px 18px",
           display:"flex",alignItems:"center",justifyContent:"space-between",
           boxShadow:"0 8px 32px rgba(0,0,0,.22)",
           animation:"slideUp .22s ease-out",zIndex:200,
         }}>
           <div>
-            <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:15,letterSpacing:1,color:C.text}}>{deletedMeal.mealName} removed</div>
-            <div style={{fontSize:11,color:C.muted,marginTop:2}}>{Math.round(deletedMeal.totals?.calories||0)} kcal · {Math.round(deletedMeal.totals?.protein_g||0)}g protein</div>
+            <div style={{fontFamily:"var(--font-display)", fontWeight:700,fontSize:15,color:C.text}}>{deletedMeal.mealName} removed</div>
+            <div style={{fontSize:12,color:C.muted,marginTop:2}}>{Math.round(deletedMeal.totals?.calories||0)} kcal · {Math.round(deletedMeal.totals?.protein_g||0)}g protein</div>
           </div>
           <div style={{display:"flex",alignItems:"center",gap:10}}>
-            <div style={{width:28,height:28,borderRadius:"50%",border:`2px solid ${C.border}`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:11,fontWeight:700,color:C.muted}}>{deleteCountdown}</div>
+            <div style={{width:28,height:28,borderRadius:"50%",border:`1px solid ${C.border}`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:12,fontWeight:700,color:C.muted}}>{deleteCountdown}</div>
             <button onClick={handleUndoDeleteMeal}
-              style={{padding:"6px 16px",background:C.up,border:`1px solid ${C.border}`,borderRadius:8,color:C.text,fontSize:13,fontWeight:600,cursor:"pointer"}}>
+              style={{padding:"6px 16px",background:C.up,border:`1px solid ${C.border}`,borderRadius:12,color:C.text,fontSize:13,fontWeight:600,cursor:"pointer"}}>
               Undo
             </button>
           </div>
@@ -3632,13 +3638,13 @@ function PostPrepScreen({user}) {
   const rules = (protocol?.mode||mode)==="maintenance" ? rulesM : rulesR;
 
   if (!loaded) return (
-    <div className="loading"><div style={{textAlign:"center",fontFamily:"'Bebas Neue',sans-serif",fontSize:18,letterSpacing:2,color:C.muted,animation:"pulse 2s infinite"}}>LOADING YOUR PROTOCOL...</div></div>
+    <div className="loading"><div style={{textAlign:"center",fontFamily:"var(--font-display)", fontWeight:700,fontSize:18,color:C.muted,animation:"pulse 2s infinite"}}>Loading your protocol...</div></div>
   );
 
   return (
     <div className="screen">
       <div className="sh">
-        <div><div className="sh-label">Post-Show</div><div className="sh-title" style={{color:activeCfg.color}}>REBOUND PROTOCOL</div></div>
+        <div><div className="sh-label">Post-Show</div><div className="sh-title" style={{color:activeCfg.color}}>Rebound protocol</div></div>
       </div>
 
       {/* SAVED BANNER — shows when protocol exists and not editing */}
@@ -3649,7 +3655,7 @@ function PostPrepScreen({user}) {
             <div className="sb-title">{activeCfg.label}</div>
             <div className="sb-sub">Stage: {protocol.stageWeight} lbs · {protocol.stageCalories} kcal · {protocol.wks}wk prep</div>
           </div>
-          <button className="btn-edit" onClick={handleEdit}>↺ EDIT</button>
+          <button className="btn-edit" onClick={handleEdit}>↺ Edit</button>
         </div>
       )}
 
@@ -3657,29 +3663,29 @@ function PostPrepScreen({user}) {
       {editing && (
         <>
           <div className="pp-hero" style={{borderColor:`${cfg.color}35`}}>
-            <div className="pp-badge" style={{color:cfg.color}}>● APEX POST-PREP ENGINE</div>
+            <div className="pp-badge" style={{color:cfg.color}}>● APEX post-prep engine</div>
             <div className="pp-title">The <span style={{color:cfg.color}}>Smart</span> Rebound.<br/>Gain Without the Mess.</div>
             <div className="pp-sub">{cfg.heroSub}</div>
           </div>
 
           {/* MODE TOGGLE */}
           <div style={{margin:"0 24px 16px"}}>
-            <div style={{fontSize:11,letterSpacing:2,textTransform:"uppercase",color:C.muted,marginBottom:10}}>● Select Your Approach</div>
+            <div style={{fontSize:12,color:C.muted,marginBottom:10}}>● Select Your Approach</div>
             <div className="mode-grid">
               {Object.entries(MODES).map(([key,mc])=>(
                 <div key={key} className="mode-card" onClick={()=>handleModeSwitch(key)}
                   style={{borderColor:mode===key?mc.color:C.border,background:mode===key?`${mc.color}12`:C.surface}}>
                   {mode===key&&<div className="mode-check" style={{background:mc.color}}>✓</div>}
                   <div style={{width:8,height:8,borderRadius:"50%",background:mc.color,marginBottom:8}}/>
-                  <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:13,letterSpacing:1,color:mode===key?mc.color:C.text,marginBottom:4}}>{mc.label}</div>
-                  <div style={{fontSize:11,color:C.muted,lineHeight:1.4}}>{mc.tagline}</div>
+                  <div style={{fontFamily:"var(--font-display)", fontWeight:700,fontSize:13,color:mode===key?mc.color:C.text,marginBottom:4}}>{mc.label}</div>
+                  <div style={{fontSize:12,color:C.muted,lineHeight:1.4}}>{mc.tagline}</div>
                 </div>
               ))}
             </div>
             <div style={{background:C.surface,border:`1px solid ${C.border}`,borderRadius:12,padding:"12px 14px",marginTop:10}}>
-              <div style={{fontSize:11,letterSpacing:1,textTransform:"uppercase",color:cfg.color,marginBottom:8}}>Best For</div>
-              {cfg.best.map((b,i)=><div key={i} style={{display:"flex",gap:8,marginBottom:4}}><span style={{color:cfg.color,fontSize:11,flexShrink:0}}>▸</span><span style={{fontSize:12,color:C.faint,lineHeight:1.4}}>{b}</span></div>)}
-              <div style={{marginTop:10,paddingTop:8,borderTop:`1px solid ${C.border}`,fontSize:11,color:C.muted}}><span style={{color:C.accentInk}}>Trade-off: </span>{cfg.tradeoff}</div>
+              <div style={{fontSize:12,color:cfg.color,marginBottom:8}}>Best For</div>
+              {cfg.best.map((b,i)=><div key={i} style={{display:"flex",gap:8,marginBottom:4}}><span style={{color:cfg.color,fontSize:12,flexShrink:0}}>▸</span><span style={{fontSize:12,color:C.faint,lineHeight:1.4}}>{b}</span></div>)}
+              <div style={{marginTop:10,paddingTop:8,borderTop:`1px solid ${C.border}`,fontSize:12,color:C.muted}}><span style={{color:C.accentInk}}>Trade-off: </span>{cfg.tradeoff}</div>
             </div>
           </div>
 
@@ -3694,7 +3700,7 @@ function PostPrepScreen({user}) {
               <div className="slider-wrap">
                 <div style={{display:"flex",justifyContent:"space-between"}}><label className="ilabel">Prep Duration</label><span className="slider-val" style={{color:cfg.color}}>{prepWeeks} weeks</span></div>
                 <input type="range" className="slider" min="8" max="32" step="1" value={prepWeeks} onChange={e=>setPrepWeeks(e.target.value)}/>
-                <div style={{display:"flex",justifyContent:"space-between",fontSize:11,color:C.muted}}><span>8 wks</span><span>20 wks</span><span>32 wks</span></div>
+                <div style={{display:"flex",justifyContent:"space-between",fontSize:12,color:C.muted}}><span>8 wks</span><span>20 wks</span><span>32 wks</span></div>
               </div>
               <button className="btn" disabled={!canCalc} onClick={calculate}
                 style={{background:cfg.color,color:"#080A0C",boxShadow:`0 4px 20px ${cfg.color}40`,opacity:canCalc?1:.4,cursor:canCalc?"pointer":"not-allowed"}}>
@@ -3710,18 +3716,18 @@ function PostPrepScreen({user}) {
         <div className="pp-results">
 
           {/* ACTIVE PROTOCOL BADGE */}
-          <div style={{margin:"0 24px 14px",padding:"10px 14px",background:`${activeCfg.color}10`,border:`1px solid ${activeCfg.color}30`,borderRadius:10,display:"flex",alignItems:"center",gap:10}}>
+          <div style={{margin:"0 24px 14px",padding:"10px 14px",background:`${activeCfg.color}10`,border:`1px solid ${activeCfg.color}30`,borderRadius:12,display:"flex",alignItems:"center",gap:10}}>
             <span style={{width:10,height:10,borderRadius:"50%",background:activeCfg.color,display:"inline-block",flexShrink:0}}/>
-            <div><div style={{fontSize:11,letterSpacing:2,textTransform:"uppercase",color:activeCfg.color}}>Active Protocol</div><div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:16,letterSpacing:1}}>{activeCfg.label}</div></div>
-            <div style={{marginLeft:"auto",textAlign:"right"}}><div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:22,color:activeCfg.color}}>{protocol.baselineCals}</div><div style={{fontSize:11,color:C.muted}}>DAY 1 KCAL</div></div>
+            <div><div style={{fontSize:12,color:activeCfg.color}}>Active Protocol</div><div style={{fontFamily:"var(--font-display)", fontWeight:700,fontSize:16,}}>{activeCfg.label}</div></div>
+            <div style={{marginLeft:"auto",textAlign:"right"}}><div style={{fontFamily:"var(--font-display)", fontWeight:700,fontSize:22,color:activeCfg.color}}>{protocol.baselineCals}</div><div style={{fontSize:12,color:C.muted}}>Day 1 kcal</div></div>
           </div>
 
           {/* CEILING */}
           <div className="knum" style={{margin:"0 24px 14px",background:"linear-gradient(135deg,rgba(232,69,69,.05),#0F1215)",borderColor:"rgba(232,69,69,.25)"}}>
-            <div className="knum-label" style={{color:C.red}}>REBOUND CEILING — DO NOT EXCEED</div>
+            <div className="knum-label" style={{color:C.red}}>Rebound ceiling — do not exceed</div>
             <div style={{display:"flex",alignItems:"flex-end",justifyContent:"space-between"}}>
               <div><div className="knum-main" style={{color:C.red}}>{protocol.ceiling} <span style={{fontSize:18,color:C.muted}}>lbs</span></div><div className="knum-sub">Maximum offseason bodyweight</div></div>
-              <div style={{textAlign:"right"}}><div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:24,color:C.faint}}>+{protocol.ceiling-protocol.stageWeight}</div><div style={{fontSize:11,color:C.muted}}>lbs above stage</div></div>
+              <div style={{textAlign:"right"}}><div style={{fontFamily:"var(--font-display)", fontWeight:700,fontSize:24,color:C.faint}}>+{protocol.ceiling-protocol.stageWeight}</div><div style={{fontSize:12,color:C.muted}}>lbs above stage</div></div>
             </div>
             <div className="knum-note">Stay under this and you walk into your next prep without a cleanup week. <strong style={{color:C.text}}>Prep-ready offseason.</strong></div>
           </div>
@@ -3731,9 +3737,9 @@ function PostPrepScreen({user}) {
             <div className="knum-3">
               {[{label:"Target Weight",val:protocol.target,unit:"lbs",color:C.green},{label:"Maintenance",val:protocol.mainCals,unit:"kcal",color:C.green},{label:"Lean Surplus",val:protocol.surplusCals,unit:"kcal",color:C.purple}].map(k=>(
                 <div key={k.label} className="knum-mini" style={{borderColor:`${k.color}30`}}>
-                  <div style={{fontSize:11,letterSpacing:1,textTransform:"uppercase",color:C.muted,marginBottom:4}}>{k.label}</div>
-                  <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:24,color:k.color,lineHeight:1}}>{k.val}</div>
-                  <div style={{fontSize:11,color:C.muted,marginTop:2}}>{k.unit}</div>
+                  <div style={{fontSize:12,color:C.muted,marginBottom:4}}>{k.label}</div>
+                  <div style={{fontFamily:"var(--font-display)", fontWeight:700,fontSize:24,color:k.color,lineHeight:1}}>{k.val}</div>
+                  <div style={{fontSize:12,color:C.muted,marginTop:2}}>{k.unit}</div>
                 </div>
               ))}
             </div>
@@ -3743,19 +3749,19 @@ function PostPrepScreen({user}) {
                 <div className="knum-label" style={{color:C.green}}>Target Weight</div>
                 <div className="knum-main" style={{color:C.green,fontSize:30}}>{protocol.target}</div>
                 <div className="knum-sub">lbs offseason carry</div>
-                <div style={{fontSize:11,color:C.muted,marginTop:6}}>+{protocol.target-protocol.stageWeight} lbs above stage</div>
+                <div style={{fontSize:12,color:C.muted,marginTop:6}}>+{protocol.target-protocol.stageWeight} lbs above stage</div>
               </div>
               <div className="knum" style={{background:"linear-gradient(135deg,rgba(245,166,35,.05),#0F1215)",borderColor:"rgba(245,166,35,.2)"}}>
                 <div className="knum-label" style={{color:C.accentInk}}>{activeCfg.day1Label}</div>
                 <div className="knum-main" style={{color:C.accentInk,fontSize:30}}>{protocol.baselineCals}</div>
                 <div className="knum-sub">kcal Day 1</div>
-                <div style={{fontSize:11,color:C.muted,marginTop:6}}>{activeCfg.day1Note}</div>
+                <div style={{fontSize:12,color:C.muted,marginTop:6}}>{activeCfg.day1Note}</div>
               </div>
             </div>
           )}
 
           {/* PHASE TABS */}
-          <div className="stitle">PHASE BREAKDOWN</div>
+          <div className="stitle">Phase breakdown</div>
           <div className="ptabs">
             {protocol.phases.map((ph,i)=>(
               <div key={ph.key} className="ptab" onClick={()=>setActivePhase(i)}
@@ -3771,9 +3777,9 @@ function PostPrepScreen({user}) {
             return (
               <div style={{margin:"0 24px 20px",background:C.surface,border:`1px solid ${ph.color}40`,borderRadius:16,padding:20,borderLeft:`3px solid ${ph.color}`}}>
                 <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:14}}>
-                  <span style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:16,letterSpacing:1,color:ph.color,opacity:.7}}>{ph.icon}</span>
-                  <div style={{flex:1}}><div style={{fontSize:11,letterSpacing:2,color:ph.color,textTransform:"uppercase"}}>{ph.label}</div><div style={{fontFamily:"'Bebas Neue'",fontSize:20,letterSpacing:1}}>{ph.name}</div></div>
-                  <div style={{textAlign:"right"}}><div style={{fontFamily:"'Bebas Neue'",fontSize:28,color:ph.color}}>{ph.cals}</div><div style={{fontSize:11,color:C.muted}}>KCAL/DAY</div></div>
+                  <span style={{fontFamily:"var(--font-display)", fontWeight:700,fontSize:16,color:ph.color,opacity:.7}}>{ph.icon}</span>
+                  <div style={{flex:1}}><div style={{fontSize:12,color:ph.color,}}>{ph.label}</div><div style={{fontFamily:"var(--font-display)", fontWeight:700,fontSize:20,}}>{ph.name}</div></div>
+                  <div style={{textAlign:"right"}}><div style={{fontFamily:"var(--font-display)", fontWeight:700,fontSize:28,color:ph.color}}>{ph.cals}</div><div style={{fontSize:12,color:C.muted}}>kcal/day</div></div>
                 </div>
                 <MacroRing protein={ph.p} carbs={ph.c} fat={ph.f} calories={ph.cals}/>
                 <div style={{marginTop:14,paddingTop:12,borderTop:`1px solid ${C.border}`,fontSize:13,color:C.faint,lineHeight:1.6}}>{ph.desc}</div>
@@ -3782,7 +3788,7 @@ function PostPrepScreen({user}) {
           })()}
 
           {/* ROADMAP */}
-          <div className="stitle">WEEK-BY-WEEK ROADMAP</div>
+          <div className="stitle">Week-by-week roadmap</div>
           <div className="ptl">
             <div className="ptl-line"/>
             {protocol.phases.map(ph=>(
@@ -3804,7 +3810,7 @@ function PostPrepScreen({user}) {
           </div>
 
           {/* VITALS */}
-          <div className="stitle">VITALS RECOVERY CLOCK</div>
+          <div className="stitle">Vitals recovery clock</div>
           <div style={{padding:"0 24px 8px",fontSize:13,color:C.muted,lineHeight:1.5,marginBottom:8}}>Based on a {protocol.wks}-week prep. Current status on show day — and weeks to full restore.</div>
           <div className="vgrid">
             {protocol.vitals.map((v,i)=>{
@@ -3822,7 +3828,7 @@ function PostPrepScreen({user}) {
           </div>
 
           {/* RULES */}
-          <div className="stitle">THE GOLDEN RULES</div>
+          <div className="stitle">The golden rules</div>
           <div className="rules-card">
             {rules.map((r,i)=><div key={i} className="rule-row"><span className="rule-icon">▸</span><span className="rule-text">{r.text}</span></div>)}
           </div>
@@ -3904,7 +3910,7 @@ function FeedbackArchiveScreen({ embedded = false }) {
 
   if (!loaded) return (
     <div className="loading">
-      <div style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:18, letterSpacing:2, color:C.muted, animation:"pulse 2s infinite" }}>LOADING ARCHIVE...</div>
+      <div style={{ fontFamily:"var(--font-display)", fontWeight:700, fontSize:18, color:C.muted, animation:"pulse 2s infinite" }}>Loading archive...</div>
     </div>
   );
 
@@ -3917,23 +3923,22 @@ function FeedbackArchiveScreen({ embedded = false }) {
         <div className="sh">
           <div>
             <div className="sh-label">Coach</div>
-            <div className="sh-title">FEEDBACK ARCHIVE</div>
+            <div className="sh-title">Feedback archive</div>
           </div>
           {unreadCount > 0 && (
-            <div style={{ display:"flex", alignItems:"center", gap:6, padding:"6px 12px", background:`${C.accent}18`, border:`1px solid ${C.accent}40`, borderRadius:8 }}>
+            <div style={{ display:"flex", alignItems:"center", gap:6, padding:"6px 12px", background:`${C.accent}18`, border:`1px solid ${C.accent}40`, borderRadius:12 }}>
               <div style={{ width:6, height:6, borderRadius:"50%", background:C.accent }}/>
-              <span style={{ fontSize:11, fontWeight:700, color:C.accentInk, letterSpacing:.5 }}>{unreadCount} NEW</span>
+              <span style={{ fontSize:12, fontWeight:700, color:C.accentInk, }}>{unreadCount} NEW</span>
             </div>
           )}
         </div>
       )}
 
       {/* GROUP BY TOGGLE */}
-      <div style={{ margin:"0 24px 20px", display:"flex", background:C.up, borderRadius:10, padding:3 }}>
-        {[{id:"date",label:"BY DATE"},{id:"workout",label:"BY WORKOUT"},{id:"muscle",label:"BY MUSCLE"}].map(opt => (
+      <div style={{ margin:"0 24px 20px", display:"flex", background:C.up, borderRadius:12, padding:3 }}>
+        {[{id:"date",label:"By date"},{id:"workout",label:"By workout"},{id:"muscle",label:"By muscle"}].map(opt => (
           <button key={opt.id} onClick={() => setGroupBy(opt.id)}
-            style={{ flex:1, padding:"8px 4px", border:"none", borderRadius:8, cursor:"pointer", fontSize:11, fontFamily:"'Bebas Neue',sans-serif", letterSpacing:1.5,
-              background: groupBy === opt.id ? C.accent : "transparent",
+            style={{ flex:1, padding:"8px 4px", border:"none", borderRadius:12, cursor:"pointer", fontSize:12, fontFamily:"var(--font-display)", fontWeight:700, background: groupBy === opt.id ? C.accent : "transparent",
               color: groupBy === opt.id ? "#080A0C" : C.muted,
               transition:"all .15s" }}>
             {opt.label}
@@ -3943,7 +3948,7 @@ function FeedbackArchiveScreen({ embedded = false }) {
 
       {feedbacks.length === 0 ? (
         <div style={{ margin:"60px 24px 0", textAlign:"center" }}>
-          <div style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:32, letterSpacing:2, color:C.muted, marginBottom:8 }}>NO SESSIONS YET</div>
+          <div style={{ fontFamily:"var(--font-display)", fontWeight:700, fontSize:32, color:C.muted, marginBottom:8 }}>No sessions yet</div>
           <div style={{ fontSize:13, color:C.muted, lineHeight:1.6 }}>Complete a workout to receive<br/>AI coaching feedback here.</div>
         </div>
       ) : (
@@ -3952,11 +3957,11 @@ function FeedbackArchiveScreen({ embedded = false }) {
             <div key={group.label}>
               {/* GROUP HEADER */}
               <div style={{ margin:"8px 24px 10px", display:"flex", alignItems:"center", gap:10 }}>
-                <div style={{ fontSize:11, letterSpacing:2, textTransform:"uppercase", color:C.muted, fontWeight:700 }}>
+                <div style={{ fontSize:12, color:C.muted, fontWeight:700 }}>
                   {group.label}
                 </div>
                 <div style={{ flex:1, height:1, background:C.border }}/>
-                <div style={{ fontSize:11, color:C.muted }}>{group.items.length}</div>
+                <div style={{ fontSize:12, color:C.muted }}>{group.items.length}</div>
               </div>
 
               {/* FEEDBACK CARDS */}
@@ -3977,16 +3982,16 @@ function FeedbackArchiveScreen({ embedded = false }) {
                       <div style={{ width:6, height:6, borderRadius:"50%", flexShrink:0, background: !fb.read ? C.accent : "transparent", border: !fb.read ? "none" : `1px solid ${C.border}` }}/>
                       <div style={{ flex:1, minWidth:0 }}>
                         <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:4, flexWrap:"wrap" }}>
-                          <span style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:13, letterSpacing:1.5, color: isOpen ? C.accentInk : C.text }}>
+                          <span style={{ fontFamily:"var(--font-display)", fontWeight:700, fontSize:13, color: isOpen ? C.accentInk : C.text }}>
                             {DAY_LABEL(fb.dayKey)}
                           </span>
                           {(fb.muscles || []).slice(0, 3).map(m => (
-                            <span key={m} style={{ fontSize:11, fontWeight:700, letterSpacing:.5, textTransform:"uppercase", padding:"2px 6px", borderRadius:4, background:`${MUSCLE_BENCHMARKS[m]?.color || C.accent}18`, color: MUSCLE_BENCHMARKS[m]?.color || C.accentInk }}>
+                            <span key={m} style={{ fontSize:12, fontWeight:700, padding:"2px 6px", borderRadius:10, background:`${MUSCLE_BENCHMARKS[m]?.color || C.accent}18`, color: MUSCLE_BENCHMARKS[m]?.color || C.accentInk }}>
                               {MUSCLE_BENCHMARKS[m]?.label || m}
                             </span>
                           ))}
                         </div>
-                        <div style={{ fontSize:11, color:C.muted }}>{dateStr}</div>
+                        <div style={{ fontSize:12, color:C.muted }}>{dateStr}</div>
                       </div>
                       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"
                         style={{ width:14, height:14, color:C.muted, flexShrink:0, transform: isOpen ? "rotate(180deg)" : "none", transition:"transform .2s" }}>
@@ -4001,10 +4006,10 @@ function FeedbackArchiveScreen({ embedded = false }) {
                           {fb.text}
                         </div>
                         <div style={{ marginTop:12, paddingTop:10, borderTop:`1px solid ${C.border}`, display:"flex", alignItems:"center", justifyContent:"space-between" }}>
-                          <div style={{ fontSize:11, color:C.muted, letterSpacing:.5 }}>
+                          <div style={{ fontSize:12, color:C.muted, }}>
                             {date.toLocaleDateString("en-US", { weekday:"long", month:"long", day:"numeric" })} · {timeStr}
                           </div>
-                          <div style={{ fontSize:11, color:C.accentInk, letterSpacing:.5, fontWeight:700 }}>APEX COACH</div>
+                          <div style={{ fontSize:12, color:C.accentInk, fontWeight:700 }}>APEX coach</div>
                         </div>
                       </div>
                     )}
@@ -4042,7 +4047,7 @@ function CoachScreen({user}) {
         if(!r?.value) return;
         const entry = JSON.parse(r.value);
         if(!entry?.text || entry.read) return;
-        const goalLabel = entry.goalType ? ` — ${entry.goalType.toUpperCase()} to ${entry.goalWeight} lbs` : "";
+        const goalLabel = entry.goalType ? ` — ${labelCase(entry.goalType)} to ${entry.goalWeight} lbs` : "";
         setMessages(prev=>[...prev,{role:"coach",text:`Your goal analysis${goalLabel}:\n\n${entry.text}`,time:"now"}]);
         window.storage.set(GOAL_ANALYSIS_KEY, JSON.stringify({...entry, read:true})).catch(()=>{});
         setTimeout(()=>{ if(msgsRef.current) msgsRef.current.scrollTop=msgsRef.current.scrollHeight; },120);
@@ -4074,7 +4079,7 @@ function CoachScreen({user}) {
         const unread = arr.filter(fb=>fb?.text&&!fb?.read);
         if(!unread.length) return;
         const latest = unread.sort((a,b)=>(b.ts||0)-(a.ts||0))[0];
-        const dayLabel = latest.dayKey ? ` (${latest.dayKey.replace(/_/g," ").toUpperCase()})` : "";
+        const dayLabel = latest.dayKey ? ` (${labelCase(latest.dayKey)})` : "";
         setMessages(prev=>[...prev,{role:"coach",text:`Post-session recap${dayLabel}:\n\n${latest.text}`,time:"now"}]);
         // Mark all as read
         const updated = arr.map(fb=>({...fb,read:true}));
@@ -4175,7 +4180,7 @@ Keep all responses conversational, specific, and actionable. Max 4 short paragra
     <div className="screen" style={{overflowY:"auto"}}>
       <div style={{padding:"56px 20px 12px",borderBottom:`1px solid ${C.border}`,display:"flex",alignItems:"center",gap:12}}>
         <button onClick={() => setCoachTab("chat")} style={{background:"none",border:"none",color:C.accentInk,fontSize:13,cursor:"pointer",padding:0,fontWeight:600}}>← Coach</button>
-        <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:24,letterSpacing:1,color:C.text}}>SESSION HISTORY</div>
+        <div style={{fontFamily:"var(--font-display)", fontWeight:700,fontSize:24,color:C.text}}>Session history</div>
       </div>
       <FeedbackArchiveScreen embedded/>
     </div>
@@ -4190,14 +4195,14 @@ Keep all responses conversational, specific, and actionable. Max 4 short paragra
             <div className="ch-dot"/>
           </div>
           <div>
-            <div className="ch-name">APEX COACH</div>
+            <div className="ch-name">APEX coach</div>
             <div className="ch-status">Online · Ready to coach</div>
           </div>
         </div>
         <div style={{display:"flex",alignItems:"center",gap:8}}>
           <button onClick={() => setCoachTab("history")}
-            style={{background:"none",border:`1px solid ${C.border}`,borderRadius:8,padding:"5px 10px",color:C.muted,fontSize:11,cursor:"pointer",fontFamily:"'Bebas Neue',sans-serif",letterSpacing:1}}>
-            HISTORY
+            style={{background:"none",border:`1px solid ${C.border}`,borderRadius:12,padding:"5px 10px",color:C.muted,fontSize:12,cursor:"pointer",fontFamily:"var(--font-display)", fontWeight:700,}}>
+            History
           </button>
         </div>
       </div>
@@ -4214,7 +4219,7 @@ Keep all responses conversational, specific, and actionable. Max 4 short paragra
               {msg.photos&&msg.photos.length>0&&(
                 <div style={{display:"flex",gap:6,marginBottom:6,flexDirection:"row-reverse",flexWrap:"wrap"}}>
                   {msg.photos.map((src,pi)=>(
-                    <img key={pi} src={src} alt="physique" style={{width:76,height:76,objectFit:"cover",borderRadius:10,border:`1px solid ${C.border}`}}/>
+                    <img key={pi} src={src} alt="physique" style={{width:76,height:76,objectFit:"cover",borderRadius:12,border:`1px solid ${C.border}`}}/>
                   ))}
                 </div>
               )}
@@ -4239,7 +4244,7 @@ Keep all responses conversational, specific, and actionable. Max 4 short paragra
               <button className="pthumb-rm" onClick={()=>removePhoto(p.id)}>✕</button>
             </div>
           ))}
-          <span style={{flexShrink:0,fontSize:11,color:C.accentInk,paddingLeft:6,whiteSpace:"nowrap"}}>
+          <span style={{flexShrink:0,fontSize:12,color:C.accentInk,paddingLeft:6,whiteSpace:"nowrap"}}>
             {pending.length} photo{pending.length>1?"s":""} attached · send or type a message
           </span>
         </div>
@@ -4343,18 +4348,18 @@ function WeightGraph3D({ logs, ceilingWeight, stageWeight }) {
       ctx.beginPath(); ctx.moveTo(origin.px, origin.py); ctx.lineTo(axX.px, axX.py);
       ctx.strokeStyle = hex2rgba(cc.brutal||cc.accent, 0.6); ctx.lineWidth = 2; ctx.stroke();
       ctx.fillStyle = hex2rgba(cc.brutal||cc.accent, 1);
-      ctx.font = `700 ${10 / s.scale}px 'DM Sans',sans-serif`;
-      ctx.fillText("DAYS", axX.px + 6, axX.py + 4);
+      ctx.font = `700 ${10 / s.scale}px system-ui,sans-serif`;
+      ctx.fillText("Days", axX.px + 6, axX.py + 4);
 
       ctx.beginPath(); ctx.moveTo(origin.px, origin.py); ctx.lineTo(axY.px, axY.py);
       ctx.strokeStyle = hex2rgba(cc.green, 0.7); ctx.lineWidth = 2; ctx.stroke();
       ctx.fillStyle = hex2rgba(cc.green, 1);
-      ctx.fillText("LBS", axY.px - 24, axY.py - 4);
+      ctx.fillText("lbs", axY.px - 24, axY.py - 4);
 
       ctx.beginPath(); ctx.moveTo(origin.px, origin.py); ctx.lineTo(axZ.px, axZ.py);
       ctx.strokeStyle = hex2rgba(cc.brutal||cc.accent, 0.3); ctx.lineWidth = 1; ctx.stroke();
       ctx.fillStyle = hex2rgba(cc.brutal||cc.accent, 0.6);
-      ctx.fillText("ΔRATE", axZ.px + 4, axZ.py + 4);
+      ctx.fillText("ΔRate", axZ.px + 4, axZ.py + 4);
 
       // ── CEILING & STAGE PLANES ──
       if (ceilingWeight && stageWeight) {
@@ -4365,7 +4370,7 @@ function WeightGraph3D({ logs, ceilingWeight, stageWeight }) {
           ctx.beginPath(); ctx.moveTo(c1.px, c1.py); ctx.lineTo(c2.px, c2.py);
           ctx.setLineDash([4, 4]); ctx.strokeStyle = hex2rgba(cc.red, 0.5); ctx.lineWidth = 1.5; ctx.stroke();
           ctx.setLineDash([]);
-          ctx.fillStyle = hex2rgba(cc.red, 0.7); ctx.font = `${8 / s.scale}px Inter`;
+          ctx.fillStyle = hex2rgba(cc.red, 0.7); ctx.font = `${8 / s.scale}px system-ui,sans-serif`;
           ctx.fillText(`! ${ceilingWeight}`, c2.px + 4, c2.py);
         }
         if (stageNorm >= 0 && stageNorm <= 1) {
@@ -4373,7 +4378,7 @@ function WeightGraph3D({ logs, ceilingWeight, stageWeight }) {
           ctx.beginPath(); ctx.moveTo(s1.px, s1.py); ctx.lineTo(s2.px, s2.py);
           ctx.setLineDash([3, 3]); ctx.strokeStyle = hex2rgba(cc.purple, 0.4); ctx.lineWidth = 1; ctx.stroke();
           ctx.setLineDash([]);
-          ctx.fillStyle = hex2rgba(cc.purple, 0.6); ctx.font = `${8 / s.scale}px Inter`;
+          ctx.fillStyle = hex2rgba(cc.purple, 0.6); ctx.font = `${8 / s.scale}px system-ui,sans-serif`;
           ctx.fillText(`STAGE ${stageWeight}`, s2.px + 4, s2.py);
         }
       }
@@ -4405,7 +4410,7 @@ function WeightGraph3D({ logs, ceilingWeight, stageWeight }) {
         if (isHov) {
           const label = `${d.weight} lbs`;
           const dateStr = d.date;
-          ctx.font = `600 ${10 / s.scale}px 'DM Sans',sans-serif`;
+          ctx.font = `600 ${10 / s.scale}px system-ui,sans-serif`;
           const lw = Math.max(ctx.measureText(label).width, ctx.measureText(dateStr).width) + 18;
           const lx = top.px - lw / 2, ly = top.py - 48;
           // Brutalist tooltip: hard offset shadow + border
@@ -4416,11 +4421,11 @@ function WeightGraph3D({ logs, ceilingWeight, stageWeight }) {
           ctx.strokeStyle = cc.brutal || cc.accent; ctx.lineWidth = 2;
           ctx.strokeRect(lx, ly, lw, 36);
           ctx.fillStyle = cc.brutal || cc.accent;
-          ctx.font = `700 ${10 / s.scale}px 'DM Sans',sans-serif`;
+          ctx.font = `700 ${10 / s.scale}px system-ui,sans-serif`;
           ctx.textAlign = "center";
           ctx.fillText(label, top.px, ly + 15);
           ctx.fillStyle = cc.muted;
-          ctx.font = `500 ${9 / s.scale}px 'DM Sans',sans-serif`;
+          ctx.font = `500 ${9 / s.scale}px system-ui,sans-serif`;
           ctx.fillText(dateStr, top.px, ly + 29);
           ctx.textAlign = "left";
         }
@@ -4446,7 +4451,7 @@ function WeightGraph3D({ logs, ceilingWeight, stageWeight }) {
         const wVal = Math.round(minW + tf * wRange);
         const pt = project(0, tf, 0);
         ctx.fillStyle = hex2rgba(cc.muted, 0.9);
-        ctx.font = `500 ${8 / s.scale}px 'DM Mono',monospace`;
+        ctx.font = `500 ${8 / s.scale}px ui-rounded,system-ui,sans-serif`;
         ctx.fillText(wVal, pt.px - 26, pt.py + 3);
       }
     }
@@ -4541,13 +4546,13 @@ function Tip({ label, children }) {
     <span style={{ position:"relative", display:"inline-flex", alignItems:"center", gap:3 }}>
       {children}
       <button type="button" onClick={e => { e.stopPropagation(); setOpen(o => !o); }}
-        style={{ background:"none", border:`1px solid ${C.faint}`, borderRadius:"50%", width:12, height:12, fontSize:11, color:C.faint, cursor:"pointer", padding:0, lineHeight:1, display:"inline-flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>
+        style={{ background:"none", border:`1px solid ${C.faint}`, borderRadius:"50%", width:12, height:12, fontSize:12, color:C.faint, cursor:"pointer", padding:0, lineHeight:1, display:"inline-flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>
         ?
       </button>
       {open && (
         <>
           <div onClick={() => setOpen(false)} style={{ position:"fixed", inset:0, zIndex:98 }}/>
-          <div style={{ position:"absolute", bottom:"calc(100% + 6px)", left:"50%", transform:"translateX(-50%)", background:C.surface, border:`1px solid ${C.border}`, borderRadius:8, padding:"7px 10px", fontSize:11, color:C.muted, lineHeight:1.55, whiteSpace:"nowrap", zIndex:99, boxShadow:"var(--depth-shadow)", maxWidth:220, whiteSpace:"normal", textAlign:"left" }}>
+          <div style={{ position:"absolute", bottom:"calc(100% + 6px)", left:"50%", transform:"translateX(-50%)", background:C.surface, border:`1px solid ${C.border}`, borderRadius:12, padding:"7px 10px", fontSize:12, color:C.muted, lineHeight:1.55, whiteSpace:"nowrap", zIndex:99, boxShadow:"var(--depth-shadow)", maxWidth:220, whiteSpace:"normal", textAlign:"left" }}>
             {label}
           </div>
         </>
@@ -4579,8 +4584,8 @@ function AvatarMenu({ initial, onEditProfile }) {
 
   const itemStyle = {
     width:"100%", padding:"12px 16px", background:"none", border:"none",
-    cursor:"pointer", fontFamily:"'Bebas Neue',sans-serif", fontSize:14,
-    letterSpacing:1.5, color:"var(--text)", textAlign:"left", transition:"background .15s",
+    cursor:"pointer", fontFamily:"var(--font-display)", fontWeight:700, fontSize:14,
+    color:"var(--text)", textAlign:"left", transition:"background .15s",
   };
   return (
     <div style={{position:"relative"}}>
@@ -4588,26 +4593,26 @@ function AvatarMenu({ initial, onEditProfile }) {
         {initial}
       </div>
       {open && (
-        <div style={{position:"absolute",top:"calc(100% + 8px)",right:0,background:"var(--card)",border:"2px solid var(--brutal)",borderRadius:6,boxShadow:"4px 4px 0 var(--brutal)",overflow:"hidden",zIndex:500,minWidth:168}}>
+        <div style={{position:"absolute",top:"calc(100% + 8px)",right:0,background:"var(--card)",border:"1px solid var(--border)",borderRadius:10,boxShadow:"var(--shadow-1)",overflow:"hidden",zIndex:500,minWidth:168}}>
           <button onClick={()=>{setOpen(false);onEditProfile?.();}}
             style={itemStyle}
             onMouseOver={e=>e.currentTarget.style.background="var(--up)"}
             onMouseOut={e=>e.currentTarget.style.background="none"}>
-            EDIT PROFILE
+            Edit profile
           </button>
           <div style={{height:1,background:"var(--border)"}}/>
           <button onClick={handleForceSync}
             style={{...itemStyle, color: syncState==="ok" ? "var(--green)" : syncState==="fail" ? "var(--red)" : "var(--muted)", fontSize:13}}
             onMouseOver={e=>e.currentTarget.style.background="var(--up)"}
             onMouseOut={e=>e.currentTarget.style.background="none"}>
-            {syncState==="syncing" ? "SYNCING..." : syncState==="ok" ? "✓ SYNCED" : syncState==="fail" ? "✕ SYNC FAILED" : "FORCE SYNC"}
+            {syncState==="syncing" ? "Syncing..." : syncState==="ok" ? "✓ Synced" : syncState==="fail" ? "✕ Sync failed" : "Force sync"}
           </button>
           <div style={{height:1,background:"var(--border)"}}/>
           <button onClick={signOut}
             style={{...itemStyle, color:"var(--muted)"}}
             onMouseOver={e=>e.currentTarget.style.background="var(--up)"}
             onMouseOut={e=>e.currentTarget.style.background="none"}>
-            SIGN OUT
+            Sign out
           </button>
         </div>
       )}
@@ -5030,7 +5035,7 @@ function DashboardScreen({ user, weightLog, onLogWeight, onDeleteWeight, onEditW
   };
 
   const DECISION_COLOR = { red: C.red, green: C.green, accent: C.accent, muted: C.muted };
-  const PRIORITY_LABEL = { P0: "CRITICAL", P1: "ADJUST", P2: "NOTE", info: "ON TRACK" };
+  const PRIORITY_LABEL = { P0: "Critical", P1: "Adjust", P2: "Note", info: "On track" };
 
   return (
     <div className="screen">
@@ -5053,7 +5058,7 @@ function DashboardScreen({ user, weightLog, onLogWeight, onDeleteWeight, onEditW
       <div className="sh">
         <div>
           <div className="sh-greeting">{(()=>{const h=new Date().getHours();return h<11?"Good morning,":h<17?"Good afternoon,":h<21?"Good evening,":"Hey,"})()}</div>
-          <div className="sh-title">{user.name.toUpperCase()}</div>
+          <div className="sh-title">{user.name}</div>
         </div>
         <AvatarMenu initial={user.name[0].toUpperCase()} onEditProfile={onEditProfile}/>
       </div>
@@ -5112,31 +5117,31 @@ function DashboardScreen({ user, weightLog, onLogWeight, onDeleteWeight, onEditW
                         {statusLabel}
                       </div>
                       {totalChange !== 0 && (
-                        <div style={{fontSize:11,color:"var(--faint)"}}>
+                        <div style={{fontSize:12,color:"var(--faint)"}}>
                           {totalChange > 0 ? "+" : ""}{totalChange} lbs total
                         </div>
                       )}
                     </div>
                     <div>
                       <span className="pace-rate-num" style={{color}}>{rateStr}</span>
-                      <span style={{fontSize:11,color:"var(--muted)",marginLeft:3}}>lbs/wk</span>
+                      <span style={{fontSize:12,color:"var(--muted)",marginLeft:3}}>lbs/wk</span>
                     </div>
                   </div>
                   <div className="pace-bar-track">
                     <div className="pace-bar-fill" style={{width:`${Math.min(100, paceBarPct)}%`,background:color}}/>
                   </div>
                   <div className="pace-foot">
-                    <div style={{fontSize:11,color:"var(--faint)"}}>Target {targetStr} lbs/wk</div>
+                    <div style={{fontSize:12,color:"var(--faint)"}}>Target {targetStr} lbs/wk</div>
                     {goalPacing.forecast7d && (
-                      <div style={{fontSize:11,color:"var(--faint)"}}>7d forecast: {goalPacing.forecast7d} lbs</div>
+                      <div style={{fontSize:12,color:"var(--faint)"}}>7d forecast: {goalPacing.forecast7d} lbs</div>
                     )}
                   </div>
                   {etaWeeks !== null && nextMilestone !== null && (
                     <div className="pace-milestone">
-                      <div style={{fontSize:11,color:"var(--muted)"}}>
+                      <div style={{fontSize:12,color:"var(--muted)"}}>
                         Next milestone: <span style={{color:"var(--text)",fontWeight:700}}>{dir > 0 ? "+" : ""}{nextMilestone} lbs</span>
                       </div>
-                      <div style={{fontSize:11,fontFamily:"'Bebas Neue',sans-serif",letterSpacing:1,color:"var(--accent-ink)"}}>
+                      <div style={{fontSize:12,fontFamily:"var(--font-display)", fontWeight:700,color:"var(--accent-ink)"}}>
                         ~{etaWeeks} WKS
                       </div>
                     </div>
@@ -5166,13 +5171,13 @@ function DashboardScreen({ user, weightLog, onLogWeight, onDeleteWeight, onEditW
                   style={{transition:"stroke-dasharray 1.2s cubic-bezier(.16,1,.3,1)"}}
                 />
                 {/* Percent label */}
-                <text x="58" y="44" textAnchor="middle" fontSize="15" fontFamily="Bebas Neue,sans-serif" letterSpacing="1" fill={accentCol}>
+                <text x="58" y="44" textAnchor="middle" fontSize="15" fontFamily="system-ui,-apple-system,sans-serif" fontWeight="700" fill={accentCol}>
                   {Math.round(heroPct)}%
                 </text>
-                <text x="58" y="54" textAnchor="middle" fontSize="8" fontFamily="DM Sans,sans-serif" fill="var(--muted)">to goal</text>
+                <text x="58" y="54" textAnchor="middle" fontSize="8" fontFamily="system-ui,-apple-system,sans-serif" fill="var(--muted)">to goal</text>
                 {/* Start / goal labels — bumped to 9px for readability */}
-                <text x="4" y="72" textAnchor="start" fontSize="9" fontFamily="DM Mono,monospace" fill="var(--faint)">{Math.round(goalConfig.startWeight)}</text>
-                <text x="112" y="72" textAnchor="end" fontSize="9" fontFamily="DM Mono,monospace" fill="var(--faint)">{Math.round(goalConfig.effectiveGoalWeight)}</text>
+                <text x="4" y="72" textAnchor="start" fontSize="9" fontFamily="ui-rounded,system-ui,sans-serif" fill="var(--faint)">{Math.round(goalConfig.startWeight)}</text>
+                <text x="112" y="72" textAnchor="end" fontSize="9" fontFamily="ui-rounded,system-ui,sans-serif" fill="var(--faint)">{Math.round(goalConfig.effectiveGoalWeight)}</text>
               </svg>
             );
           })() : recentWeights.length >= 2 && (
@@ -5210,11 +5215,11 @@ function DashboardScreen({ user, weightLog, onLogWeight, onDeleteWeight, onEditW
             disabled={!inputVal || parseFloat(inputVal) < 50}
             saved={justLogged}
           >
-            {justLogged ? "SAVED" : "LOG"}
+            {justLogged ? "Saved" : "Log"}
           </CubeButton>
         </div>
         {inputVal && parseFloat(inputVal) < 50 && (
-          <div style={{fontSize:11,color:"var(--red)",marginTop:6,paddingLeft:2}}>Enter a valid weight (50 – 500 lbs)</div>
+          <div style={{fontSize:12,color:"var(--red)",marginTop:6,paddingLeft:2}}>Enter a valid weight (50 – 500 lbs)</div>
         )}
 
         {/* Post-log reaction */}
@@ -5230,7 +5235,7 @@ function DashboardScreen({ user, weightLog, onLogWeight, onDeleteWeight, onEditW
 
         {/* Recent entries */}
         {sortedLog.length === 0 && (
-          <div style={{marginTop:14,paddingTop:12,borderTop:"1px solid var(--border)",fontSize:11,color:"var(--muted)",lineHeight:1.6}}>
+          <div style={{marginTop:14,paddingTop:12,borderTop:"1px solid var(--border)",fontSize:12,color:"var(--muted)",lineHeight:1.6}}>
             Log your weight daily — even approximate numbers build trend data. Consistency matters more than precision.
           </div>
         )}
@@ -5244,7 +5249,7 @@ function DashboardScreen({ user, weightLog, onLogWeight, onDeleteWeight, onEditW
                 <div key={e.ts}>
                   {isEditing ? (
                     <div style={{display:"flex",alignItems:"center",gap:8,animation:"slideUp .18s ease-out"}}>
-                      <span style={{fontSize:11,color:"var(--muted)",flexShrink:0}}>{e.date}</span>
+                      <span style={{fontSize:12,color:"var(--muted)",flexShrink:0}}>{e.date}</span>
                       <input
                         type="number"
                         value={editingVal}
@@ -5254,17 +5259,17 @@ function DashboardScreen({ user, weightLog, onLogWeight, onDeleteWeight, onEditW
                           if(ev.key==="Escape"){setEditingTs(null);}
                         }}
                         autoFocus
-                        style={{flex:1,fontFamily:"'Bebas Neue',sans-serif",fontSize:15,background:"var(--up)",border:"1px solid var(--accent)",borderRadius:6,color:"var(--text)",padding:"3px 8px",textAlign:"right",width:0}}
+                        style={{flex:1,fontFamily:"var(--font-display)", fontWeight:700,fontSize:15,background:"var(--up)",border:"1px solid var(--accent)",borderRadius:10,color:"var(--text)",padding:"3px 8px",textAlign:"right",width:0}}
                       />
-                      <span style={{fontSize:11,color:"var(--muted)"}}>lbs</span>
+                      <span style={{fontSize:12,color:"var(--muted)"}}>lbs</span>
                       <button onClick={()=>{const w=parseFloat(editingVal);if(w>=50&&w<=500){onEditWeight(e.ts,w);setEditingTs(null);setSavedTs(e.ts);setTimeout(()=>setSavedTs(null),1800);}}}
-                        style={{fontSize:11,padding:"3px 10px",background:"var(--accent)",border:"none",borderRadius:6,color:"#000",cursor:"pointer",fontWeight:700,flexShrink:0}}>Save</button>
+                        style={{fontSize:12,padding:"3px 10px",background:"var(--accent)",border:"none",borderRadius:10,color:"#000",cursor:"pointer",fontWeight:700,flexShrink:0}}>Save</button>
                       <button onClick={()=>setEditingTs(null)}
-                        style={{background:"none",border:"none",color:"var(--faint)",fontSize:11,cursor:"pointer",padding:"0 2px",lineHeight:1,flexShrink:0}}>✕</button>
+                        style={{background:"none",border:"none",color:"var(--faint)",fontSize:12,cursor:"pointer",padding:"0 2px",lineHeight:1,flexShrink:0}}>✕</button>
                     </div>
                   ) : (
                     <div style={{display:"flex",alignItems:"center",justifyContent:"space-between"}}>
-                      <span style={{fontSize:11,color:"var(--muted)",fontVariantNumeric:"tabular-nums"}}>{e.date}</span>
+                      <span style={{fontSize:12,color:"var(--muted)",fontVariantNumeric:"tabular-nums"}}>{e.date}</span>
                       <div style={{display:"flex",alignItems:"center",gap:10}}>
                         {change !== null && (() => {
                           const n = parseFloat(change);
@@ -5277,31 +5282,31 @@ function DashboardScreen({ user, weightLog, onLogWeight, onDeleteWeight, onEditW
                             : (losingIsGood && n > 0) || (gainingIsGood && n < 0) ? "var(--red)"
                             : "var(--accent)";
                           return (
-                            <span style={{fontSize:11,color:changeCol}}>
+                            <span style={{fontSize:12,color:changeCol}}>
                               {n>0?"+":""}{change}
                             </span>
                           );
                         })()}
                         <span
                           onClick={()=>{setPendingDeleteTs(null);setEditingTs(e.ts);setEditingVal(String(e.weight));}}
-                          style={{display:"flex",alignItems:"center",gap:4,fontFamily:"'Bebas Neue',sans-serif",fontSize:15,color:savedTs===e.ts?"var(--green)":i===0?"var(--accent-ink)":"var(--text)",cursor:"pointer",transition:"color .35s"}}
+                          style={{display:"flex",alignItems:"center",gap:4,fontFamily:"var(--font-display)", fontWeight:700,fontSize:15,color:savedTs===e.ts?"var(--green)":i===0?"var(--accent-ink)":"var(--text)",cursor:"pointer",transition:"color .35s"}}
                         >
                           {savedTs===e.ts?"✓":e.weight}
                           {savedTs!==e.ts&&<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{width:11,height:11,opacity:.45}}><path d="M11 2l3 3-8 8H3v-3l8-8z"/></svg>}
                         </span>
                         <button onClick={()=>setPendingDeleteTs(isPendingDelete?null:e.ts)}
-                          style={{background:"none",border:"none",color:"var(--faint)",fontSize:11,cursor:"pointer",padding:"0 2px",lineHeight:1}}>✕</button>
+                          style={{background:"none",border:"none",color:"var(--faint)",fontSize:12,cursor:"pointer",padding:"0 2px",lineHeight:1}}>✕</button>
                       </div>
                     </div>
                   )}
                   {!isEditing && isPendingDelete && (
-                    <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginTop:6,padding:"8px 10px",background:"var(--up)",borderRadius:8,animation:"slideUp .2s ease-out"}}>
-                      <span style={{fontSize:11,color:"var(--muted)"}}>Remove {e.date} entry?</span>
+                    <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginTop:6,padding:"8px 10px",background:"var(--up)",borderRadius:12,animation:"slideUp .2s ease-out"}}>
+                      <span style={{fontSize:12,color:"var(--muted)"}}>Remove {e.date} entry?</span>
                       <div style={{display:"flex",gap:6}}>
                         <button onClick={()=>setPendingDeleteTs(null)}
-                          style={{fontSize:11,padding:"3px 10px",background:"var(--surface)",border:"1px solid var(--border)",borderRadius:6,color:"var(--muted)",cursor:"pointer"}}>Cancel</button>
+                          style={{fontSize:12,padding:"3px 10px",background:"var(--surface)",border:"1px solid var(--border)",borderRadius:10,color:"var(--muted)",cursor:"pointer"}}>Cancel</button>
                         <button onClick={()=>{onDeleteWeight(e.ts);setPendingDeleteTs(null);}}
-                          style={{fontSize:11,padding:"3px 10px",background:"var(--red)",border:"none",borderRadius:6,color:"#FFF",cursor:"pointer",fontWeight:600}}>Remove</button>
+                          style={{fontSize:12,padding:"3px 10px",background:"var(--red)",border:"none",borderRadius:10,color:"#FFF",cursor:"pointer",fontWeight:600}}>Remove</button>
                       </div>
                     </div>
                   )}
@@ -5348,12 +5353,12 @@ function DashboardScreen({ user, weightLog, onLogWeight, onDeleteWeight, onEditW
             {/* Header: goal weight + sustainability badge */}
             <div style={{padding:"14px 16px 10px",borderBottom:"1px solid var(--border)",display:"flex",alignItems:"center",justifyContent:"space-between"}}>
               <div>
-                <div style={{fontSize:11,letterSpacing:2,textTransform:"uppercase",marginBottom:2,display:"flex",alignItems:"center",gap:6}}>
+                <div style={{fontSize:12,marginBottom:2,display:"flex",alignItems:"center",gap:6}}>
                   <span style={{color: completionState==="reached" ? "var(--green)" : completionState==="approaching" ? "#FBBF24" : "var(--accent-ink)"}}>●</span>
                   <span style={{color:"var(--accent-ink)"}}>Physique Target</span>
-                  {completionState === "approaching" && <span style={{color:"#FBBF24",fontSize:11}}>APPROACHING</span>}
-                  {completionState === "reached"     && <span style={{color:"var(--green)",fontSize:11}}>GOAL REACHED</span>}
-                  {completionState === "exceeded"    && <span style={{color:"var(--accent-ink)",fontSize:11}}>OVERSHOT</span>}
+                  {completionState === "approaching" && <span style={{color:"#FBBF24",fontSize:12}}>Approaching</span>}
+                  {completionState === "reached"     && <span style={{color:"var(--green)",fontSize:12}}>Goal reached</span>}
+                  {completionState === "exceeded"    && <span style={{color:"var(--accent-ink)",fontSize:12}}>Overshot</span>}
                 </div>
                 {showOverrideInput ? (
                   <div style={{display:"flex",alignItems:"center",gap:8,marginTop:4}}>
@@ -5361,8 +5366,8 @@ function DashboardScreen({ user, weightLog, onLogWeight, onDeleteWeight, onEditW
                       value={overrideVal}
                       onChange={e => setOverrideVal(e.target.value)}
                       placeholder={String(goalConfig.effectiveGoalWeight)}
-                      style={{width:90,background:"var(--up)",border:"1px solid var(--accent)",borderRadius:6,padding:"6px 10px",color:"var(--text)",fontSize:15,fontFamily:"'Bebas Neue',sans-serif",letterSpacing:1,outline:"none"}}/>
-                    <span style={{fontSize:11,color:"var(--muted)"}}>lbs</span>
+                      style={{width:90,background:"var(--up)",border:"1px solid var(--accent)",borderRadius:10,padding:"6px 10px",color:"var(--text)",fontSize:15,fontFamily:"var(--font-display)", fontWeight:700,outline:"none"}}/>
+                    <span style={{fontSize:12,color:"var(--muted)"}}>lbs</span>
                     <button onClick={() => {
                       const w = parseFloat(overrideVal);
                       if (!w || w < 80 || w > 400) return;
@@ -5370,7 +5375,7 @@ function DashboardScreen({ user, weightLog, onLogWeight, onDeleteWeight, onEditW
                       window.storage.set(GOAL_CONFIG_KEY, JSON.stringify(updated)).catch(()=>{});
                       setStoredGoalConfig(updated);
                       setShowOverrideInput(false); setOverrideVal("");
-                    }} style={{padding:"5px 10px",background:"var(--accent)",color:"#080A0C",border:"none",borderRadius:6,fontFamily:"'Bebas Neue',sans-serif",fontSize:11,letterSpacing:1,cursor:"pointer"}}>
+                    }} style={{padding:"5px 10px",background:"var(--accent)",color:"#080A0C",border:"none",borderRadius:10,fontFamily:"var(--font-display)", fontWeight:700,fontSize:12,cursor:"pointer"}}>
                       SET
                     </button>
                     <button onClick={() => { setShowOverrideInput(false); setOverrideVal(""); }}
@@ -5378,12 +5383,12 @@ function DashboardScreen({ user, weightLog, onLogWeight, onDeleteWeight, onEditW
                   </div>
                 ) : (
                   <div style={{display:"flex",alignItems:"baseline",gap:8}}>
-                    <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:20,letterSpacing:1,color:"var(--text)"}}>
-                      {goalConfig.isDualTarget ? "COMPOSITION SHIFT" : `${goalConfig.effectiveGoalWeight} LBS`}
+                    <div style={{fontFamily:"var(--font-display)", fontWeight:700,fontSize:20,color:"var(--text)"}}>
+                      {goalConfig.isDualTarget ? "Composition shift" : `${goalConfig.effectiveGoalWeight} lbs`}
                     </div>
                     {!goalConfig.isDualTarget && (
                       <button onClick={() => { setOverrideVal(String(goalConfig.effectiveGoalWeight)); setShowOverrideInput(true); }}
-                        style={{background:"none",border:"none",color:"var(--faint)",fontSize:11,cursor:"pointer",padding:0,letterSpacing:.5,textDecoration:"underline",textUnderlineOffset:2,fontFamily:"'DM Sans',sans-serif"}}>
+                        style={{background:"none",border:"none",color:"var(--faint)",fontSize:12,cursor:"pointer",padding:0,textDecoration:"underline",textUnderlineOffset:2,fontFamily:"var(--font-text)"}}>
                         {goalConfig.userOverrideWeight ? "custom" : "customize"}
                       </button>
                     )}
@@ -5392,7 +5397,7 @@ function DashboardScreen({ user, weightLog, onLogWeight, onDeleteWeight, onEditW
                         const reset = { ...goalConfig, userOverrideWeight:null, effectiveGoalWeight:goalConfig.goalWeight, updatedAt:Date.now() };
                         window.storage.set(GOAL_CONFIG_KEY, JSON.stringify(reset)).catch(()=>{});
                         setStoredGoalConfig(reset);
-                      }} style={{background:"none",border:"none",color:"var(--muted)",fontSize:11,cursor:"pointer",padding:0,letterSpacing:.5,textDecoration:"underline",textUnderlineOffset:2,fontFamily:"'DM Sans',sans-serif"}}>
+                      }} style={{background:"none",border:"none",color:"var(--muted)",fontSize:12,cursor:"pointer",padding:0,textDecoration:"underline",textUnderlineOffset:2,fontFamily:"var(--font-text)"}}>
                         reset
                       </button>
                     )}
@@ -5407,7 +5412,7 @@ function DashboardScreen({ user, weightLog, onLogWeight, onDeleteWeight, onEditW
                   const inRange = w >= goalConfig.goalWeightRange[0] && w <= goalConfig.goalWeightRange[1];
                   const col = inRange ? "var(--green)" : Math.abs(w - goalConfig.goalWeight) < 10 ? "var(--accent)" : "var(--red)";
                   return (
-                    <div style={{marginTop:5,fontSize:11,color:col}}>
+                    <div style={{marginTop:5,fontSize:12,color:col}}>
                       {projBf.toFixed(1)}% BF · {outcome}
                       {!inRange && <span style={{marginLeft:4,opacity:.7}}>(outside recommended range)</span>}
                     </div>
@@ -5417,21 +5422,21 @@ function DashboardScreen({ user, weightLog, onLogWeight, onDeleteWeight, onEditW
               <div style={{display:"flex",flexDirection:"column",alignItems:"flex-end",gap:4}}>
                 <div style={{display:"inline-flex",alignItems:"center",gap:5,padding:"4px 10px",borderRadius:20,background:`color-mix(in srgb,${ratingCol} 12%,transparent)`,border:`1px solid color-mix(in srgb,${ratingCol} 30%,transparent)`}}>
                   <div style={{width:5,height:5,borderRadius:"50%",background:ratingCol}}/>
-                  <span style={{fontSize:11,fontFamily:"'Bebas Neue',sans-serif",letterSpacing:1.5,color:ratingCol}}>{goalConfig.realisticRating.toUpperCase()}</span>
+                  <span style={{fontSize:12,fontFamily:"var(--font-display)", fontWeight:700,color:ratingCol}}>{labelCase(goalConfig.realisticRating)}</span>
                 </div>
-                <div style={{fontSize:11,color:"var(--muted)"}}>{goalConfig.goalBfPct}% BF target</div>
+                <div style={{fontSize:12,color:"var(--muted)"}}>{goalConfig.goalBfPct}% BF target</div>
               </div>
             </div>
 
             {/* Compact summary row — always visible */}
             <div style={{padding:"8px 16px",borderBottom:"1px solid var(--border)",display:"flex",alignItems:"center",justifyContent:"space-between"}}>
-              <div style={{fontSize:11,color:"var(--muted)"}}>
+              <div style={{fontSize:12,color:"var(--muted)"}}>
                 {totalDelta > 0
                   ? <><span style={{color:"var(--text)",fontWeight:600}}>{Math.round(progressPct)}%</span> of the way · ETA <span style={{color:"var(--text)",fontWeight:600}}>{liveEta > 0 ? `${liveEta}w` : "—"}</span></>
                   : <span style={{color:"var(--muted)"}}>Recomposition target — weight stays flat</span>}
               </div>
-              <button onClick={() => setGcExpanded(e => !e)} style={{background:"none",border:"none",padding:0,cursor:"pointer",display:"flex",alignItems:"center",gap:4,fontSize:11,color:"var(--faint)",fontFamily:"'Bebas Neue',sans-serif",letterSpacing:1}}>
-                {gcExpanded ? "LESS" : "DETAILS"}
+              <button onClick={() => setGcExpanded(e => !e)} style={{background:"none",border:"none",padding:0,cursor:"pointer",display:"flex",alignItems:"center",gap:4,fontSize:12,color:"var(--faint)",fontFamily:"var(--font-display)", fontWeight:700,}}>
+                {gcExpanded ? "Less" : "Details"}
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{width:12,height:12,transition:"transform .2s",transform:gcExpanded?"rotate(180deg)":"none"}}>
                   <path d="M6 9l6 6 6-6"/>
                 </svg>
@@ -5442,19 +5447,19 @@ function DashboardScreen({ user, weightLog, onLogWeight, onDeleteWeight, onEditW
             {gcExpanded && totalDelta > 0 && (
               <div style={{padding:"10px 16px 8px",borderBottom:"1px solid var(--border)"}}>
                 <div style={{display:"flex",justifyContent:"space-between",alignItems:"baseline",marginBottom:5}}>
-                  <div style={{fontSize:11,letterSpacing:1.5,textTransform:"uppercase",color:"var(--muted)"}}>Progress</div>
-                  <div style={{fontSize:11,color:"var(--faint)"}}>
+                  <div style={{fontSize:12,color:"var(--muted)"}}>Progress</div>
+                  <div style={{fontSize:12,color:"var(--faint)"}}>
                     {rawDelta !== 0
                       ? `${rawDelta > 0 ? "+" : ""}${rawDelta.toFixed(1)} lbs from start`
                       : "at baseline"}
                   </div>
                 </div>
-                <div style={{height:6,background:"var(--up)",borderRadius:3,overflow:"hidden",marginBottom:6}}>
+                <div style={{height:6,background:"var(--up)",borderRadius:10,overflow:"hidden",marginBottom:6}}>
                   <div style={{height:"100%",width:`${progressPct}%`,
                     background: completionState==="reached" ? "var(--green)" : completionState==="approaching" ? "#FBBF24" : "var(--accent)",
-                    borderRadius:3,transition:"width 1s cubic-bezier(.22,1,.36,1)"}}/>
+                    borderRadius:10,transition:"width 1s cubic-bezier(.22,1,.36,1)"}}/>
                 </div>
-                <div style={{fontSize:11,color:"var(--faint)",marginBottom:8,textAlign:"right"}}>{Math.round(progressPct)}% of the way there</div>
+                <div style={{fontSize:12,color:"var(--faint)",marginBottom:8,textAlign:"right"}}>{Math.round(progressPct)}% of the way there</div>
 
                 {/* Snapshot trajectory sparkline */}
                 {snapshots.length >= 2 && (() => {
@@ -5509,15 +5514,15 @@ function DashboardScreen({ user, weightLog, onLogWeight, onDeleteWeight, onEditW
                 },
               ].map((m, i) => (
                 <div key={m.label} style={{padding:"10px 12px",borderRight: i < 2 ? "1px solid var(--border)" : "none"}}>
-                  <div style={{fontSize:11,letterSpacing:1.5,textTransform:"uppercase",color:"var(--muted)",marginBottom:3}}>
+                  <div style={{fontSize:12,color:"var(--muted)",marginBottom:3}}>
                     {m.label === "LBM Goal" ? (
-                      <Tip label="Lean Body Mass target — your muscle + organ weight at goal, no fat included">LBM GOAL</Tip>
+                      <Tip label="Lean Body Mass target — your muscle + organ weight at goal, no fat included">LBM goal</Tip>
                     ) : m.label === "Sustain" ? (
-                      <Tip label="Sustainability score: how realistic this goal is given your starting point (0 = unrealistic, 100 = conservative)">SUSTAIN</Tip>
+                      <Tip label="Sustainability score: how realistic this goal is given your starting point (0 = unrealistic, 100 = conservative)">Sustain</Tip>
                     ) : m.label}
                   </div>
-                  <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:20,letterSpacing:.5,color:m.color,lineHeight:1}}>{m.val}</div>
-                  <div style={{fontSize:11,color:"var(--faint)",marginTop:2}}>{m.sub}</div>
+                  <div style={{fontFamily:"var(--font-display)", fontWeight:700,fontSize:20,color:m.color,lineHeight:1}}>{m.val}</div>
+                  <div style={{fontSize:12,color:"var(--faint)",marginTop:2}}>{m.sub}</div>
                 </div>
               ))}
             </div>}
@@ -5526,7 +5531,7 @@ function DashboardScreen({ user, weightLog, onLogWeight, onDeleteWeight, onEditW
             {latestSnapshot?.rateAlert && (
               <div style={{padding:"8px 16px",borderBottom:"1px solid var(--border)",display:"flex",alignItems:"center",gap:8,background:`color-mix(in srgb,${rateAlertCol[latestSnapshot.rateAlert]} 8%,transparent)`}}>
                 <div style={{width:5,height:5,borderRadius:"50%",flexShrink:0,background:rateAlertCol[latestSnapshot.rateAlert]}}/>
-                <div style={{fontSize:11,color:rateAlertCol[latestSnapshot.rateAlert]}}>
+                <div style={{fontSize:12,color:rateAlertCol[latestSnapshot.rateAlert]}}>
                   {latestSnapshot.rateAlert === "too_fast" && "Rate faster than target — watch muscle retention and recovery"}
                   {latestSnapshot.rateAlert === "too_slow" && "Rate slower than target — review calorie targets and adherence"}
                   {latestSnapshot.rateAlert === "off_course" && "Moving in the wrong direction — check nutrition tracking"}
@@ -5539,17 +5544,16 @@ function DashboardScreen({ user, weightLog, onLogWeight, onDeleteWeight, onEditW
             <div style={{padding:"10px 16px",borderBottom:"1px solid var(--border)"}}>
               <div style={{display:"flex",alignItems:"flex-start",justifyContent:"space-between",gap:12}}>
                 <div style={{flex:1}}>
-                  <div style={{fontSize:11,fontWeight:600,color:"var(--muted)",letterSpacing:.5,marginBottom:3}}>Projected outcome</div>
+                  <div style={{fontSize:12,fontWeight:600,color:"var(--muted)",marginBottom:3}}>Projected outcome</div>
                   <div style={{fontSize:12,color:"var(--faint)",lineHeight:1.55,fontStyle:"italic"}}>"{goalConfig.projectedVisualOutcome}"</div>
                   {goalConfig.currentVisualOutcome !== goalConfig.projectedVisualOutcome && (
-                    <div style={{fontSize:11,color:"var(--muted)",marginTop:4}}>Currently: {goalConfig.currentVisualOutcome}</div>
+                    <div style={{fontSize:12,color:"var(--muted)",marginTop:4}}>Currently: {goalConfig.currentVisualOutcome}</div>
                   )}
                 </div>
                 <button onClick={handleGenerateReport}
                   style={{flexShrink:0,padding:"7px 12px",background:"color-mix(in srgb,var(--accent) 14%,transparent)",
                     border:"1px solid color-mix(in srgb,var(--accent) 35%,transparent)",
-                    borderRadius:8,fontFamily:"'Bebas Neue',sans-serif",fontSize:11,letterSpacing:1.5,
-                    color:"var(--accent-ink)",cursor:"pointer",whiteSpace:"nowrap",alignSelf:"flex-start",marginTop:2}}>
+                    borderRadius:12,fontFamily:"var(--font-display)", fontWeight:700,fontSize:12,color:"var(--accent-ink)",cursor:"pointer",whiteSpace:"nowrap",alignSelf:"flex-start",marginTop:2}}>
                   → FULL ANALYSIS
                 </button>
               </div>
@@ -5559,10 +5563,10 @@ function DashboardScreen({ user, weightLog, onLogWeight, onDeleteWeight, onEditW
             {/* Goal revision suggestion — Accept / Defer 7d / Dismiss */}
             {goalRevision?.suggested && (
               <div style={{padding:"12px 16px",background:"color-mix(in srgb,var(--accent) 8%,transparent)",borderTop:"1px solid var(--border)"}}>
-                <div style={{fontSize:11,letterSpacing:2,textTransform:"uppercase",color:"var(--accent-ink)",marginBottom:6}}>● APEX SUGGESTS</div>
+                <div style={{fontSize:12,color:"var(--accent-ink)",marginBottom:6}}>● APEX suggests</div>
                 <div style={{fontSize:12,color:"var(--faint)",lineHeight:1.65,marginBottom:10}}>{goalRevision.reason}</div>
                 {goalRevision.revisedGoalWeight && (
-                  <div style={{fontSize:11,fontFamily:"'Bebas Neue',sans-serif",letterSpacing:1,color:"var(--accent-ink)",marginBottom:10}}>
+                  <div style={{fontSize:12,fontFamily:"var(--font-display)", fontWeight:700,color:"var(--accent-ink)",marginBottom:10}}>
                     Revised target: {goalRevision.revisedGoalWeight} lbs
                   </div>
                 )}
@@ -5585,8 +5589,8 @@ function DashboardScreen({ user, weightLog, onLogWeight, onDeleteWeight, onEditW
                       setStoredGoalConfig(updated);
                       setGoalRevision(null);
                     }}
-                    style={{padding:"7px 14px",background:"var(--accent)",color:"#080A0C",border:"none",borderRadius:8,fontFamily:"'Bebas Neue',sans-serif",fontSize:12,letterSpacing:1.2,cursor:"pointer"}}>
-                      ACCEPT
+                    style={{padding:"7px 14px",background:"var(--accent)",color:"#080A0C",border:"none",borderRadius:12,fontFamily:"var(--font-display)", fontWeight:700,fontSize:12,cursor:"pointer"}}>
+                      Accept
                     </button>
                   )}
                   {/* DEFER 7D — snoozes all revision triggers for 7 days */}
@@ -5603,8 +5607,8 @@ function DashboardScreen({ user, weightLog, onLogWeight, onDeleteWeight, onEditW
                     setStoredGoalConfig(updated);
                     setGoalRevision(null);
                   }}
-                  style={{padding:"7px 14px",background:"var(--up)",color:"var(--muted)",border:"1px solid var(--border)",borderRadius:8,fontFamily:"'Bebas Neue',sans-serif",fontSize:12,letterSpacing:1.2,cursor:"pointer"}}>
-                    DEFER 7D
+                  style={{padding:"7px 14px",background:"var(--up)",color:"var(--muted)",border:"1px solid var(--border)",borderRadius:12,fontFamily:"var(--font-display)", fontWeight:700,fontSize:12,cursor:"pointer"}}>
+                    Defer 7 days
                   </button>
                   {/* DISMISS — acknowledges this trigger, won't fire again */}
                   <button onClick={() => {
@@ -5620,7 +5624,7 @@ function DashboardScreen({ user, weightLog, onLogWeight, onDeleteWeight, onEditW
                     setStoredGoalConfig(updated);
                     setGoalRevision(null);
                   }}
-                  style={{padding:"7px 14px",background:"none",color:"var(--faint)",border:"none",fontFamily:"'DM Sans',sans-serif",fontSize:12,cursor:"pointer",textDecoration:"underline",textUnderlineOffset:2}}>
+                  style={{padding:"7px 14px",background:"none",color:"var(--faint)",border:"none",fontFamily:"var(--font-text)",fontSize:12,cursor:"pointer",textDecoration:"underline",textUnderlineOffset:2}}>
                     Dismiss
                   </button>
                 </div>
@@ -5631,8 +5635,8 @@ function DashboardScreen({ user, weightLog, onLogWeight, onDeleteWeight, onEditW
             <div style={{padding:"12px 16px",background:`color-mix(in srgb,${completionState==="reached"?"var(--green)":"var(--accent)"} 10%,transparent)`,borderTop:"1px solid var(--border)"}}>
               <div style={{display:"flex",alignItems:"flex-start",justifyContent:"space-between",marginBottom:8}}>
                 <div>
-                  <div style={{fontSize:11,letterSpacing:2,textTransform:"uppercase",color:completionState==="reached"?"var(--green)":"var(--accent-ink)",marginBottom:3}}>
-                    {completionState==="reached" ? "GOAL REACHED" : "GOAL EXCEEDED"}
+                  <div style={{fontSize:12,color:completionState==="reached"?"var(--green)":"var(--accent-ink)",marginBottom:3}}>
+                    {completionState==="reached" ? "Goal reached" : "Goal exceeded"}
                   </div>
                   <div style={{fontSize:12,color:"var(--faint)",lineHeight:1.5}}>
                     {completionState==="reached"
@@ -5645,15 +5649,15 @@ function DashboardScreen({ user, weightLog, onLogWeight, onDeleteWeight, onEditW
               </div>
               <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
                 <button onClick={()=>{ onGoalTransition?.("maintain"); setCompletionDismissed(true); }}
-                  style={{padding:"7px 14px",background:"var(--green)",color:"#080A0C",border:"none",borderRadius:8,fontFamily:"'Bebas Neue',sans-serif",fontSize:12,letterSpacing:1.2,cursor:"pointer"}}>
-                  MAINTAIN
+                  style={{padding:"7px 14px",background:"var(--green)",color:"#080A0C",border:"none",borderRadius:12,fontFamily:"var(--font-display)", fontWeight:700,fontSize:12,cursor:"pointer"}}>
+                  Maintain
                 </button>
                 <button onClick={()=>{ onEditProfile?.(); setCompletionDismissed(true); }}
-                  style={{padding:"7px 14px",background:"var(--up)",color:"var(--text)",border:"1px solid var(--border)",borderRadius:8,fontFamily:"'Bebas Neue',sans-serif",fontSize:12,letterSpacing:1.2,cursor:"pointer"}}>
-                  NEW PHASE
+                  style={{padding:"7px 14px",background:"var(--up)",color:"var(--text)",border:"1px solid var(--border)",borderRadius:12,fontFamily:"var(--font-display)", fontWeight:700,fontSize:12,cursor:"pointer"}}>
+                  New phase
                 </button>
                 <button onClick={()=>setCompletionDismissed(true)}
-                  style={{padding:"7px 14px",background:"none",color:"var(--faint)",border:"none",fontFamily:"'DM Sans',sans-serif",fontSize:12,cursor:"pointer",textDecoration:"underline",textUnderlineOffset:2}}>
+                  style={{padding:"7px 14px",background:"none",color:"var(--faint)",border:"none",fontFamily:"var(--font-text)",fontSize:12,cursor:"pointer",textDecoration:"underline",textUnderlineOffset:2}}>
                   Keep going
                 </button>
               </div>
@@ -5669,18 +5673,18 @@ function DashboardScreen({ user, weightLog, onLogWeight, onDeleteWeight, onEditW
               : null;
             return (
               <div style={{padding:"8px 16px",borderTop:"1px solid var(--border)",display:"flex",alignItems:"center",justifyContent:"space-between"}}>
-                <div style={{fontSize:11,color:"var(--muted)",letterSpacing:.5}}>
+                <div style={{fontSize:12,color:"var(--muted)",}}>
                   {completed.length > 0
                     ? `Phase ${goalHistory.length} · ${completed.length} completed`
                     : "Phase 1 · Journey start"}
                 </div>
                 {weeksIn !== null && (
-                  <div style={{fontSize:11,color:"var(--faint)"}}>{weeksIn}w in</div>
+                  <div style={{fontSize:12,color:"var(--faint)"}}>{weeksIn}w in</div>
                 )}
                 {completed.length > 0 && (
                   <div style={{display:"flex",gap:4}}>
                     {completed.slice(-3).map((p, i) => (
-                      <div key={i} style={{fontSize:11,padding:"2px 6px",borderRadius:4,background:"var(--up)",color:"var(--muted)",fontFamily:"'Bebas Neue',sans-serif",letterSpacing:.5}}>
+                      <div key={i} style={{fontSize:12,padding:"2px 6px",borderRadius:10,background:"var(--up)",color:"var(--muted)",fontFamily:"var(--font-display)", fontWeight:700,}}>
                         {p.phase.toUpperCase().slice(0,3)}
                         {p.endWeight && p.startWeight
                           ? ` ${p.endWeight - p.startWeight > 0 ? "+" : ""}${(p.endWeight - p.startWeight).toFixed(0)}`
@@ -5728,47 +5732,47 @@ function DashboardScreen({ user, weightLog, onLogWeight, onDeleteWeight, onEditW
         };
 
         return (
-          <div style={{margin:"0 24px 20px",background:"var(--surface)",border:"1px solid var(--border)",borderRadius:14,overflow:"hidden"}}>
+          <div style={{margin:"0 24px 20px",background:"var(--surface)",border:"1px solid var(--border)",borderRadius:16,overflow:"hidden"}}>
             <div style={{padding:"10px 14px 8px",borderBottom:"1px solid var(--border)",display:"flex",alignItems:"center",justifyContent:"space-between"}}>
-              <div style={{fontSize:11,letterSpacing:2,textTransform:"uppercase",color:"var(--accent-ink)"}}>● Body Composition</div>
+              <div style={{fontSize:12,color:"var(--accent-ink)"}}>● Body Composition</div>
               <div style={{display:"flex",alignItems:"center",gap:8}}>
                 {physiqueHistory.length > 0 && (
-                  <div style={{fontSize:11,color:"var(--muted)"}}>{physiqueHistory.length} scan{physiqueHistory.length!==1?"s":""}</div>
+                  <div style={{fontSize:12,color:"var(--muted)"}}>{physiqueHistory.length} scan{physiqueHistory.length!==1?"s":""}</div>
                 )}
                 <button onClick={()=>setShowPhysiqueScan(true)}
-                  style={{padding:"4px 10px",background:"color-mix(in srgb,var(--accent) 14%,transparent)",border:"1px solid color-mix(in srgb,var(--accent) 35%,transparent)",borderRadius:6,fontFamily:"'Bebas Neue',sans-serif",fontSize:11,letterSpacing:1.5,color:"var(--accent-ink)",cursor:"pointer"}}>
-                  PHYSIQUE SCAN
+                  style={{padding:"4px 10px",background:"color-mix(in srgb,var(--accent) 14%,transparent)",border:"1px solid color-mix(in srgb,var(--accent) 35%,transparent)",borderRadius:10,fontFamily:"var(--font-display)", fontWeight:700,fontSize:12,color:"var(--accent-ink)",cursor:"pointer"}}>
+                  Physique scan
                 </button>
               </div>
             </div>
             <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:0}}>
               {/* BF% */}
               <div style={{padding:"10px 14px",borderRight:"1px solid var(--border)"}}>
-                <div style={{fontSize:11,letterSpacing:1.5,textTransform:"uppercase",color:"var(--muted)",marginBottom:2}}>Body Fat %</div>
+                <div style={{fontSize:12,color:"var(--muted)",marginBottom:2}}>Body Fat %</div>
                 <div style={{display:"flex",alignItems:"baseline",gap:6,marginBottom:4}}>
-                  <span style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:20,letterSpacing:.5,color:"var(--text)"}}>{latSnap.estimatedBfPct ?? "—"}</span>
+                  <span style={{fontFamily:"var(--font-display)", fontWeight:700,fontSize:20,color:"var(--text)"}}>{latSnap.estimatedBfPct ?? "—"}</span>
                   {bfDelta !== null && (
-                    <span style={{fontSize:11,color: bfDelta < 0 ? "var(--green)" : "var(--accent-ink)"}}>
+                    <span style={{fontSize:12,color: bfDelta < 0 ? "var(--green)" : "var(--accent-ink)"}}>
                       {bfDelta > 0 ? "+" : ""}{bfDelta}%
                     </span>
                   )}
                 </div>
                 <Spark pts={bfPts} col="var(--accent)" goal={goalConfig.goalBfPct} invert={true}/>
-                <div style={{fontSize:11,color:"var(--faint)",marginTop:3}}>Goal: {goalConfig.goalBfPct}%</div>
+                <div style={{fontSize:12,color:"var(--faint)",marginTop:3}}>Goal: {goalConfig.goalBfPct}%</div>
               </div>
               {/* LBM */}
               <div style={{padding:"10px 14px"}}>
-                <div style={{fontSize:11,letterSpacing:1.5,textTransform:"uppercase",color:"var(--muted)",marginBottom:2}}>Lean Mass (lbs)</div>
+                <div style={{fontSize:12,color:"var(--muted)",marginBottom:2}}>Lean Mass (lbs)</div>
                 <div style={{display:"flex",alignItems:"baseline",gap:6,marginBottom:4}}>
-                  <span style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:20,letterSpacing:.5,color:"var(--text)"}}>{latSnap.estimatedLbmLbs ?? "—"}</span>
+                  <span style={{fontFamily:"var(--font-display)", fontWeight:700,fontSize:20,color:"var(--text)"}}>{latSnap.estimatedLbmLbs ?? "—"}</span>
                   {lbmDelta !== null && (
-                    <span style={{fontSize:11,color: lbmDelta >= 0 ? "var(--green)" : "var(--red)"}}>
+                    <span style={{fontSize:12,color: lbmDelta >= 0 ? "var(--green)" : "var(--red)"}}>
                       {lbmDelta > 0 ? "+" : ""}{lbmDelta}
                     </span>
                   )}
                 </div>
                 <Spark pts={lbmPts} col="var(--blue)" goal={goalConfig.goalLbmLbs} invert={false}/>
-                <div style={{fontSize:11,color:"var(--faint)",marginTop:3}}>Goal: {goalConfig.goalLbmLbs} lbs</div>
+                <div style={{fontSize:12,color:"var(--faint)",marginTop:3}}>Goal: {goalConfig.goalLbmLbs} lbs</div>
               </div>
             </div>
             {/* FFMI progress meter */}
@@ -5780,16 +5784,16 @@ function DashboardScreen({ user, weightLog, onLogWeight, onDeleteWeight, onEditW
               return (
                 <div style={{padding:"10px 14px",borderTop:"1px solid var(--border)"}}>
                   <div style={{display:"flex",justifyContent:"space-between",alignItems:"baseline",marginBottom:4}}>
-                    <div style={{fontSize:11,letterSpacing:1.5,textTransform:"uppercase",color:"var(--muted)"}}>FFMI — Muscle Index</div>
+                    <div style={{fontSize:12,color:"var(--muted)"}}>FFMI — Muscle Index</div>
                     <div style={{display:"flex",alignItems:"baseline",gap:4}}>
-                      <span style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:16,color:ffmiCol}}>{latSnap.ffmi.toFixed(1)}</span>
-                      <span style={{fontSize:11,color:"var(--muted)"}}>&nbsp;/ {ceiling}</span>
+                      <span style={{fontFamily:"var(--font-display)", fontWeight:700,fontSize:16,color:ffmiCol}}>{latSnap.ffmi.toFixed(1)}</span>
+                      <span style={{fontSize:12,color:"var(--muted)"}}>&nbsp;/ {ceiling}</span>
                     </div>
                   </div>
-                  <div style={{height:4,background:"var(--up)",borderRadius:2,overflow:"hidden",marginBottom:3}}>
-                    <div style={{height:"100%",width:`${pct}%`,background:ffmiCol,borderRadius:2,transition:"width .8s cubic-bezier(.22,1,.36,1)"}}/>
+                  <div style={{height:4,background:"var(--up)",borderRadius:10,overflow:"hidden",marginBottom:3}}>
+                    <div style={{height:"100%",width:`${pct}%`,background:ffmiCol,borderRadius:10,transition:"width .8s cubic-bezier(.22,1,.36,1)"}}/>
                   </div>
-                  <div style={{fontSize:11,color:"var(--faint)"}}>
+                  <div style={{fontSize:12,color:"var(--faint)"}}>
                     {pct < 40 ? "Significant growth potential — beginner/early development"
                     : pct < 65 ? "Intermediate range — strong growth potential remains"
                     : pct < 82 ? "Advanced — approaching natural ceiling"
@@ -5816,10 +5820,10 @@ function DashboardScreen({ user, weightLog, onLogWeight, onDeleteWeight, onEditW
               return (
                 <div style={{padding:"10px 14px",borderTop:"1px solid var(--border)"}}>
                   <div style={{display:"flex",justifyContent:"space-between",alignItems:"baseline",marginBottom:4}}>
-                    <div style={{fontSize:11,letterSpacing:1.5,textTransform:"uppercase",color:"var(--muted)"}}>Adherence</div>
+                    <div style={{fontSize:12,color:"var(--muted)"}}>Adherence</div>
                     <div style={{display:"flex",alignItems:"baseline",gap:5}}>
-                      <span style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:16,color:col}}>{latAdh}</span>
-                      <span style={{fontSize:11,color:"var(--muted)"}}>/ 100&nbsp;·&nbsp;avg {avgAdh}</span>
+                      <span style={{fontFamily:"var(--font-display)", fontWeight:700,fontSize:16,color:col}}>{latAdh}</span>
+                      <span style={{fontSize:12,color:"var(--muted)"}}>/ 100&nbsp;·&nbsp;avg {avgAdh}</span>
                     </div>
                   </div>
                   <svg viewBox={`0 0 ${W} ${H}`} style={{width:"100%",height:24,display:"block"}}>
@@ -5834,7 +5838,7 @@ function DashboardScreen({ user, weightLog, onLogWeight, onDeleteWeight, onEditW
             {goalCalAdj !== 0 && (
               <div style={{padding:"7px 14px",borderTop:"1px solid var(--border)",background:"color-mix(in srgb,var(--accent) 6%,transparent)",display:"flex",alignItems:"center",gap:8}}>
                 <div style={{width:5,height:5,borderRadius:"50%",flexShrink:0,background:"var(--accent)"}}/>
-                <div style={{fontSize:11,color:"var(--accent-ink)"}}>
+                <div style={{fontSize:12,color:"var(--accent-ink)"}}>
                   Calorie target adjusted {goalCalAdj > 0 ? "+" : ""}{goalCalAdj} kcal/day to hit pace
                 </div>
               </div>
@@ -5927,7 +5931,7 @@ function DashboardScreen({ user, weightLog, onLogWeight, onDeleteWeight, onEditW
           {last7Days.map((d,i) => (
             <div key={i} className={`sdot ${d.done?"on":"off"}`}>{d.done ? "✓" : d.label}</div>
           ))}
-          <span style={{fontSize:11,color:"var(--muted)",marginLeft:6}}>
+          <span style={{fontSize:12,color:"var(--muted)",marginLeft:6}}>
             {streak > 0 ? `${streak}-day streak` : "No sessions yet"}
           </span>
         </div>
@@ -5936,13 +5940,13 @@ function DashboardScreen({ user, weightLog, onLogWeight, onDeleteWeight, onEditW
       {/* WEIGHT GRAPH */}
       <div style={{margin:"0 24px 20px",background:"var(--surface)",border:"1px solid var(--border)",borderRadius:16,overflow:"hidden"}}>
         <div style={{padding:"14px 18px 8px"}}>
-          <div style={{fontSize:11,fontWeight:600,color:"var(--muted)"}}>30-Day Bodyweight Trend</div>
+          <div style={{fontSize:12,fontWeight:600,color:"var(--muted)"}}>30-Day Bodyweight Trend</div>
         </div>
         {sortedLog.length >= 1 ? (
           <WeightGraph3D logs={sortedLog} ceilingWeight={reboundData?.ceiling||null} stageWeight={reboundData?.stageWeight||null}/>
         ) : (
           <div style={{height:180,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:8,padding:24}}>
-            <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:16,letterSpacing:1,color:"var(--muted)"}}>NO DATA YET</div>
+            <div style={{fontFamily:"var(--font-display)", fontWeight:700,fontSize:16,color:"var(--muted)"}}>No data yet</div>
             <div style={{fontSize:12,color:"var(--muted)",textAlign:"center",lineHeight:1.5}}>Log your first weight above to start tracking.</div>
           </div>
         )}
@@ -5953,8 +5957,8 @@ function DashboardScreen({ user, weightLog, onLogWeight, onDeleteWeight, onEditW
         <div style={{display:"flex",alignItems:"center",justifyContent:"space-between"}}>
           <button onClick={()=>setShowProtocol(p=>!p)}
             style={{display:"flex",alignItems:"center",gap:10,background:"none",border:"none",cursor:"pointer",padding:0,textAlign:"left"}}>
-            <div style={{fontSize:11,fontWeight:700,letterSpacing:2,textTransform:"uppercase",color:C.text}}>Coach View</div>
-            <div style={{width:20,height:20,borderRadius:4,border:`1px solid var(--border)`,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,transition:"transform .2s",transform:showProtocol?"rotate(180deg)":"none"}}>
+            <div style={{fontSize:12,fontWeight:700,color:C.text}}>Coach View</div>
+            <div style={{width:20,height:20,borderRadius:10,border:`1px solid var(--border)`,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,transition:"transform .2s",transform:showProtocol?"rotate(180deg)":"none"}}>
               <svg viewBox="0 0 12 8" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" style={{width:10,color:"var(--muted)"}}><path d="M1 1.5l5 5 5-5"/></svg>
             </div>
           </button>
@@ -5971,14 +5975,14 @@ function DashboardScreen({ user, weightLog, onLogWeight, onDeleteWeight, onEditW
           <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:10}}>
             <div className="pi-group" style={{margin:0}}>Body Composition</div>
             <button onClick={()=>setShowPhysiqueScan(true)}
-              style={{padding:"4px 10px",background:"color-mix(in srgb,var(--accent) 12%,transparent)",border:"1px solid color-mix(in srgb,var(--accent) 30%,transparent)",borderRadius:6,fontFamily:"'Bebas Neue',sans-serif",fontSize:11,letterSpacing:1.5,color:"var(--accent-ink)",cursor:"pointer"}}>
-              {physiqueHistory.length > 0 ? "RE-SCAN" : "PHYSIQUE SCAN"}
+              style={{padding:"4px 10px",background:"color-mix(in srgb,var(--accent) 12%,transparent)",border:"1px solid color-mix(in srgb,var(--accent) 30%,transparent)",borderRadius:10,fontFamily:"var(--font-display)", fontWeight:700,fontSize:12,color:"var(--accent-ink)",cursor:"pointer"}}>
+              {physiqueHistory.length > 0 ? "Re-scan" : "Physique scan"}
             </button>
           </div>
           <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:0,textAlign:"center"}}>
             {/* Body Fat — tappable to edit */}
             <div onClick={()=>{setBfInput(String(displayComp.bfPct));setBfTab("manual");setShowBfEditor(true);}}
-              style={{cursor:"pointer",padding:"4px 8px",borderRadius:6,transition:"background .15s"}}
+              style={{cursor:"pointer",padding:"4px 8px",borderRadius:10,transition:"background .15s"}}
               onMouseOver={e=>e.currentTarget.style.background="var(--up)"}
               onMouseOut={e=>e.currentTarget.style.background=""}>
               <div className="pi-body-val" style={{color:bfOverride!=null?C.accentInk:"var(--text)"}}>{displayComp.bfPct}%</div>
@@ -6021,8 +6025,8 @@ function DashboardScreen({ user, weightLog, onLogWeight, onDeleteWeight, onEditW
               )}
             </div>
             <div>
-              <div style={{fontSize:11,fontWeight:600,letterSpacing:1,textTransform:"uppercase",color:C.muted,marginBottom:6}}>Tracking Quality</div>
-              <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:22,
+              <div style={{fontSize:12,fontWeight:600,color:C.muted,marginBottom:6}}>Tracking Quality</div>
+              <div style={{fontFamily:"var(--font-display)", fontWeight:700,fontSize:22,
                 color:confidenceScore>=0.75?C.green:confidenceScore>=0.5?C.accentInk:C.muted,
                 lineHeight:1,marginBottom:6}}>
                 {Math.round(confidenceScore*100)}%
@@ -6031,7 +6035,7 @@ function DashboardScreen({ user, weightLog, onLogWeight, onDeleteWeight, onEditW
                 <div className="pi-bar-fill" style={{width:`${Math.round(confidenceScore*100)}%`,
                   background:confidenceScore>=0.75?C.green:confidenceScore>=0.5?C.accent:C.muted}}/>
               </div>
-              <div style={{fontSize:11,color:C.faint,marginTop:4}}>
+              <div style={{fontSize:12,color:C.faint,marginTop:4}}>
                 {confidenceScore>=0.75?"Reliable data":"Log more to improve accuracy"}
               </div>
             </div>
@@ -6055,7 +6059,7 @@ function DashboardScreen({ user, weightLog, onLogWeight, onDeleteWeight, onEditW
                 <div className="pi-ready-bar">
                   <div className="pi-ready-fill" style={{width:`${r.val}%`,background:r.color}}/>
                 </div>
-                <div style={{fontSize:11,color:C.faint,lineHeight:1.3}}>{r.sub}</div>
+                <div style={{fontSize:12,color:C.faint,lineHeight:1.3}}>{r.sub}</div>
               </div>
               <div className="pi-ready-val" style={{color:r.color}}>{r.val}{r.unit}</div>
             </div>
@@ -6064,16 +6068,16 @@ function DashboardScreen({ user, weightLog, onLogWeight, onDeleteWeight, onEditW
 
         {/* ── RECOMMENDATIONS ── */}
         {protocolDecision.decisions.length > 0 && protocolDecision.decisions.map((d, i) => (
-          <div key={i} className="pi-alert-card" style={{borderColor:DECISION_COLOR[d.color]||"var(--brutal)",boxShadow:`4px 4px 0 ${DECISION_COLOR[d.color]||"var(--brutal)"}`}}>
+          <div key={i} className="pi-alert-card" style={{borderColor:DECISION_COLOR[d.color]||"var(--border)",boxShadow:"var(--shadow-1)"}}>
             <div className="pi-alert-dot" style={{background:DECISION_COLOR[d.color]||C.muted}}/>
             <div style={{flex:1}}>
               <div className="pi-alert-priority" style={{color:DECISION_COLOR[d.color]||C.muted}}>
-                {PRIORITY_LABEL[d.priority]||d.priority} · {d.type.toUpperCase()}
+                {PRIORITY_LABEL[d.priority]||d.priority} · {labelCase(d.type)}
               </div>
               <div className="pi-alert-msg">{d.msg}</div>
               {d.type==="calories" && protocolDecision.calAdjustment!==0 && (
-                <div style={{fontSize:11,color:C.muted,marginTop:6}}>
-                  Suggested target: <span style={{fontFamily:"'DM Mono',monospace",color:C.accentInk,fontWeight:700}}>{calTarget?(calTarget.cal+protocolDecision.calAdjustment).toLocaleString():"—"} kcal</span>
+                <div style={{fontSize:12,color:C.muted,marginTop:6}}>
+                  Suggested target: <span style={{fontFamily:"var(--font-num)", fontVariantNumeric:"tabular-nums",color:C.accentInk,fontWeight:700}}>{calTarget?(calTarget.cal+protocolDecision.calAdjustment).toLocaleString():"—"} kcal</span>
                 </div>
               )}
             </div>
@@ -6082,11 +6086,11 @@ function DashboardScreen({ user, weightLog, onLogWeight, onDeleteWeight, onEditW
 
         {/* ── VOLUME SIGNAL ── */}
         {protocolDecision.volumeSignal !== "maintain" && (
-          <div className="pi-alert-card" style={{borderColor:protocolDecision.volumeSignal==="increase"?C.green:C.red,boxShadow:`4px 4px 0 ${protocolDecision.volumeSignal==="increase"?C.green:C.red}`}}>
+          <div className="pi-alert-card" style={{borderColor:protocolDecision.volumeSignal==="increase"?C.green:C.red,boxShadow:"var(--shadow-1)"}}>
             <div className="pi-alert-dot" style={{background:protocolDecision.volumeSignal==="increase"?C.green:C.red}}/>
             <div style={{flex:1}}>
               <div className="pi-alert-priority" style={{color:protocolDecision.volumeSignal==="increase"?C.green:C.red}}>
-                VOLUME · {protocolDecision.volumeSignal.toUpperCase()}
+                Volume · {labelCase(protocolDecision.volumeSignal)}
               </div>
               <div className="pi-alert-msg">
                 {protocolDecision.volumeSignal==="increase"
@@ -6121,15 +6125,15 @@ function DashboardScreen({ user, weightLog, onLogWeight, onDeleteWeight, onEditW
       {showBfEditor && (
         <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,.42)",zIndex:300,display:"flex",alignItems:"flex-end",justifyContent:"center"}}
           onClick={e=>{if(e.target===e.currentTarget)setShowBfEditor(false);}}>
-          <div style={{width:"100%",maxWidth:430,background:"color-mix(in srgb,var(--card) 88%,transparent)",backdropFilter:"blur(24px) saturate(1.4)",WebkitBackdropFilter:"blur(24px) saturate(1.4)",borderTop:"1px solid var(--glass-border)",boxShadow:"var(--depth-shadow),var(--inner-light)",borderRadius:"20px 20px 0 0",padding:"24px 24px 40px",animation:"slideUp .3s cubic-bezier(.22,1,.36,1)"}}>
-            <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:24,letterSpacing:1.5,color:C.text,marginBottom:4}}>SET BODY FAT %</div>
+          <div style={{width:"100%",maxWidth:430,background:"color-mix(in srgb,var(--card) 88%,transparent)",backdropFilter:"blur(24px) saturate(1.4)",WebkitBackdropFilter:"blur(24px) saturate(1.4)",borderTop:"1px solid var(--glass-border)",boxShadow:"var(--depth-shadow),var(--inner-light)",borderRadius:"var(--shadow-1)",padding:"24px 24px 40px",animation:"slideUp .3s cubic-bezier(.22,1,.36,1)"}}>
+            <div style={{fontFamily:"var(--font-display)", fontWeight:700,fontSize:24,color:C.text,marginBottom:4}}>Set body fat %</div>
             <div style={{fontSize:12,color:C.muted,marginBottom:20,lineHeight:1.5}}>The formula estimated <strong style={{color:C.text}}>{userState.bodyComp.bfPct}%</strong>. Override it with your own estimate or upload a photo for AI analysis.</div>
 
             {/* Tab toggle */}
-            <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",border:`2px solid ${C.brutal}`,borderRadius:6,boxShadow:`3px 3px 0 ${C.brutal}`,overflow:"hidden",marginBottom:20}}>
+            <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",border:`1px solid ${C.border}`,borderRadius:10,boxShadow:"var(--shadow-1)",overflow:"hidden",marginBottom:20}}>
               {[{id:"manual",label:"I'll Estimate"},{id:"photo",label:"Analyze Photo"}].map(t=>(
                 <button key={t.id} onClick={()=>setBfTab(t.id)}
-                  style={{padding:"10px",background:bfTab===t.id?C.brutal:"var(--card)",border:"none",cursor:"pointer",fontFamily:"'Bebas Neue',sans-serif",fontSize:13,letterSpacing:1.5,color:bfTab===t.id?C.card:C.muted,borderRight:t.id==="manual"?`2px solid ${C.brutal}`:"none",transition:"all .15s"}}>
+                  style={{padding:"10px",background:bfTab===t.id?C.text:"var(--card)",border:"none",cursor:"pointer",fontFamily:"var(--font-display)", fontWeight:700,fontSize:13,color:bfTab===t.id?C.card:C.muted,borderRight:t.id==="manual"?`1px solid ${C.border}`:"none",transition:"all .15s"}}>
                   {t.label}
                 </button>
               ))}
@@ -6137,20 +6141,20 @@ function DashboardScreen({ user, weightLog, onLogWeight, onDeleteWeight, onEditW
 
             {bfTab === "manual" && (
               <div>
-                <div style={{fontSize:11,fontWeight:700,letterSpacing:1.5,textTransform:"uppercase",color:C.brutal,marginBottom:8}}>Your Estimate (%)</div>
+                <div style={{fontSize:12,fontWeight:700,color:C.text,marginBottom:8}}>Your Estimate (%)</div>
                 <div style={{display:"flex",gap:10,alignItems:"center",marginBottom:16}}>
                   <button onClick={()=>setBfInput(v=>String(Math.max(4,parseFloat(v||0)-0.5)))}
-                    style={{width:40,height:46,background:"var(--card)",border:`2px solid ${C.brutal}`,borderRadius:4,boxShadow:`3px 3px 0 ${C.brutal}`,fontSize:20,cursor:"pointer",color:C.text,fontWeight:700}}>−</button>
+                    style={{width:40,height:46,background:"var(--card)",border:`1px solid ${C.border}`,borderRadius:10,boxShadow:"var(--shadow-1)",fontSize:20,cursor:"pointer",color:C.text,fontWeight:700}}>−</button>
                   <input type="number" min="4" max="45" step="0.5"
                     value={bfInput} onChange={e=>setBfInput(e.target.value)}
-                    style={{flex:1,height:46,background:"var(--card)",border:`2px solid ${C.brutal}`,borderRadius:4,boxShadow:`3px 3px 0 ${C.brutal}`,fontSize:22,fontFamily:"'Bebas Neue',sans-serif",letterSpacing:1,color:C.text,padding:"0 14px",outline:"none",textAlign:"center"}}/>
+                    style={{flex:1,height:46,background:"var(--card)",border:`1px solid ${C.border}`,borderRadius:10,boxShadow:"var(--shadow-1)",fontSize:22,fontFamily:"var(--font-display)", fontWeight:700,color:C.text,padding:"0 14px",outline:"none",textAlign:"center"}}/>
                   <button onClick={()=>setBfInput(v=>String(Math.min(45,parseFloat(v||0)+0.5)))}
-                    style={{width:40,height:46,background:"var(--card)",border:`2px solid ${C.brutal}`,borderRadius:4,boxShadow:`3px 3px 0 ${C.brutal}`,fontSize:20,cursor:"pointer",color:C.text,fontWeight:700}}>+</button>
+                    style={{width:40,height:46,background:"var(--card)",border:`1px solid ${C.border}`,borderRadius:10,boxShadow:"var(--shadow-1)",fontSize:20,cursor:"pointer",color:C.text,fontWeight:700}}>+</button>
                 </div>
-                <div style={{fontSize:11,color:C.muted,marginBottom:16,lineHeight:1.5}}>
+                <div style={{fontSize:12,color:C.muted,marginBottom:16,lineHeight:1.5}}>
                   Roughly: 6–9% contest lean · 10–12% visible abs · 13–17% athletic · 18–24% average · 25%+ higher body fat
                 </div>
-                <CubeButton onClick={saveBfManual} disabled={!bfInput||parseFloat(bfInput)<4||parseFloat(bfInput)>45} style={{width:"100%"}}>SAVE ESTIMATE</CubeButton>
+                <CubeButton onClick={saveBfManual} disabled={!bfInput||parseFloat(bfInput)<4||parseFloat(bfInput)>45} style={{width:"100%"}}>Save estimate</CubeButton>
               </div>
             )}
 
@@ -6159,28 +6163,28 @@ function DashboardScreen({ user, weightLog, onLogWeight, onDeleteWeight, onEditW
                 <input ref={fileInputRef} type="file" accept="image/*" style={{display:"none"}}
                   onChange={e=>e.target.files?.[0]&&analyzeBfPhoto(e.target.files[0])}/>
                 <div onClick={()=>bfPhotoStatus==="idle"&&fileInputRef.current?.click()}
-                  style={{border:`2px dashed ${C.brutal}`,borderRadius:6,padding:"32px 20px",textAlign:"center",cursor:bfPhotoStatus==="idle"?"pointer":"default",marginBottom:16,background:"var(--card)",transition:"background .15s"}}
+                  style={{border:`2px dashed ${C.border}`,borderRadius:10,padding:"32px 20px",textAlign:"center",cursor:bfPhotoStatus==="idle"?"pointer":"default",marginBottom:16,background:"var(--card)",transition:"background .15s"}}
                   onMouseOver={e=>{if(bfPhotoStatus==="idle")e.currentTarget.style.background="var(--up)"}}
                   onMouseOut={e=>e.currentTarget.style.background="var(--card)"}>
                   {bfPhotoStatus==="idle" && <>
                     <div style={{fontSize:32,marginBottom:8}}>📸</div>
-                    <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:18,letterSpacing:1,color:C.text}}>TAP TO UPLOAD PHOTO</div>
-                    <div style={{fontSize:11,color:C.muted,marginTop:4}}>Front or side physique photo works best</div>
+                    <div style={{fontFamily:"var(--font-display)", fontWeight:700,fontSize:18,color:C.text}}>Tap to upload photo</div>
+                    <div style={{fontSize:12,color:C.muted,marginTop:4}}>Front or side physique photo works best</div>
                   </>}
-                  {bfPhotoStatus==="loading" && <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:18,letterSpacing:1,color:C.accentInk,animation:"pulse 1.5s infinite"}}>ANALYZING...</div>}
-                  {bfPhotoStatus==="done" && <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:18,letterSpacing:1,color:C.green}}>✓ ESTIMATED: {bfOverride}%</div>}
+                  {bfPhotoStatus==="loading" && <div style={{fontFamily:"var(--font-display)", fontWeight:700,fontSize:18,color:C.accentInk,animation:"pulse 1.5s infinite"}}>Analyzing...</div>}
+                  {bfPhotoStatus==="done" && <div style={{fontFamily:"var(--font-display)", fontWeight:700,fontSize:18,color:C.green}}>✓ ESTIMATED: {bfOverride}%</div>}
                   {bfPhotoStatus==="error" && <>
-                    <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:16,color:C.red}}>COULDN'T ANALYZE</div>
-                    <div style={{fontSize:11,color:C.muted,marginTop:4}}>Try a clearer photo or use manual estimate</div>
+                    <div style={{fontFamily:"var(--font-display)", fontWeight:700,fontSize:16,color:C.red}}>Couldn't analyze</div>
+                    <div style={{fontSize:12,color:C.muted,marginTop:4}}>Try a clearer photo or use manual estimate</div>
                   </>}
                 </div>
-                <div style={{fontSize:11,color:C.muted,lineHeight:1.6,marginBottom:16}}>Photo is sent to Claude AI for analysis and not stored. Results are an estimate — use manual entry if you know your BF%.</div>
+                <div style={{fontSize:12,color:C.muted,lineHeight:1.6,marginBottom:16}}>Photo is sent to Claude AI for analysis and not stored. Results are an estimate — use manual entry if you know your BF%.</div>
               </div>
             )}
 
             {bfOverride != null && (
               <button onClick={clearBfOverride}
-                style={{width:"100%",marginTop:12,background:"none",border:"none",color:C.muted,fontSize:12,cursor:"pointer",padding:8,fontFamily:"'DM Sans',sans-serif"}}>
+                style={{width:"100%",marginTop:12,background:"none",border:"none",color:C.muted,fontSize:12,cursor:"pointer",padding:8,fontFamily:"var(--font-text)"}}>
                 Remove override — revert to formula estimate
               </button>
             )}
@@ -6191,8 +6195,8 @@ function DashboardScreen({ user, weightLog, onLogWeight, onDeleteWeight, onEditW
       {/* ── WEEKLY CHECK-IN MODAL ─────────────────────────────────────────────── */}
       {showCheckIn && (
         <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,.42)",zIndex:300,display:"flex",alignItems:"flex-end",justifyContent:"center"}} onClick={e=>{if(e.target===e.currentTarget)setShowCheckIn(false);}}>
-          <div style={{width:"100%",maxWidth:430,background:"color-mix(in srgb,var(--card) 88%,transparent)",backdropFilter:"blur(24px) saturate(1.4)",WebkitBackdropFilter:"blur(24px) saturate(1.4)",borderTop:"1px solid var(--glass-border)",boxShadow:"var(--depth-shadow),var(--inner-light)",borderRadius:"20px 20px 0 0",padding:"28px 24px 40px",animation:"slideUp .3s cubic-bezier(.22,1,.36,1)"}}>
-            <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:26,letterSpacing:1.5,color:C.text,marginBottom:4}}>WEEKLY CHECK-IN</div>
+          <div style={{width:"100%",maxWidth:430,background:"color-mix(in srgb,var(--card) 88%,transparent)",backdropFilter:"blur(24px) saturate(1.4)",WebkitBackdropFilter:"blur(24px) saturate(1.4)",borderTop:"1px solid var(--glass-border)",boxShadow:"var(--depth-shadow),var(--inner-light)",borderRadius:"var(--shadow-1)",padding:"28px 24px 40px",animation:"slideUp .3s cubic-bezier(.22,1,.36,1)"}}>
+            <div style={{fontFamily:"var(--font-display)", fontWeight:700,fontSize:26,color:C.text,marginBottom:4}}>Weekly check-in</div>
             <div style={{fontSize:13,color:C.muted,marginBottom:24,lineHeight:1.5}}>Takes 10 seconds. Powers your recovery score and protocol adjustments.</div>
             {[
               {label:"Sleep last night",key:"sleep",val:ciSleep,set:setCiSleep,min:3,max:12,step:.5,unit:"hrs",desc:["3h","12h"]},
@@ -6202,18 +6206,18 @@ function DashboardScreen({ user, weightLog, onLogWeight, onDeleteWeight, onEditW
               <div key={field.key} style={{marginBottom:18}}>
                 <div style={{display:"flex",justifyContent:"space-between",alignItems:"baseline",marginBottom:6}}>
                   <div style={{fontSize:12,fontWeight:600,color:C.text}}>{field.label}</div>
-                  <div style={{fontFamily:"'DM Mono',monospace",fontSize:14,color:C.accentInk}}>{field.val}{field.unit}</div>
+                  <div style={{fontFamily:"var(--font-num)", fontVariantNumeric:"tabular-nums",fontSize:14,color:C.accentInk}}>{field.val}{field.unit}</div>
                 </div>
                 <input type="range" min={field.min} max={field.max} step={field.step} value={field.val}
                   onChange={e=>field.set(e.target.value)} className="slider"
                   style={{width:"100%"}}/>
-                <div style={{display:"flex",justifyContent:"space-between",fontSize:11,color:C.faint,marginTop:3}}>
+                <div style={{display:"flex",justifyContent:"space-between",fontSize:12,color:C.faint,marginTop:3}}>
                   <span>{field.desc[0]}</span><span>{field.desc[1]}</span>
                 </div>
               </div>
             ))}
-            <CubeButton onClick={saveCheckIn} style={{marginTop:4,width:"100%"}}>SAVE CHECK-IN</CubeButton>
-            {checkIn && <button onClick={()=>setShowCheckIn(false)} style={{width:"100%",marginTop:10,background:"none",border:"none",color:C.muted,fontSize:13,cursor:"pointer",padding:6,fontFamily:"'DM Sans',sans-serif"}}>Dismiss</button>}
+            <CubeButton onClick={saveCheckIn} style={{marginTop:4,width:"100%"}}>Save check-in</CubeButton>
+            {checkIn && <button onClick={()=>setShowCheckIn(false)} style={{width:"100%",marginTop:10,background:"none",border:"none",color:C.muted,fontSize:13,cursor:"pointer",padding:6,fontFamily:"var(--font-text)"}}>Dismiss</button>}
           </div>
         </div>
       )}
@@ -6230,7 +6234,7 @@ function WeightReminderBanner({ type, daysAgo, onDismiss, onLogNow }) {
 
   const title = isWeek
     ? `${daysAgo} DAYS WITHOUT A WEIGH-IN`
-    : "NO WEIGHT LOGGED TODAY";
+    : "No weight logged today";
   const sub = isWeek
     ? "Trend data is going stale — log now to keep your projections accurate."
     : "A quick weigh-in keeps your streak and pace tracking live.";
@@ -6352,9 +6356,9 @@ function AdminUserDetail({ userData, onBack, C }) {
         </button>
         <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start"}}>
           <div>
-            <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:32,letterSpacing:1,lineHeight:1,color:C.text}}>{profile?.name || "Unknown"}</div>
+            <div style={{fontFamily:"var(--font-display)", fontWeight:700,fontSize:32,lineHeight:1,color:C.text}}>{profile?.name || "Unknown"}</div>
             <div style={{color:C.muted,fontSize:13,marginTop:4}}>
-              <span style={{background:`color-mix(in srgb,${C.accent} 15%,transparent)`,color:C.accentInk,padding:"2px 7px",borderRadius:4,fontWeight:700,fontSize:11,marginRight:6}}>{goalLabel.toUpperCase()}</span>
+              <span style={{background:`color-mix(in srgb,${C.accent} 15%,transparent)`,color:C.accentInk,padding:"2px 7px",borderRadius:10,fontWeight:700,fontSize:12,marginRight:6}}>{goalLabel}</span>
               {profile?.level || "—"} · {profile?.sex || "—"}
             </div>
             <div style={{color:C.muted,fontSize:12,marginTop:4}}>
@@ -6362,9 +6366,9 @@ function AdminUserDetail({ userData, onBack, C }) {
             </div>
           </div>
           {etaWeeks ? (
-            <div style={{textAlign:"center",background:`color-mix(in srgb,${C.accent} 12%,transparent)`,border:`2px solid ${C.accent}`,borderRadius:8,padding:"8px 12px",minWidth:64}}>
-              <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:28,color:C.accentInk,lineHeight:1}}>{etaWeeks}</div>
-              <div style={{fontSize:11,color:C.muted,letterSpacing:1,textTransform:"uppercase"}}>wks ETA</div>
+            <div style={{textAlign:"center",background:`color-mix(in srgb,${C.accent} 12%,transparent)`,border:`1px solid ${C.accent}`,borderRadius:12,padding:"8px 12px",minWidth:64}}>
+              <div style={{fontFamily:"var(--font-display)", fontWeight:700,fontSize:28,color:C.accentInk,lineHeight:1}}>{etaWeeks}</div>
+              <div style={{fontSize:12,color:C.muted,}}>wks ETA</div>
             </div>
           ) : null}
         </div>
@@ -6372,35 +6376,35 @@ function AdminUserDetail({ userData, onBack, C }) {
 
       {/* Weight chart */}
       <div style={{padding:"16px 20px"}}>
-        <div style={{fontSize:11,fontWeight:700,letterSpacing:1.5,color:C.muted,textTransform:"uppercase",marginBottom:10}}>Body Weight Trend</div>
-        <div style={{background:C.card,borderRadius:10,padding:12,border:`1px solid ${C.border}`}}>
+        <div style={{fontSize:12,fontWeight:700,color:C.muted,marginBottom:10}}>Body Weight Trend</div>
+        <div style={{background:C.card,borderRadius:12,padding:12,border:`1px solid ${C.border}`}}>
           <AdminWeightChart logs={sortedLog} goalWeight={goalWeight} C={C}/>
           <div style={{display:"flex",justifyContent:"space-between",marginTop:8}}>
-            <span style={{fontSize:11,color:trendColor,fontWeight:600}}>
+            <span style={{fontSize:12,color:trendColor,fontWeight:600}}>
               {trend.rate !== 0 ? `${trend.rate > 0 ? "▲ +" : "▼ "}${Math.abs(trend.rate).toFixed(2)} lbs/wk` : "Stable"}
             </span>
-            <span style={{fontSize:11,color:C.muted}}>{trend.classification?.replace(/_/g," ") || "—"}</span>
+            <span style={{fontSize:12,color:C.muted}}>{trend.classification?.replace(/_/g," ") || "—"}</span>
           </div>
         </div>
       </div>
 
       {/* Today's nutrition */}
       <div style={{padding:"0 20px 16px"}}>
-        <div style={{fontSize:11,fontWeight:700,letterSpacing:1.5,color:C.muted,textTransform:"uppercase",marginBottom:10}}>Today's Nutrition</div>
+        <div style={{fontSize:12,fontWeight:700,color:C.muted,marginBottom:10}}>Today's Nutrition</div>
         {todayLogs.length === 0 ? (
-          <div style={{color:C.faint,fontSize:13,background:C.card,borderRadius:10,padding:"14px 16px",border:`1px solid ${C.border}`}}>Nothing logged today</div>
+          <div style={{color:C.faint,fontSize:13,background:C.card,borderRadius:12,padding:"14px 16px",border:`1px solid ${C.border}`}}>Nothing logged today</div>
         ) : (
-          <div style={{background:C.card,borderRadius:10,padding:14,border:`1px solid ${C.border}`}}>
+          <div style={{background:C.card,borderRadius:12,padding:14,border:`1px solid ${C.border}`}}>
             <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr 1fr",gap:8,textAlign:"center"}}>
               {[
-                { label:"CALS", val:Math.round(todayMacros.cal), color:C.text },
+                { label:"Cals", val:Math.round(todayMacros.cal), color:C.text },
                 { label:"PRO", val:`${Math.round(todayMacros.p)}g`, color:C.blue },
-                { label:"CARBS", val:`${Math.round(todayMacros.c)}g`, color:C.green },
-                { label:"FAT", val:`${Math.round(todayMacros.f)}g`, color:C.accentInk },
+                { label:"Carbs", val:`${Math.round(todayMacros.c)}g`, color:C.green },
+                { label:"Fat", val:`${Math.round(todayMacros.f)}g`, color:C.accentInk },
               ].map(m => (
                 <div key={m.label}>
-                  <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:22,color:m.color,lineHeight:1}}>{m.val}</div>
-                  <div style={{fontSize:11,color:C.muted,marginTop:2,letterSpacing:1}}>{m.label}</div>
+                  <div style={{fontFamily:"var(--font-display)", fontWeight:700,fontSize:22,color:m.color,lineHeight:1}}>{m.val}</div>
+                  <div style={{fontSize:12,color:C.muted,marginTop:2,}}>{m.label}</div>
                 </div>
               ))}
             </div>
@@ -6419,11 +6423,11 @@ function AdminUserDetail({ userData, onBack, C }) {
 
       {/* Recent workouts */}
       <div style={{padding:"0 20px 16px"}}>
-        <div style={{fontSize:11,fontWeight:700,letterSpacing:1.5,color:C.muted,textTransform:"uppercase",marginBottom:10}}>Recent Workouts</div>
+        <div style={{fontSize:12,fontWeight:700,color:C.muted,marginBottom:10}}>Recent Workouts</div>
         {sessions.length === 0 ? (
-          <div style={{color:C.faint,fontSize:13,background:C.card,borderRadius:10,padding:"14px 16px",border:`1px solid ${C.border}`}}>No sessions logged</div>
+          <div style={{color:C.faint,fontSize:13,background:C.card,borderRadius:12,padding:"14px 16px",border:`1px solid ${C.border}`}}>No sessions logged</div>
         ) : sessions.map(s => {
-          const dayName = (s.dayKey || "Session").replace(/_/g, " ").toUpperCase();
+          const dayName = labelCase(s.dayKey || "Session");
           const mins = Math.floor((s.duration || 0) / 60);
           const date = new Date(s.ts).toLocaleDateString("en-US", { month:"short", day:"numeric" });
           const exes = (s.completedExercises || []);
@@ -6432,12 +6436,12 @@ function AdminUserDetail({ userData, onBack, C }) {
             return best ? `${e.name} ${best.weight || 0}×${best.reps}` : e.name;
           });
           return (
-            <div key={s.ts} style={{background:C.card,borderRadius:10,padding:14,border:`1px solid ${C.border}`,marginBottom:8}}>
+            <div key={s.ts} style={{background:C.card,borderRadius:12,padding:14,border:`1px solid ${C.border}`,marginBottom:8}}>
               <div style={{display:"flex",justifyContent:"space-between",marginBottom:6}}>
                 <span style={{fontWeight:700,fontSize:13,color:C.text}}>{dayName}</span>
-                <span style={{fontSize:11,color:C.muted}}>{date}{mins ? ` · ${mins}m` : ""}</span>
+                <span style={{fontSize:12,color:C.muted}}>{date}{mins ? ` · ${mins}m` : ""}</span>
               </div>
-              <div style={{fontSize:11,color:C.muted,lineHeight:1.7}}>
+              <div style={{fontSize:12,color:C.muted,lineHeight:1.7}}>
                 {topSets.map((t, i) => <div key={i}>{t}</div>)}
                 {exes.length > 3 && <div style={{color:C.faint}}>+{exes.length - 3} more</div>}
               </div>
@@ -6449,8 +6453,8 @@ function AdminUserDetail({ userData, onBack, C }) {
       {/* Goal config */}
       {goalConfig && (
         <div style={{padding:"0 20px 24px"}}>
-          <div style={{fontSize:11,fontWeight:700,letterSpacing:1.5,color:C.muted,textTransform:"uppercase",marginBottom:10}}>Goal Config</div>
-          <div style={{background:C.card,borderRadius:10,padding:14,border:`1px solid ${C.border}`,fontSize:12,color:C.muted,lineHeight:2}}>
+          <div style={{fontSize:12,fontWeight:700,color:C.muted,marginBottom:10}}>Goal Config</div>
+          <div style={{background:C.card,borderRadius:12,padding:14,border:`1px solid ${C.border}`,fontSize:12,color:C.muted,lineHeight:2}}>
             {[
               ["Target weight", `${goalConfig.effectiveGoalWeight} lbs`],
               ["Goal body fat", `${goalConfig.goalBfPct}%`],
@@ -6518,7 +6522,7 @@ function AdminScreen() {
   return (
     <div className="screen" style={{background:C.bg,overflowY:"auto",paddingBottom:100}}>
       <div style={{padding:"56px 20px 16px",borderBottom:`1px solid ${C.border}`}}>
-        <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:40,letterSpacing:2,lineHeight:1,color:C.text}}>ROSTER</div>
+        <div style={{fontFamily:"var(--font-display)", fontWeight:700,fontSize:40,lineHeight:1,color:C.text}}>Roster</div>
         <div style={{color:C.muted,fontSize:13,marginTop:4}}>
           {loading ? "Loading..." : `${users.length} athlete${users.length !== 1 ? "s" : ""}`}
         </div>
@@ -6529,10 +6533,10 @@ function AdminScreen() {
       )}
 
       {error && (
-        <div style={{margin:"20px",padding:"14px 16px",background:`color-mix(in srgb,${C.red} 10%,transparent)`,border:`1px solid ${C.red}`,borderRadius:10,color:C.red,fontSize:13,lineHeight:1.6}}>
+        <div style={{margin:"20px",padding:"14px 16px",background:`color-mix(in srgb,${C.red} 10%,transparent)`,border:`1px solid ${C.red}`,borderRadius:12,color:C.red,fontSize:13,lineHeight:1.6}}>
           <div style={{fontWeight:700,marginBottom:4}}>Admin access error</div>
           {error}
-          <div style={{marginTop:8,color:C.muted,fontSize:11}}>This account needs the admin claim. Run scripts/set-admin-claim.mjs, deploy firestore.rules, then sign out and back in.</div>
+          <div style={{marginTop:8,color:C.muted,fontSize:12}}>This account needs the admin claim. Run scripts/set-admin-claim.mjs, deploy firestore.rules, then sign out and back in.</div>
         </div>
       )}
 
@@ -6541,7 +6545,7 @@ function AdminScreen() {
         const currentW = sortedLog.length ? sortedLog[sortedLog.length - 1].weight : null;
         const trend = sortedLog.length >= 3 ? analyzeWeightTrend(sortedLog) : null;
         const goalWeight = u.goalConfig?.effectiveGoalWeight;
-        const goalLabel = { bulk:"BULK", cut:"CUT", maintain:"MAINTAIN", recomp:"RECOMP", contest:"CONTEST" }[u.profile?.goal] || (u.profile?.goal || "").toUpperCase();
+        const goalLabel = { bulk:"Bulk", cut:"Cut", maintain:"Maintain", recomp:"Recomp", contest:"Contest" }[u.profile?.goal] || labelCase(u.profile?.goal || "");
         const sessionCount = (u.tState?.history || []).length;
         const lastSession = sessionCount ? [...(u.tState.history)].sort((a, b) => b.ts - a.ts)[0] : null;
         const lastDate = lastSession ? new Date(lastSession.ts).toLocaleDateString("en-US", { month:"short", day:"numeric" }) : null;
@@ -6557,17 +6561,17 @@ function AdminScreen() {
               <div style={{flex:1,minWidth:0}}>
                 <div style={{fontWeight:700,fontSize:16,color:C.text,marginBottom:4}}>{u.profile.name}</div>
                 <div style={{display:"flex",flexWrap:"wrap",gap:4,alignItems:"center",marginBottom:4}}>
-                  <span style={{background:`color-mix(in srgb,${C.accent} 15%,transparent)`,color:C.accentInk,padding:"1px 6px",borderRadius:4,fontWeight:700,fontSize:11}}>{goalLabel}</span>
+                  <span style={{background:`color-mix(in srgb,${C.accent} 15%,transparent)`,color:C.accentInk,padding:"1px 6px",borderRadius:10,fontWeight:700,fontSize:12}}>{goalLabel}</span>
                   <span style={{fontSize:12,color:C.muted}}>{u.profile.level || "—"}</span>
-                  {sessionCount > 0 && <span style={{fontSize:11,color:C.muted}}>· {sessionCount} sessions</span>}
-                  {lastDate && <span style={{fontSize:11,color:C.muted}}>· Last: {lastDate}</span>}
+                  {sessionCount > 0 && <span style={{fontSize:12,color:C.muted}}>· {sessionCount} sessions</span>}
+                  {lastDate && <span style={{fontSize:12,color:C.muted}}>· Last: {lastDate}</span>}
                 </div>
               </div>
               <div style={{textAlign:"right",flexShrink:0,marginLeft:12}}>
-                <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:24,lineHeight:1,color:C.text}}>{currentW ?? "—"}</div>
-                <div style={{fontSize:11,color:C.muted,marginTop:1}}>→ {goalWeight ?? "—"} lbs</div>
+                <div style={{fontFamily:"var(--font-display)", fontWeight:700,fontSize:24,lineHeight:1,color:C.text}}>{currentW ?? "—"}</div>
+                <div style={{fontSize:12,color:C.muted,marginTop:1}}>→ {goalWeight ?? "—"} lbs</div>
                 {trend?.rate !== undefined && Math.abs(trend.rate) > 0.1 && (
-                  <div style={{fontSize:11,color:trendColor,fontWeight:700,marginTop:3}}>
+                  <div style={{fontSize:12,color:trendColor,fontWeight:700,marginTop:3}}>
                     {trend.rate > 0 ? "▲ +" : "▼ "}{Math.abs(trend.rate).toFixed(1)}/wk
                   </div>
                 )}
@@ -6585,7 +6589,7 @@ function AdminScreen() {
 
 
 
-function NavIcon({ id }) {
+function NavIcon({ id, on = false }) {
   const paths = {
     home: "M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6",
     training: "M6.5 6.5v11M17.5 6.5v11M4 9h4.5v6H4zM15.5 9h4.5v6h-4.5zM8.5 12h7",
@@ -6596,7 +6600,7 @@ function NavIcon({ id }) {
     admin: "M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2M9 11a4 4 0 100-8 4 4 0 000 8zM23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75",
   };
   return (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" style={{width:22,height:22}}>
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={on ? 2.25 : 1.6} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" style={{width:26,height:26}}>
       <path d={paths[id]}/>
     </svg>
   );
@@ -6751,9 +6755,9 @@ const POSE_SVG = {
 };
 
 const POSE_CONFIG = [
-  { key:"front", label:"FRONT VIEW", tip:"Stand facing camera, arms slightly out, feet shoulder-width apart." },
-  { key:"side",  label:"SIDE VIEW",  tip:"Stand in profile, arms at sides, natural posture." },
-  { key:"back",  label:"BACK VIEW",  tip:"Stand with back to camera, same stance as front." },
+  { key:"front", label:"Front view", tip:"Stand facing camera, arms slightly out, feet shoulder-width apart." },
+  { key:"side",  label:"Side view",  tip:"Stand in profile, arms at sides, natural posture." },
+  { key:"back",  label:"Back view",  tip:"Stand with back to camera, same stance as front." },
 ];
 
 const CATEGORY_LABELS = {
@@ -6821,7 +6825,7 @@ function PhysiqueCheckInModal({ user, currentWeight, onSave, onClose }) {
     WebkitBackdropFilter:"blur(24px) saturate(1.4)",
     borderTop:"1px solid var(--glass-border)",
     boxShadow:"var(--depth-shadow),var(--inner-light)",
-    borderRadius:"20px 20px 0 0",
+    borderRadius:"var(--shadow-1)",
     maxHeight:"90vh", overflowY:"auto",
     animation:"slideUp .3s cubic-bezier(.22,1,.36,1)",
   };
@@ -6843,13 +6847,13 @@ function PhysiqueCheckInModal({ user, currentWeight, onSave, onClose }) {
         {/* ── STEP 0: INTRO ── */}
         {step === 0 && (
           <div style={{padding:"16px 24px 32px"}}>
-            <div style={{fontSize:11,letterSpacing:2,textTransform:"uppercase",color:"var(--accent-ink)",marginBottom:4}}>● Enhanced Analysis</div>
-            <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:26,letterSpacing:1.5,marginBottom:6}}>PHYSIQUE SCAN</div>
+            <div style={{fontSize:12,color:"var(--accent-ink)",marginBottom:4}}>● Enhanced Analysis</div>
+            <div style={{fontFamily:"var(--font-display)", fontWeight:700,fontSize:26,marginBottom:6}}>Physique scan</div>
             <div style={{fontSize:13,color:"var(--muted)",lineHeight:1.65,marginBottom:20}}>
               Upload 3 photos for a precise body composition assessment — front, side, and back. APEX will estimate your BF%, lean mass, and calibrate your goal targets.
             </div>
-            <div style={{background:"var(--up)",borderRadius:10,padding:"14px 16px",marginBottom:24}}>
-              <div style={{fontSize:11,fontWeight:700,letterSpacing:1,color:"var(--text)",marginBottom:8}}>FOR BEST RESULTS</div>
+            <div style={{background:"var(--up)",borderRadius:12,padding:"14px 16px",marginBottom:24}}>
+              <div style={{fontSize:12,fontWeight:700,color:"var(--text)",marginBottom:8}}>For best results</div>
               {["Good, even lighting — avoid harsh shadows","Minimal clothing for visibility","Natural standing posture, no flexing","Full body in frame, head to toe"].map((t,i) => (
                 <div key={i} style={{display:"flex",gap:8,alignItems:"flex-start",marginBottom:i<3?6:0}}>
                   <div style={{width:5,height:5,borderRadius:"50%",background:"var(--accent)",flexShrink:0,marginTop:5}}/>
@@ -6858,11 +6862,11 @@ function PhysiqueCheckInModal({ user, currentWeight, onSave, onClose }) {
               ))}
             </div>
             <button onClick={()=>setStep(1)}
-              style={{width:"100%",padding:14,background:"var(--accent)",color:"#080A0C",border:"none",borderRadius:10,fontFamily:"'Bebas Neue',sans-serif",fontSize:17,letterSpacing:2,cursor:"pointer"}}>
+              style={{width:"100%",padding:14,background:"var(--accent)",color:"#080A0C",border:"none",borderRadius:12,fontFamily:"var(--font-display)", fontWeight:700,fontSize:17,cursor:"pointer"}}>
               START SCAN ▶
             </button>
             <button onClick={onClose}
-              style={{width:"100%",marginTop:10,background:"none",border:"none",color:"var(--muted)",fontSize:13,cursor:"pointer",padding:8,fontFamily:"'DM Sans',sans-serif"}}>
+              style={{width:"100%",marginTop:10,background:"none",border:"none",color:"var(--muted)",fontSize:13,cursor:"pointer",padding:8,fontFamily:"var(--font-text)"}}>
               Cancel
             </button>
           </div>
@@ -6872,10 +6876,10 @@ function PhysiqueCheckInModal({ user, currentWeight, onSave, onClose }) {
         {step >= 1 && step <= 3 && poseStep && (
           <div style={{padding:"12px 24px 32px"}}>
             <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:4}}>
-              <button onClick={()=>setStep(s=>s-1)} style={{background:"none",border:"none",color:"var(--muted)",cursor:"pointer",fontSize:13,fontFamily:"'DM Sans'"}}>← Back</button>
-              <div style={{fontSize:11,letterSpacing:2,textTransform:"uppercase",color:"var(--muted)"}}>{step} / 3</div>
+              <button onClick={()=>setStep(s=>s-1)} style={{background:"none",border:"none",color:"var(--muted)",cursor:"pointer",fontSize:13,fontFamily:"var(--font-text)"}}>← Back</button>
+              <div style={{fontSize:12,color:"var(--muted)"}}>{step} / 3</div>
             </div>
-            <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:22,letterSpacing:1.5,marginBottom:3}}>{poseStep.label}</div>
+            <div style={{fontFamily:"var(--font-display)", fontWeight:700,fontSize:22,marginBottom:3}}>{poseStep.label}</div>
             <div style={{fontSize:12,color:"var(--muted)",marginBottom:16,lineHeight:1.5}}>{poseStep.tip}</div>
 
             {/* Viewfinder with silhouette overlay */}
@@ -6893,7 +6897,7 @@ function PhysiqueCheckInModal({ user, currentWeight, onSave, onClose }) {
                 <div style={{width:"55%",height:"90%"}}>{POSE_SVG[poseStep.key]}</div>
               </div>
               {previews[poseStep.key] && (
-                <div style={{position:"absolute",top:8,right:8,background:"rgba(61,220,132,.9)",borderRadius:6,padding:"3px 8px",fontSize:11,fontWeight:700,color:"#000"}}>✓ READY</div>
+                <div style={{position:"absolute",top:8,right:8,background:"rgba(61,220,132,.9)",borderRadius:10,padding:"3px 8px",fontSize:12,fontWeight:700,color:"#000"}}>✓ Ready</div>
               )}
             </div>
 
@@ -6901,20 +6905,20 @@ function PhysiqueCheckInModal({ user, currentWeight, onSave, onClose }) {
               onChange={e=>handleFile(poseStep.key, e)}/>
 
             <button onClick={()=>fileRefs[poseStep.key].current?.click()}
-              style={{width:"100%",padding:13,background:previews[poseStep.key]?"var(--up)":"var(--accent)",color:previews[poseStep.key]?"var(--text)":"#080A0C",border:`2px solid ${previews[poseStep.key]?"var(--border)":"var(--accent)"}`,borderRadius:10,fontFamily:"'Bebas Neue',sans-serif",fontSize:15,letterSpacing:1.5,cursor:"pointer",marginBottom:10}}>
-              {previews[poseStep.key] ? "RETAKE PHOTO" : `UPLOAD ${poseStep.label}`}
+              style={{width:"100%",padding:13,background:previews[poseStep.key]?"var(--up)":"var(--accent)",color:previews[poseStep.key]?"var(--text)":"#080A0C",border:`1px solid ${previews[poseStep.key]?"var(--border)":"var(--accent)"}`,borderRadius:12,fontFamily:"var(--font-display)", fontWeight:700,fontSize:15,cursor:"pointer",marginBottom:10}}>
+              {previews[poseStep.key] ? "Retake photo" : `UPLOAD ${poseStep.label}`}
             </button>
 
-            {error && <div style={{fontSize:11,color:"var(--red)",marginBottom:10,textAlign:"center"}}>{error}</div>}
+            {error && <div style={{fontSize:12,color:"var(--red)",marginBottom:10,textAlign:"center"}}>{error}</div>}
 
             {step < 3 ? (
               <button onClick={()=>setStep(s=>s+1)} disabled={!previews[poseStep.key]}
-                style={{width:"100%",padding:13,background:"var(--brutal)",color:"var(--card)",border:"none",borderRadius:10,fontFamily:"'Bebas Neue',sans-serif",fontSize:15,letterSpacing:1.5,cursor:previews[poseStep.key]?"pointer":"not-allowed",opacity:previews[poseStep.key]?1:.4}}>
+                style={{width:"100%",padding:13,background:"var(--brutal)",color:"var(--card)",border:"none",borderRadius:12,fontFamily:"var(--font-display)", fontWeight:700,fontSize:15,cursor:previews[poseStep.key]?"pointer":"not-allowed",opacity:previews[poseStep.key]?1:.4}}>
                 NEXT →
               </button>
             ) : (
               <button onClick={handleAnalyze} disabled={!allDone}
-                style={{width:"100%",padding:13,background:"var(--accent)",color:"#080A0C",border:"none",borderRadius:10,fontFamily:"'Bebas Neue',sans-serif",fontSize:15,letterSpacing:1.5,cursor:allDone?"pointer":"not-allowed",opacity:allDone?1:.4}}>
+                style={{width:"100%",padding:13,background:"var(--accent)",color:"#080A0C",border:"none",borderRadius:12,fontFamily:"var(--font-display)", fontWeight:700,fontSize:15,cursor:allDone?"pointer":"not-allowed",opacity:allDone?1:.4}}>
                 ⚡ ANALYZE PHYSIQUE
               </button>
             )}
@@ -6924,7 +6928,7 @@ function PhysiqueCheckInModal({ user, currentWeight, onSave, onClose }) {
         {/* ── STEP 4: ANALYZING ── */}
         {step === 4 && (
           <div style={{padding:"40px 24px 48px",textAlign:"center"}}>
-            <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:22,letterSpacing:2,marginBottom:8}}>ANALYZING</div>
+            <div style={{fontFamily:"var(--font-display)", fontWeight:700,fontSize:22,marginBottom:8}}>Analyzing</div>
             <div style={{fontSize:12,color:"var(--muted)",marginBottom:32,lineHeight:1.6}}>
               Reading muscle development, body fat distribution,<br/>and comparing to your {user.goal||"bulk"} goal...
             </div>
@@ -6939,33 +6943,33 @@ function PhysiqueCheckInModal({ user, currentWeight, onSave, onClose }) {
         {/* ── STEP 5: RESULTS ── */}
         {step === 5 && result && (
           <div style={{padding:"16px 24px 32px"}}>
-            <div style={{fontSize:11,letterSpacing:2,textTransform:"uppercase",color:"var(--accent-ink)",marginBottom:4}}>● Physique Analysis</div>
-            <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:24,letterSpacing:1.5,marginBottom:16}}>YOUR PHYSIQUE</div>
+            <div style={{fontSize:12,color:"var(--accent-ink)",marginBottom:4}}>● Physique Analysis</div>
+            <div style={{fontFamily:"var(--font-display)", fontWeight:700,fontSize:24,marginBottom:16}}>Your physique</div>
 
             {/* Key metrics */}
-            <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:1,background:"var(--border)",borderRadius:10,overflow:"hidden",marginBottom:16}}>
+            <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:1,background:"var(--border)",borderRadius:12,overflow:"hidden",marginBottom:16}}>
               {[
                 { label:"Body Fat", val:`${result.estimatedBfPct}%`, sub:"estimated" },
                 { label:"Lean Mass", val:result.estimatedLbmLbs ? `${Math.round(result.estimatedLbmLbs)}lbs` : "—", sub:"lean body mass" },
                 { label:"Category", val:CATEGORY_LABELS[result.physiqueCategory] || result.physiqueCategory, sub:"level" },
               ].map((m,i) => (
                 <div key={i} style={{background:"var(--surface)",padding:"12px 10px",textAlign:"center"}}>
-                  <div style={{fontSize:11,letterSpacing:1,textTransform:"uppercase",color:"var(--muted)",marginBottom:4}}>{m.label}</div>
-                  <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:m.label==="Category"?13:20,color:"var(--accent-ink)",lineHeight:1}}>{m.val}</div>
-                  <div style={{fontSize:11,color:"var(--faint)",marginTop:3}}>{m.sub}</div>
+                  <div style={{fontSize:12,color:"var(--muted)",marginBottom:4}}>{m.label}</div>
+                  <div style={{fontFamily:"var(--font-display)", fontWeight:700,fontSize:m.label==="Category"?13:20,color:"var(--accent-ink)",lineHeight:1}}>{m.val}</div>
+                  <div style={{fontSize:12,color:"var(--faint)",marginTop:3}}>{m.sub}</div>
                 </div>
               ))}
             </div>
 
             {/* Goal alignment */}
             {result.goalAlignment && (
-              <div style={{display:"flex",alignItems:"center",gap:8,padding:"10px 14px",background:"var(--up)",borderRadius:8,marginBottom:14}}>
+              <div style={{display:"flex",alignItems:"center",gap:8,padding:"10px 14px",background:"var(--up)",borderRadius:12,marginBottom:14}}>
                 <div style={{width:6,height:6,borderRadius:"50%",background:ALIGNMENT_COLOR[result.goalAlignment]||"var(--accent)"}}/>
-                <div style={{fontSize:11,color:ALIGNMENT_COLOR[result.goalAlignment]||"var(--accent-ink)",fontWeight:700,letterSpacing:.5}}>
+                <div style={{fontSize:12,color:ALIGNMENT_COLOR[result.goalAlignment]||"var(--accent-ink)",fontWeight:700,}}>
                   {ALIGNMENT_LABEL[result.goalAlignment]||result.goalAlignment} for your {user.goal||"bulk"} goal
                 </div>
                 {result.recommendedBfTarget && (
-                  <div style={{marginLeft:"auto",fontSize:11,color:"var(--muted)"}}>Target: {result.recommendedBfTarget}% BF</div>
+                  <div style={{marginLeft:"auto",fontSize:12,color:"var(--muted)"}}>Target: {result.recommendedBfTarget}% BF</div>
                 )}
               </div>
             )}
@@ -6976,12 +6980,12 @@ function PhysiqueCheckInModal({ user, currentWeight, onSave, onClose }) {
                 { label:"Strengths", items:result.primaryStrengths||[], color:"var(--green)" },
                 { label:"Lagging",   items:result.primaryWeaknesses||[], color:"var(--accent-ink)" },
               ].map(col => (
-                <div key={col.label} style={{background:"var(--up)",borderRadius:8,padding:"10px 12px"}}>
-                  <div style={{fontSize:11,letterSpacing:1.5,textTransform:"uppercase",color:col.color,marginBottom:6,fontWeight:700}}>{col.label}</div>
+                <div key={col.label} style={{background:"var(--up)",borderRadius:12,padding:"10px 12px"}}>
+                  <div style={{fontSize:12,color:col.color,marginBottom:6,fontWeight:700}}>{col.label}</div>
                   {(col.items||[]).map((item,i) => (
                     <div key={i} style={{display:"flex",alignItems:"center",gap:6,marginBottom:4}}>
                       <div style={{width:4,height:4,borderRadius:"50%",background:col.color,flexShrink:0}}/>
-                      <div style={{fontSize:11,color:"var(--faint)",textTransform:"capitalize"}}>{item}</div>
+                      <div style={{fontSize:12,color:"var(--faint)",textTransform:"capitalize"}}>{item}</div>
                     </div>
                   ))}
                 </div>
@@ -6990,8 +6994,8 @@ function PhysiqueCheckInModal({ user, currentWeight, onSave, onClose }) {
 
             {/* Projected outcome */}
             {result.projectedOutcome && (
-              <div style={{padding:"10px 14px",background:"var(--up)",borderRadius:8,marginBottom:14}}>
-                <div style={{fontSize:11,letterSpacing:1.5,textTransform:"uppercase",color:"var(--muted)",marginBottom:4}}>Projected outcome at target BF%</div>
+              <div style={{padding:"10px 14px",background:"var(--up)",borderRadius:12,marginBottom:14}}>
+                <div style={{fontSize:12,color:"var(--muted)",marginBottom:4}}>Projected outcome at target BF%</div>
                 <div style={{fontSize:12,color:"var(--faint)",fontStyle:"italic",lineHeight:1.5}}>"{result.projectedOutcome}"</div>
               </div>
             )}
@@ -6999,17 +7003,17 @@ function PhysiqueCheckInModal({ user, currentWeight, onSave, onClose }) {
             {/* Coach assessment */}
             {result.coachAssessment && (
               <div style={{marginBottom:20}}>
-                <div style={{fontSize:11,letterSpacing:2,textTransform:"uppercase",color:"var(--accent-ink)",marginBottom:8}}>● COACH ASSESSMENT</div>
+                <div style={{fontSize:12,color:"var(--accent-ink)",marginBottom:8}}>● Coach assessment</div>
                 <div style={{fontSize:13,color:"var(--faint)",lineHeight:1.75,whiteSpace:"pre-wrap"}}>{result.coachAssessment}</div>
               </div>
             )}
 
             <button onClick={handleSave}
-              style={{width:"100%",padding:14,background:"var(--accent)",color:"#080A0C",border:"none",borderRadius:10,fontFamily:"'Bebas Neue',sans-serif",fontSize:16,letterSpacing:2,cursor:"pointer",marginBottom:10}}>
+              style={{width:"100%",padding:14,background:"var(--accent)",color:"#080A0C",border:"none",borderRadius:12,fontFamily:"var(--font-display)", fontWeight:700,fontSize:16,cursor:"pointer",marginBottom:10}}>
               UPDATE MY PROFILE →
             </button>
             <button onClick={onClose}
-              style={{width:"100%",background:"none",border:"none",color:"var(--muted)",fontSize:13,cursor:"pointer",padding:8,fontFamily:"'DM Sans',sans-serif"}}>
+              style={{width:"100%",background:"none",border:"none",color:"var(--muted)",fontSize:13,cursor:"pointer",padding:8,fontFamily:"var(--font-text)"}}>
               Dismiss (don't save)
             </button>
           </div>
@@ -7026,7 +7030,7 @@ function PhysiqueCheckInModal({ user, currentWeight, onSave, onClose }) {
 
 async function analyzePhysique(photos, user, currentWeight) {
   const content = [];
-  const poseLabels = { front: "FRONT VIEW", side: "SIDE VIEW", back: "BACK VIEW" };
+  const poseLabels = { front: "Front view", side: "Side view", back: "Back view" };
 
   for (const pose of ["front", "side", "back"]) {
     const src = photos[pose];
@@ -7095,17 +7099,17 @@ function ProfileEditModal({ user, onSave, onClose }) {
   };
 
   const inputStyle = {
-    flex:1, background:"var(--up)", border:"1px solid var(--border)", borderRadius:8,
+    flex:1, background:"var(--up)", border:"1px solid var(--border)", borderRadius:12,
     padding:"10px 12px", color:"var(--text)", fontSize:15,
-    fontFamily:"'DM Mono',monospace", outline:"none",
+    fontFamily:"var(--font-num)", fontVariantNumeric:"tabular-nums", outline:"none",
   };
 
   return (
     <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,.42)",zIndex:400,display:"flex",alignItems:"flex-end",justifyContent:"center"}}
       onClick={e=>{if(e.target===e.currentTarget)onClose();}}>
-      <div style={{width:"100%",maxWidth:430,background:"color-mix(in srgb,var(--card) 88%,transparent)",backdropFilter:"blur(24px) saturate(1.4)",WebkitBackdropFilter:"blur(24px) saturate(1.4)",borderTop:"1px solid var(--glass-border)",boxShadow:"var(--depth-shadow),var(--inner-light)",borderRadius:"20px 20px 0 0",padding:"24px 24px 36px",animation:"slideUp .3s cubic-bezier(.22,1,.36,1)",maxHeight:"88vh",overflowY:"auto"}}>
+      <div style={{width:"100%",maxWidth:430,background:"color-mix(in srgb,var(--card) 88%,transparent)",backdropFilter:"blur(24px) saturate(1.4)",WebkitBackdropFilter:"blur(24px) saturate(1.4)",borderTop:"1px solid var(--glass-border)",boxShadow:"var(--depth-shadow),var(--inner-light)",borderRadius:"var(--shadow-1)",padding:"24px 24px 36px",animation:"slideUp .3s cubic-bezier(.22,1,.36,1)",maxHeight:"88vh",overflowY:"auto"}}>
 
-        <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:24,letterSpacing:1.5,marginBottom:4}}>EDIT PROFILE</div>
+        <div style={{fontFamily:"var(--font-display)", fontWeight:700,fontSize:24,marginBottom:4}}>Edit profile</div>
         <div style={{fontSize:12,color:"var(--muted)",marginBottom:20}}>Changes recompute your physique target and open a new goal phase.</div>
 
         {/* Body metrics */}
@@ -7116,17 +7120,17 @@ function ProfileEditModal({ user, onSave, onClose }) {
             {label:"Age",         val:age,    set:setAge,    placeholder:"28"},
           ].map(f=>(
             <div key={f.label} style={{gridColumn: f.label==="Age" ? "span 1" : "span 1"}}>
-              <div style={{fontSize:11,color:"var(--muted)",letterSpacing:1,textTransform:"uppercase",marginBottom:5}}>{f.label}</div>
+              <div style={{fontSize:12,color:"var(--muted)",marginBottom:5}}>{f.label}</div>
               <input type="number" value={f.val} placeholder={f.placeholder}
                 onChange={e=>f.set(e.target.value)} style={inputStyle}/>
             </div>
           ))}
           <div>
-            <div style={{fontSize:11,color:"var(--muted)",letterSpacing:1,textTransform:"uppercase",marginBottom:5}}>Sex</div>
+            <div style={{fontSize:12,color:"var(--muted)",marginBottom:5}}>Sex</div>
             <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:4}}>
               {["male","female"].map(s=>(
                 <button key={s} onClick={()=>setSex(s)}
-                  style={{padding:"10px 0",border:`1px solid ${sex===s?"var(--accent)":"var(--border)"}`,borderRadius:8,background:sex===s?`color-mix(in srgb,var(--accent) 14%,transparent)`:"var(--up)",color:sex===s?"var(--accent-ink)":"var(--muted)",fontFamily:"'Bebas Neue',sans-serif",fontSize:13,letterSpacing:1,cursor:"pointer",textTransform:"capitalize"}}>
+                  style={{padding:"10px 0",border:`1px solid ${sex===s?"var(--accent)":"var(--border)"}`,borderRadius:12,background:sex===s?`color-mix(in srgb,var(--accent) 14%,transparent)`:"var(--up)",color:sex===s?"var(--accent-ink)":"var(--muted)",fontFamily:"var(--font-display)", fontWeight:700,fontSize:13,cursor:"pointer",textTransform:"capitalize"}}>
                   {s}
                 </button>
               ))}
@@ -7136,11 +7140,11 @@ function ProfileEditModal({ user, onSave, onClose }) {
 
         {/* Goal */}
         <div style={{marginBottom:14}}>
-          <div style={{fontSize:11,color:"var(--muted)",letterSpacing:1,textTransform:"uppercase",marginBottom:7}}>Goal</div>
+          <div style={{fontSize:12,color:"var(--muted)",marginBottom:7}}>Goal</div>
           <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:6}}>
             {GOALS.map(g=>(
               <button key={g.id} onClick={()=>setGoal(g.id)}
-                style={{padding:"8px 6px",border:`1px solid ${goal===g.id?"var(--accent)":"var(--border)"}`,borderRadius:8,background:goal===g.id?`color-mix(in srgb,var(--accent) 12%,transparent)`:"var(--up)",color:goal===g.id?"var(--accent-ink)":"var(--muted)",fontFamily:"'Bebas Neue',sans-serif",fontSize:11,letterSpacing:.8,cursor:"pointer",textAlign:"center"}}>
+                style={{padding:"8px 6px",border:`1px solid ${goal===g.id?"var(--accent)":"var(--border)"}`,borderRadius:12,background:goal===g.id?`color-mix(in srgb,var(--accent) 12%,transparent)`:"var(--up)",color:goal===g.id?"var(--accent-ink)":"var(--muted)",fontFamily:"var(--font-display)", fontWeight:700,fontSize:12,cursor:"pointer",textAlign:"center"}}>
                 {g.label}
               </button>
             ))}
@@ -7149,11 +7153,11 @@ function ProfileEditModal({ user, onSave, onClose }) {
 
         {/* Level */}
         <div style={{marginBottom:14}}>
-          <div style={{fontSize:11,color:"var(--muted)",letterSpacing:1,textTransform:"uppercase",marginBottom:7}}>Training Level</div>
+          <div style={{fontSize:12,color:"var(--muted)",marginBottom:7}}>Training Level</div>
           <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr 1fr",gap:6}}>
             {["beginner","intermediate","advanced","competitor"].map(l=>(
               <button key={l} onClick={()=>setLevel(l)}
-                style={{padding:"8px 4px",border:`1px solid ${level===l?"var(--accent)":"var(--border)"}`,borderRadius:8,background:level===l?`color-mix(in srgb,var(--accent) 12%,transparent)`:"var(--up)",color:level===l?"var(--accent-ink)":"var(--muted)",fontFamily:"'Bebas Neue',sans-serif",fontSize:11,letterSpacing:.5,cursor:"pointer",textAlign:"center",textTransform:"capitalize"}}>
+                style={{padding:"8px 4px",border:`1px solid ${level===l?"var(--accent)":"var(--border)"}`,borderRadius:12,background:level===l?`color-mix(in srgb,var(--accent) 12%,transparent)`:"var(--up)",color:level===l?"var(--accent-ink)":"var(--muted)",fontFamily:"var(--font-display)", fontWeight:700,fontSize:12,cursor:"pointer",textAlign:"center",textTransform:"capitalize"}}>
                 {l}
               </button>
             ))}
@@ -7162,9 +7166,9 @@ function ProfileEditModal({ user, onSave, onClose }) {
 
         {/* Activity */}
         <div style={{marginBottom:24}}>
-          <div style={{fontSize:11,color:"var(--muted)",letterSpacing:1,textTransform:"uppercase",marginBottom:5}}>Activity Level</div>
+          <div style={{fontSize:12,color:"var(--muted)",marginBottom:5}}>Activity Level</div>
           <select value={activity} onChange={e=>setActivity(e.target.value)}
-            style={{width:"100%",padding:"10px 12px",background:"var(--up)",border:"1px solid var(--border)",borderRadius:8,color:"var(--text)",fontSize:13,outline:"none"}}>
+            style={{width:"100%",padding:"10px 12px",background:"var(--up)",border:"1px solid var(--border)",borderRadius:12,color:"var(--text)",fontSize:13,outline:"none"}}>
             <option value="sedentary">Sedentary — desk job, little movement</option>
             <option value="lightly_active">Lightly Active — 1–3 workouts/wk</option>
             <option value="moderately_active">Moderately Active — 3–5 workouts/wk</option>
@@ -7174,10 +7178,10 @@ function ProfileEditModal({ user, onSave, onClose }) {
         </div>
 
         <CubeButton onClick={handleSave} disabled={!canSave} style={{width:"100%",marginBottom:10}}>
-          SAVE PROFILE
+          Save profile
         </CubeButton>
         <button onClick={onClose}
-          style={{width:"100%",background:"none",border:"none",color:"var(--muted)",fontSize:13,cursor:"pointer",padding:8,fontFamily:"'DM Sans',sans-serif"}}>
+          style={{width:"100%",background:"none",border:"none",color:"var(--muted)",fontSize:13,cursor:"pointer",padding:8,fontFamily:"var(--font-text)"}}>
           Cancel
         </button>
       </div>
@@ -7192,17 +7196,17 @@ function IntelligenceReportModal({ text, loading, ts, onClose, onOpenCoach }) {
   return (
     <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,.45)",zIndex:500,display:"flex",alignItems:"flex-end",justifyContent:"center"}}
       onClick={e=>{if(e.target===e.currentTarget)onClose();}}>
-      <div style={{width:"100%",maxWidth:430,background:"color-mix(in srgb,var(--card) 90%,transparent)",backdropFilter:"blur(28px) saturate(1.5)",WebkitBackdropFilter:"blur(28px) saturate(1.5)",borderTop:"1px solid var(--glass-border)",boxShadow:"var(--depth-shadow),var(--inner-light)",borderRadius:"20px 20px 0 0",
+      <div style={{width:"100%",maxWidth:430,background:"color-mix(in srgb,var(--card) 90%,transparent)",backdropFilter:"blur(28px) saturate(1.5)",WebkitBackdropFilter:"blur(28px) saturate(1.5)",borderTop:"1px solid var(--glass-border)",boxShadow:"var(--depth-shadow),var(--inner-light)",borderRadius:"var(--shadow-1)",
         animation:"slideUp .3s cubic-bezier(.22,1,.36,1)",maxHeight:"88vh",display:"flex",flexDirection:"column"}}>
 
         {/* Header */}
         <div style={{padding:"20px 24px 14px",borderBottom:"1px solid var(--border)",flexShrink:0,display:"flex",alignItems:"flex-start",justifyContent:"space-between"}}>
           <div>
-            <div style={{fontSize:11,letterSpacing:2,textTransform:"uppercase",color:"var(--accent-ink)",marginBottom:3}}>⚡ APEX INTELLIGENCE</div>
-            <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:24,letterSpacing:1.5,lineHeight:1}}>FULL ANALYSIS</div>
+            <div style={{fontSize:12,color:"var(--accent-ink)",marginBottom:3}}>⚡ APEX intelligence</div>
+            <div style={{fontFamily:"var(--font-display)", fontWeight:700,fontSize:24,lineHeight:1}}>Full analysis</div>
           </div>
           <div style={{display:"flex",flexDirection:"column",alignItems:"flex-end",gap:6}}>
-            {ts && <div style={{fontSize:11,color:"var(--muted)"}}>{new Date(ts).toLocaleDateString("en-US",{month:"short",day:"numeric"})}</div>}
+            {ts && <div style={{fontSize:12,color:"var(--muted)"}}>{new Date(ts).toLocaleDateString("en-US",{month:"short",day:"numeric"})}</div>}
             <button onClick={onClose} style={{background:"none",border:"none",color:"var(--muted)",fontSize:18,cursor:"pointer",padding:0,lineHeight:1}}>✕</button>
           </div>
         </div>
@@ -7217,8 +7221,8 @@ function IntelligenceReportModal({ text, loading, ts, onClose, onOpenCoach }) {
                     opacity:.7,animation:`pulse ${.9+i*.15}s infinite`}}/>
                 ))}
               </div>
-              <div style={{fontSize:12,color:"var(--muted)",letterSpacing:1}}>Analyzing your data...</div>
-              <div style={{fontSize:11,color:"var(--faint)",marginTop:-8}}>Using all tracked metrics</div>
+              <div style={{fontSize:12,color:"var(--muted)",}}>Analyzing your data...</div>
+              <div style={{fontSize:12,color:"var(--faint)",marginTop:-8}}>Using all tracked metrics</div>
             </div>
           ) : text ? (
             <div style={{fontSize:13,color:"var(--faint)",lineHeight:1.8,whiteSpace:"pre-wrap"}}>{text}</div>
@@ -7237,14 +7241,14 @@ function IntelligenceReportModal({ text, loading, ts, onClose, onOpenCoach }) {
             {text && (
               <button onClick={onOpenCoach}
                 style={{flex:1,padding:"12px 0",background:"var(--accent)",color:"#080A0C",border:"none",
-                  borderRadius:10,fontFamily:"'Bebas Neue',sans-serif",fontSize:15,letterSpacing:2,cursor:"pointer"}}>
+                  borderRadius:12,fontFamily:"var(--font-display)", fontWeight:700,fontSize:15,cursor:"pointer"}}>
                 CONTINUE IN COACH →
               </button>
             )}
             <button onClick={onClose}
               style={{padding:"12px 20px",background:"var(--up)",color:"var(--muted)",border:"1px solid var(--border)",
-                borderRadius:10,fontFamily:"'Bebas Neue',sans-serif",fontSize:14,letterSpacing:1.5,cursor:"pointer"}}>
-              CLOSE
+                borderRadius:12,fontFamily:"var(--font-display)", fontWeight:700,fontSize:14,cursor:"pointer"}}>
+              Close
             </button>
           </div>
         )}
@@ -7259,29 +7263,29 @@ const ONBOARDING_KEY = "apex_onboarding_v1";
 const OB_CARDS = [
   {
     id: "home",
-    tag: "HOME",
-    headline: "YOUR COMMAND\nCENTER",
+    tag: "Home",
+    headline: "Your command\ncenter",
     body: "Log your weight every day. APEX tracks your trend, your pace toward goal, and your body composition — automatically.",
     sub: "Consistency is the only input.",
   },
   {
     id: "training",
-    tag: "TRAINING",
-    headline: "YOUR\nPROGRAM",
+    tag: "Training",
+    headline: "Your\nprogram",
     body: "Pick a split. APEX generates your full training program, adapts volume as you progress, and delivers AI feedback after every session.",
     sub: "It adjusts. You just lift.",
   },
   {
     id: "nutrition",
-    tag: "NUTRITION",
-    headline: "YOUR\nFUEL",
+    tag: "Nutrition",
+    headline: "Your\nfuel",
     body: "Log meals by describing them, tapping quick references, or photographing your food. APEX sets your daily targets based on goal and training load.",
     sub: "Text it. Tap it. Shoot it.",
   },
   {
     id: "coach",
-    tag: "COACH",
-    headline: "YOUR\nCOACH",
+    tag: "Coach",
+    headline: "Your\ncoach",
     body: "APEX Coach knows your stats, your goal, your lifts, and your trend. Ask anything — you get direct answers grounded in your actual data.",
     sub: "Questions? Just ask.",
   },
@@ -7297,10 +7301,10 @@ function ObIllustration({ id }) {
         strokeDasharray="117 176" style={{transition:"stroke-dasharray 1s cubic-bezier(.22,1,.36,1)"}}/>
       <circle cx="93" cy="33" r="6" fill={g}/>
       <circle cx="93" cy="33" r="11" fill="none" stroke={g} strokeWidth="1.5" opacity="0.35"/>
-      <text x="14" y="92" textAnchor="middle" fontSize="9" fill={dim} fontFamily="DM Mono,monospace">START</text>
-      <text x="126" y="92" textAnchor="middle" fontSize="9" fill={dim} fontFamily="DM Mono,monospace">GOAL</text>
-      <text x="70" y="60" textAnchor="middle" fontSize="14" fill={g} fontFamily="Bebas Neue,sans-serif" letterSpacing="1">67%</text>
-      <text x="70" y="72" textAnchor="middle" fontSize="8" fill={dim} fontFamily="DM Sans,sans-serif">to goal</text>
+      <text x="14" y="92" textAnchor="middle" fontSize="9" fill={dim} fontFamily="ui-rounded,system-ui,sans-serif">Start</text>
+      <text x="126" y="92" textAnchor="middle" fontSize="9" fill={dim} fontFamily="ui-rounded,system-ui,sans-serif">Goal</text>
+      <text x="70" y="60" textAnchor="middle" fontSize="14" fill={g} fontFamily="system-ui,-apple-system,sans-serif" fontWeight="700">67%</text>
+      <text x="70" y="72" textAnchor="middle" fontSize="8" fill={dim} fontFamily="system-ui,-apple-system,sans-serif">to goal</text>
     </svg>
   );
   if (id === "training") return (
@@ -7324,8 +7328,8 @@ function ObIllustration({ id }) {
       <circle cx="60" cy="60" r="20" fill="none" stroke={dim} strokeWidth="4"/>
       <circle cx="60" cy="60" r="20" fill="none" stroke={g} strokeWidth="4"
         strokeDasharray="56 126" strokeLinecap="round" transform="rotate(-90 60 60)" opacity="0.3"/>
-      <text x="60" y="57" textAnchor="middle" fontSize="10" fill={g} fontFamily="Bebas Neue,sans-serif" letterSpacing="1.5">MACRO</text>
-      <text x="60" y="68" textAnchor="middle" fontSize="8" fill={dim} fontFamily="DM Mono,monospace">P · C · F</text>
+      <text x="60" y="57" textAnchor="middle" fontSize="10" fill={g} fontFamily="system-ui,-apple-system,sans-serif" fontWeight="700">Macro</text>
+      <text x="60" y="68" textAnchor="middle" fontSize="8" fill={dim} fontFamily="ui-rounded,system-ui,sans-serif">P · C · F</text>
     </svg>
   );
   if (id === "coach") return (
@@ -7391,8 +7395,8 @@ function OnboardingCarousel({ onComplete }) {
 
       {/* Skip */}
       <div style={{width:"100%",display:"flex",justifyContent:"flex-end",padding:"56px 28px 0",position:"relative",zIndex:1}}>
-        <button onClick={onComplete} style={{background:"none",border:"none",color:"rgba(134,140,150,0.6)",fontSize:13,cursor:"pointer",fontFamily:"'DM Sans',sans-serif",letterSpacing:.5,padding:"4px 0"}}>
-          SKIP
+        <button onClick={onComplete} style={{background:"none",border:"none",color:"rgba(134,140,150,0.6)",fontSize:13,cursor:"pointer",fontFamily:"var(--font-text)",padding:"4px 0"}}>
+          Skip
         </button>
       </div>
 
@@ -7413,8 +7417,7 @@ function OnboardingCarousel({ onComplete }) {
 
         {/* Tag */}
         <div style={{
-          fontSize:11,fontFamily:"'Bebas Neue',sans-serif",letterSpacing:3,
-          color:"#F5A623",marginBottom:12,
+          fontSize:12,fontFamily:"var(--font-display)", fontWeight:700,color:"#F5A623",marginBottom:12,
           display:"flex",alignItems:"center",gap:8,
         }}>
           <div style={{width:20,height:1,background:"rgba(245,166,35,0.4)"}}/>
@@ -7424,8 +7427,8 @@ function OnboardingCarousel({ onComplete }) {
 
         {/* Headline */}
         <div style={{
-          fontFamily:"'Bebas Neue',sans-serif",
-          fontSize:46,letterSpacing:2,lineHeight:1.0,
+          fontFamily:"var(--font-display)", fontWeight:700,
+          fontSize:46,lineHeight:1.0,
           color:"#F0EDE8",marginBottom:20,
           whiteSpace:"pre-line",
         }}>
@@ -7441,7 +7444,7 @@ function OnboardingCarousel({ onComplete }) {
         </div>
 
         {/* Sub */}
-        <div style={{fontSize:13,color:"rgba(245,166,35,0.7)",fontStyle:"italic",letterSpacing:.3}}>
+        <div style={{fontSize:13,color:"rgba(245,166,35,0.7)",fontStyle:"italic",}}>
           {card.sub}
         </div>
       </div>
@@ -7454,7 +7457,7 @@ function OnboardingCarousel({ onComplete }) {
             <div key={i} style={{
               height:5,
               width: i === current ? 22 : 5,
-              borderRadius:3,
+              borderRadius:10,
               background: i === current ? "#F5A623" : "rgba(245,166,35,0.25)",
               transition:"all 0.3s cubic-bezier(.22,1,.36,1)",
             }}/>
@@ -7470,12 +7473,11 @@ function OnboardingCarousel({ onComplete }) {
             color: isLast ? "#09090B" : "#F0EDE8",
             border: isLast ? "none" : "1px solid rgba(240,237,232,0.2)",
             borderRadius:12,
-            fontFamily:"'Bebas Neue',sans-serif",fontSize:18,letterSpacing:2.5,
-            cursor:"pointer",
+            fontFamily:"var(--font-display)", fontWeight:700,fontSize:18,cursor:"pointer",
             transition:"all 0.2s ease",
           }}
         >
-          {isLast ? "GET STARTED →" : "NEXT"}
+          {isLast ? "Get started" : "Next"}
         </button>
       </div>
     </div>
@@ -7827,7 +7829,7 @@ function AppInner() {
         const wtChg = completedPhase.endWeight != null && completedPhase.startWeight != null
           ? (completedPhase.endWeight - completedPhase.startWeight).toFixed(1) : null;
         const lines = [
-          `Phase complete: ${completedPhase.phase.toUpperCase()} — ${weeks} week${weeks !== 1 ? "s" : ""}`,
+          `Phase complete: ${labelCase(completedPhase.phase)} — ${weeks} week${weeks !== 1 ? "s" : ""}`,
           wtChg !== null ? `Weight: ${parseFloat(wtChg) > 0 ? "+" : ""}${wtChg} lbs  (${completedPhase.startWeight} → ${completedPhase.endWeight} lbs)` : "",
           completedPhase.startBfPct ? `Started at ~${completedPhase.startBfPct}% BF` : "",
         ].filter(Boolean).join("\n");
@@ -7883,7 +7885,7 @@ function AppInner() {
           <span>Your account exists but your data isn't on this device yet.</span>
         </div>
         <button className="auth-submit" onClick={handleRetrySync} disabled={retrying}>
-          {retrying ? "SYNCING..." : "RETRY SYNC →"}
+          {retrying ? "Syncing..." : "Retry sync"}
         </button>
         {retryFailed && (
           <div style={{fontSize:12,color:"var(--red,#e53e3e)",textAlign:"center",marginTop:4}}>
@@ -7893,10 +7895,10 @@ function AppInner() {
         <div style={{fontSize:12,color:"var(--muted)",lineHeight:1.7,borderLeft:"3px solid var(--border)",paddingLeft:12,marginTop:4}}>
           If retry fails: open the app on your original device, sign in there, then come back and tap Retry Sync.
         </div>
-        <button className="auth-submit" style={{marginTop:8,background:"none",border:"2px solid var(--brutal)",color:"var(--text)",boxShadow:"3px 3px 0 var(--brutal)"}} onClick={()=>setUser(null)||setUserLoaded(true)}>
+        <button className="auth-submit" style={{marginTop:8,background:"none",border:"1px solid var(--border)",color:"var(--text)",boxShadow:"var(--shadow-1)"}} onClick={()=>setUser(null)||setUserLoaded(true)}>
           START FRESH ON THIS DEVICE →
         </button>
-        <button onClick={signOut} style={{width:"100%",marginTop:8,background:"none",border:"none",color:"var(--muted)",fontSize:12,cursor:"pointer",padding:8,fontFamily:"'DM Sans',sans-serif"}}>
+        <button onClick={signOut} style={{width:"100%",marginTop:8,background:"none",border:"none",color:"var(--muted)",fontSize:12,cursor:"pointer",padding:8,fontFamily:"var(--font-text)"}}>
           Sign out
         </button>
       </div>
@@ -7966,8 +7968,8 @@ function AppInner() {
                   transform:`translateX(${NAV.findIndex(n=>n.id===tab)*100}%)`,
                 }}/>
                 {NAV.map(n=>(
-                  <button key={n.id} className={`ni ${tab===n.id?"on":""}`} onClick={()=>setTab(n.id)}>
-                    <NavIcon id={n.id}/>
+                  <button key={n.id} className={`ni ${tab===n.id?"on":""}`} aria-current={tab===n.id?"page":undefined} onClick={()=>setTab(n.id)}>
+                    <NavIcon id={n.id} on={tab===n.id}/>
                     {n.id === "training" && session && tab !== "training"
                       ? <span className="ni-label" style={{color:"var(--accent-ink)"}}>● Active</span>
                       : <span className="ni-label">{n.label}</span>

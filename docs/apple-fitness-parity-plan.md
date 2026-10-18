@@ -112,6 +112,33 @@ Ring colours must pass the colour-blindness check (`dataviz` validator) in both 
 - **Tests:** add Vitest tests for every formula in `domain/` before touching the UI.
 
 ### Phase 1: Design system reset (about 2 weeks)
+
+**Status (2026-10-17, branch `phase-1/design-reset`):** first pass done; checked in screenshots
+at 390 px, light and dark.
+- **Type:** Bebas Neue, DM Sans, DM Mono and Fraunces are gone. Text uses the system font,
+  numbers use SF Pro Rounded where available, and canvas and SVG charts use system fonts.
+  The Google Fonts request is removed.
+- **Copy:** about 230 all-caps labels and buttons are now sentence case, and the "▶" is gone
+  from buttons. Stored keys shown to users go through `labelCase()`. Acronyms (AI, TDEE, RPE,
+  SFR…) and the APEX wordmark are kept.
+- **Surfaces:**
+  - every hard offset shadow is now one soft shadow (none in dark mode)
+  - 2px "brutal" borders are 1px hairlines
+  - corner radii are snapped to 10 / 12 / 16
+  - the ambient glow is removed
+- **Colour:**
+  - neutrals moved to an iOS-like grey scale in both modes
+  - Train / Fuel / Track ring colours added as `--ring-*` tokens (in the CSS and the canvas
+    `C` object), checked for colour-blind separation in light and dark
+- **Tab bar:** full width, translucent with blur, hairline on top. The selected tab is gold
+  with a heavier icon and `aria-current`.
+- **Text floor:** text under 12 px raised to 12. This plan originally said 13; 12 keeps the
+  dense stat strips intact and is above Apple's 11 pt caption minimum.
+- **Left for Phase 2, when those screens are rebuilt:**
+  - macro numbers and stat dividers still use several accent colours decoratively
+  - the onboarding goal picker's orbit layout
+  - motion polish (spring transitions, count-up numbers)
+
 - **Type:**
   - font stack `-apple-system, "SF Pro Text", system-ui`
   - big numbers in `ui-rounded` (SF Pro Rounded), as Apple Fitness does
