@@ -505,8 +505,8 @@ input:focus,textarea:focus,select:focus{
 .wt-history{display:flex;gap:6px;align-items:flex-end;height:40px;margin-bottom:14px;}
 .wt-bar-wrap{display:flex;flex-direction:column;align-items:center;flex:1;}
 .wt-bar{border-radius:10px 3px 0 0;min-height:4px;transition:height .5s ease;width:100%;max-width:18px;}
-.wt-input-row{display:flex;gap:8px;}
-.wt-input{flex:1;background:var(--up);border:1px solid var(--border);border-radius:10px;padding:11px 44px 11px 14px;color:var(--text);font-size:18px;font-family:var(--font-display);font-weight:700;letter-spacing:0;outline:none;transition:border-color .2s,box-shadow .2s;}
+.wt-input-row{display:flex;gap:8px;align-items:stretch;}
+.wt-input{flex:1;width:100%;min-width:0;background:var(--up);border:1px solid var(--border);border-radius:10px;padding:11px 44px 11px 14px;color:var(--text);font-size:18px;font-family:var(--font-display);font-weight:700;letter-spacing:0;outline:none;transition:border-color .2s,box-shadow .2s;}
 .wt-input:focus{border-color:var(--accent);box-shadow:var(--shadow-1);}
 .wt-input:focus{border-color:var(--accent);box-shadow:var(--shadow-1);}
 .wt-input-unit{position:absolute;right:14px;top:50%;transform:translateY(-50%);font-size:12px;color:var(--muted);}
@@ -895,6 +895,41 @@ input:focus,textarea:focus,select:focus{
 
 /* TOUCH TARGETS (Apple HIG: 44x44pt default) */
 input[type="number"]{min-height:44px;}
+
+
+/* ═══ SUMMARY: RINGS + NEXT (Phase 2) ══════════════════════════════════════ */
+.rings-card{margin:0 24px 16px;padding:20px;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);box-shadow:var(--shadow-1);}
+.rings-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;}
+.rings-title{font-family:var(--font-display);font-size:22px;font-weight:700;letter-spacing:-.02em;color:var(--text);}
+.rings-badge{font-size:12px;font-weight:600;padding:4px 10px;border-radius:999px;background:var(--up);color:var(--text);}
+.rings-body{display:flex;align-items:center;gap:18px;}
+.rings-legend{list-style:none;display:flex;flex-direction:column;gap:10px;flex:1;min-width:0;}
+.rings-row{display:flex;gap:10px;align-items:flex-start;width:100%;padding:0;border:0;background:none;text-align:left;cursor:pointer;color:inherit;font:inherit;min-height:44px;}
+.rings-row:disabled{cursor:default;}
+.rings-key{width:4px;align-self:stretch;border-radius:2px;flex-shrink:0;margin:2px 0;}
+.rings-text{display:flex;flex-direction:column;min-width:0;}
+.rings-label{font-size:13px;font-weight:600;color:var(--muted);}
+.rings-check{color:var(--text);}
+.rings-value{font-family:var(--font-num);font-variant-numeric:tabular-nums;font-size:17px;font-weight:600;color:var(--text);line-height:1.25;}
+.rings-detail{font-size:12px;color:var(--muted);line-height:1.35;}
+.rings-week{list-style:none;display:grid;grid-template-columns:repeat(7,1fr);gap:4px;margin-top:18px;padding-top:14px;border-top:1px solid var(--border);}
+.rings-week li{display:flex;flex-direction:column;align-items:center;gap:4px;font-size:12px;color:var(--muted);}
+.rings-week li.is-today{color:var(--text);font-weight:700;}
+.ring-track{stroke:color-mix(in srgb,var(--ring-color) 22%,transparent);}
+@media(prefers-color-scheme:dark){.ring-track{stroke:color-mix(in srgb,var(--ring-color) 32%,transparent);}}
+.ring-arc{transition:stroke-dashoffset .9s cubic-bezier(.16,1,.3,1);}
+@media(prefers-reduced-motion:no-preference){
+  .ring-arc{animation:ringFill 1.1s cubic-bezier(.16,1,.3,1) both;}
+}
+@keyframes ringFill{from{stroke-dashoffset:var(--ring-full);}}
+
+.next-card{margin:0 24px 16px;padding:18px 20px;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);box-shadow:var(--shadow-1);display:flex;flex-direction:column;gap:4px;}
+.next-eyebrow{font-size:13px;font-weight:600;color:var(--accent-ink);}
+.next-title{font-family:var(--font-display);font-size:20px;font-weight:700;letter-spacing:-.015em;color:var(--text);line-height:1.2;}
+.next-detail{font-size:15px;color:var(--muted);line-height:1.4;}
+.next-cta{margin-top:10px;align-self:flex-start;min-height:44px;padding:0 20px;border-radius:999px;border:0;background:var(--accent);color:#111114;font-family:var(--font-text);font-size:16px;font-weight:600;cursor:pointer;}
+.next-cta:active{transform:scale(.97);}
+.next-done .next-eyebrow{color:var(--muted);}
 
 /* REDUCED MOTION */
 @media(prefers-reduced-motion:reduce){

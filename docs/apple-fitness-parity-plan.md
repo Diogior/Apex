@@ -156,6 +156,37 @@ at 390 px, light and dark.
 - **Writing:** retire shouting labels ("NO WEIGHT LOGGED TODAY", "LOG FIRST MEAL ▶").
 
 ### Phase 2: Summary screen, Apex's version of Apple's Fitness tab (about 2 weeks)
+
+**Status (2026-10-17, branch `phase-2/summary`):** rings, Next card and the interruption
+clean-up are done. Card reordering and decorative colour are next.
+- **Ring logic:** `src/domain/rings.js`, pure functions with 16 tests (47 tests in total).
+  - **Train:** sets done today against the session's planned sets. On days without
+    training, it closes as a rest day once the last 7 days hold the split's sessions.
+    Sessions rotate from the last one logged.
+  - **Fuel:** protein against target. It closes only when calories are also within 10%.
+  - **Track:** weigh-in today, a meal today, and a check-in in the last 7 days.
+- **Home:** a "Today" card with the three nested rings, a labelled row per ring and a
+  7-day strip; tapping a row opens that tab. Ring tracks are tinted from each ring colour.
+- **Next card:** one action, in priority order:
+  1. resume a running session
+  2. set up training
+  3. weigh in
+  4. start the next session
+  5. weekly check-in, only after the account's first week
+  6. protein still to go
+- **Removed:**
+  - the "No weight logged today" banner over every tab
+  - the check-in sheet that opened by itself
+  - the duplicate "Set up training" banner
+- **First run:** the 4-card tour is now one card ("Close your three rings") showing the real
+  ring graphic. "Skip" is hidden when there's only one card.
+- **Fixed while here:** the weight field pushed the Log button off the card.
+- **Still to do in Phase 2:**
+  - reorder Home cards (Today's session, Nutrition, Body weight trend, Physique target,
+    Recent sessions)
+  - retire the decorative multi-colour accents on Home
+  - decide whether per-tab first-visit tooltips stay
+
 - **Hero:** the three rings with today's values, and a 7-day ring history underneath.
 - **One "Next" card** replaces the weigh-in banner, the auto-opening check-in sheet and the
   setup prompts. It shows only the single most useful action right now:

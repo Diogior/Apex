@@ -11,6 +11,8 @@ import { apiChat } from "./lib/apiChat.js";
 import { resolveExerciseTagWithAI } from "./lib/exerciseTagAI.js";
 import { styles } from "./styles/legacyStyles.js";
 import { ErrorBoundary } from "./components/ErrorBoundary.jsx";
+import { ActivityRingsCard, NextCard, RingStack } from "./components/ActivityRings.jsx";
+import { computeRings, ringHistory, nextAction, nextSessionDay } from "./domain/rings.js";
 import { CANVAS_DARK, CANVAS_LIGHT, getCanvasC, useThemeColors } from "./styles/theme.js";
 import {
   calcProtocol,
@@ -4687,15 +4689,9 @@ function DashboardScreen({ user, weightLog, onLogWeight, onDeleteWeight, onEditW
           if (checkins?.length) {
             const latest = checkins[checkins.length - 1];
             setCheckIn(latest);
-            // Prompt for new check-in if > 6 days old
-            const age = (Date.now() - latest.ts) / 86400000;
-            if (age > 6) setShowCheckIn(true);
-          } else {
-            setShowCheckIn(true); // First time
+            // The weekly check-in is offered by the Next card, never opened automatically.
           }
         } catch {}
-      } else {
-        setShowCheckIn(true); // No check-ins yet
       }
     }).catch(() => {});
     window.storage.get(PROTOCOL_KEY).then(r => {
@@ -4778,6 +4774,39 @@ function DashboardScreen({ user, weightLog, onLogWeight, onDeleteWeight, onEditW
   })();
 
   const splitDef = tState?.split ? SPLITS[tState.split] : null;
+
+  // ── SUMMARY RINGS + NEXT ACTION ──────────────────────────────────────────
+  const { session: liveSession } = useSession();
+  const ringArgs = {
+    day: now,
+    trainingState: tState,
+    splitDef,
+    nutLogs,
+    targets: calTarget,
+    weightLog,
+    lastCheckInTs: checkIn?.ts,
+  };
+  const rings = computeRings(ringArgs);
+  const ringWeek = ringHistory(ringArgs, 7);
+  const firstSeenTs = Math.min(
+    now,
+    ...weightLog.map(e => e.ts).filter(Boolean),
+    ...(tState?.createdAt ? [Date.parse(tState.createdAt)] : []),
+  );
+  const next = nextAction({
+    rings, liveSession, now, firstSeenTs,
+    lastCheckInTs: checkIn?.ts,
+    nextDay: nextSessionDay(splitDef?.schedule, history),
+  });
+  const handleNext = (kind) => {
+    if (kind === "weigh") {
+      const el = document.querySelector(".wt-input");
+      el?.scrollIntoView({ behavior: "smooth", block: "center" });
+      el?.focus({ preventScroll: true });
+    } else if (kind === "checkin") setShowCheckIn(true);
+    else if (kind === "fuel") onNavigate("nutrition");
+    else onNavigate("training");
+  };
 
   // Last 7 days for streak dots
   const last7Days = Array.from({length:7},(_,i)=>{
@@ -5063,6 +5092,9 @@ function DashboardScreen({ user, weightLog, onLogWeight, onDeleteWeight, onEditW
         <AvatarMenu initial={user.name[0].toUpperCase()} onEditProfile={onEditProfile}/>
       </div>
 
+      <ActivityRingsCard rings={rings} history={ringWeek} onOpen={(t) => t !== "home" && onNavigate(t)} />
+      <NextCard action={next} onAction={handleNext} />
+
       {/* BODY WEIGHT — DOMINANT HERO BLOCK */}
       <div className={`wt-hero${inputFocused?" focused":""}${justLogged?" logged":""}`}>
         <div className="wt-hero-top">
@@ -5197,7 +5229,7 @@ function DashboardScreen({ user, weightLog, onLogWeight, onDeleteWeight, onEditW
 
         {/* Log input — inline in hero */}
         <div style={{position:"relative",display:"flex",gap:8}}>
-          <div style={{flex:1,position:"relative"}}>
+          <div style={{flex:1,minWidth:0,position:"relative"}}>
             <input
               type="number" step="0.1"
               placeholder={currentWeight ? `${currentWeight}` : "185.0"}
@@ -5902,8 +5934,8 @@ function DashboardScreen({ user, weightLog, onLogWeight, onDeleteWeight, onEditW
         )}
       </div>
 
-      {/* TRAINING BLOCK */}
-      <div className="dash-banner" onClick={() => onNavigate("training")}
+      {/* TRAINING BLOCK — only once a split exists; before that the Next card asks for setup */}
+      {splitDef && <div className="dash-banner" onClick={() => onNavigate("training")}
         style={{cursor:"pointer",transition:"border-color .15s"}}
         onMouseOver={e=>e.currentTarget.style.borderColor="var(--accent)"}
         onMouseOut={e=>e.currentTarget.style.borderColor="var(--border)"}>
@@ -5912,13 +5944,13 @@ function DashboardScreen({ user, weightLog, onLogWeight, onDeleteWeight, onEditW
             {splitDef ? (
               <>
                 <div className="db-tag">{splitDef.label}</div>
-                <div className="db-title">{history.length} SESSION{history.length !== 1 ? "S" : ""} LOGGED</div>
+                <div className="db-title">{history.length} session{history.length !== 1 ? "s" : ""} logged</div>
                 <div className="db-sub">{splitDef.frequency} days/week · {history.length > 0 ? `last: ${new Date(history[history.length-1].ts).toLocaleDateString("en-US",{month:"short",day:"numeric"})}` : "no sessions yet"}</div>
               </>
             ) : (
               <>
                 <div className="db-tag">Get started</div>
-                <div className="db-title">Set Up Training</div>
+                <div className="db-title">Set up training</div>
                 <div className="db-sub">Configure your split in the Training tab</div>
               </>
             )}
@@ -5935,7 +5967,7 @@ function DashboardScreen({ user, weightLog, onLogWeight, onDeleteWeight, onEditW
             {streak > 0 ? `${streak}-day streak` : "No sessions yet"}
           </span>
         </div>
-      </div>
+      </div>}
 
       {/* WEIGHT GRAPH */}
       <div style={{margin:"0 24px 20px",background:"var(--surface)",border:"1px solid var(--border)",borderRadius:16,overflow:"hidden"}}>
@@ -7260,38 +7292,24 @@ function IntelligenceReportModal({ text, loading, ts, onClose, onOpenCoach }) {
 // ─── ONBOARDING TOUR ─────────────────────────────────────────────────────────
 const ONBOARDING_KEY = "apex_onboarding_v1";
 
+// One welcome card: the three rings are the whole idea, so lead with them.
+// Each tab still introduces itself with a short tooltip on first visit.
 const OB_CARDS = [
   {
-    id: "home",
-    tag: "Home",
-    headline: "Your command\ncenter",
-    body: "Log your weight every day. APEX tracks your trend, your pace toward goal, and your body composition — automatically.",
-    sub: "Consistency is the only input.",
-  },
-  {
-    id: "training",
-    tag: "Training",
-    headline: "Your\nprogram",
-    body: "Pick a split. APEX generates your full training program, adapts volume as you progress, and delivers AI feedback after every session.",
-    sub: "It adjusts. You just lift.",
-  },
-  {
-    id: "nutrition",
-    tag: "Nutrition",
-    headline: "Your\nfuel",
-    body: "Log meals by describing them, tapping quick references, or photographing your food. APEX sets your daily targets based on goal and training load.",
-    sub: "Text it. Tap it. Shoot it.",
-  },
-  {
-    id: "coach",
-    tag: "Coach",
-    headline: "Your\ncoach",
-    body: "APEX Coach knows your stats, your goal, your lifts, and your trend. Ask anything — you get direct answers grounded in your actual data.",
-    sub: "Questions? Just ask.",
+    id: "rings",
+    tag: "Welcome",
+    headline: "Close your\nthree rings",
+    body: "Train, Fuel and Track. Hit today's sets, your protein, and your daily logs, and APEX keeps your targets tuned as you go.",
+    sub: "One look tells you where you stand.",
   },
 ];
 
 function ObIllustration({ id }) {
+  if (id === "rings") return (
+    <div style={{display:"flex",justifyContent:"center"}}>
+      <RingStack values={{ train: 0.82, fuel: 0.64, track: 0.67 }} size={156} stroke={14} />
+    </div>
+  );
   const g = "#F5A623";
   const dim = "rgba(245,166,35,0.22)";
   if (id === "home") return (
@@ -7395,9 +7413,11 @@ function OnboardingCarousel({ onComplete }) {
 
       {/* Skip */}
       <div style={{width:"100%",display:"flex",justifyContent:"flex-end",padding:"56px 28px 0",position:"relative",zIndex:1}}>
-        <button onClick={onComplete} style={{background:"none",border:"none",color:"rgba(134,140,150,0.6)",fontSize:13,cursor:"pointer",fontFamily:"var(--font-text)",padding:"4px 0"}}>
-          Skip
-        </button>
+        {OB_CARDS.length > 1 && (
+          <button onClick={onComplete} style={{background:"none",border:"none",color:"var(--muted)",fontSize:13,cursor:"pointer",fontFamily:"var(--font-text)",padding:"4px 0",minHeight:44}}>
+            Skip
+          </button>
+        )}
       </div>
 
       {/* Card content */}
@@ -7938,15 +7958,7 @@ function AppInner() {
             {activeTooltip && (
               <TabTooltip key={activeTooltip} tabId={activeTooltip} onDismiss={() => setActiveTooltip(null)}/>
             )}
-            {/* Weight reminder banner — fixed overlay, visible on all tabs */}
-            {showNotif && (
-              <WeightReminderBanner
-                type={notifState.type}
-                daysAgo={notifState.daysAgo}
-                onDismiss={notifState.type === "daily" ? handleDismissNotif : null}
-                onLogNow={() => setTab("home")}
-              />
-            )}
+            {/* The weigh-in reminder lives in Home's Next card now, not as a banner over every tab. */}
             {tab==="home"&&<ErrorBoundary label="Home" resetKey={tab}><DashboardScreen user={enrichedUser} weightLog={weightLog} onLogWeight={handleLogWeight} onDeleteWeight={handleDeleteWeight} onEditWeight={handleEditWeight} onNavigate={setTab} onEditProfile={()=>setShowProfileEdit(true)} onGoalTransition={handleGoalTransition}/></ErrorBoundary>}
             {tab==="training"&&<ErrorBoundary label="Training" resetKey={tab}><TrainingScreen user={enrichedUser} onNavigate={setTab}/></ErrorBoundary>}
             {tab==="nutrition"&&<ErrorBoundary label="Nutrition" resetKey={tab}><NutritionScreen user={enrichedUser}/></ErrorBoundary>}
