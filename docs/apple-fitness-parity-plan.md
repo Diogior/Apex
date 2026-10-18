@@ -157,8 +157,7 @@ at 390 px, light and dark.
 
 ### Phase 2: Summary screen, Apex's version of Apple's Fitness tab (about 2 weeks)
 
-**Status (2026-10-17, branch `phase-2/summary`):** rings, Next card and the interruption
-clean-up are done. Card reordering and decorative colour are next.
+**Status (2026-10-18, branch `phase-2/summary`):** done except one open decision (tooltips).
 - **Ring logic:** `src/domain/rings.js`, pure functions with 16 tests (47 tests in total).
   - **Train:** sets done today against the session's planned sets. On days without
     training, it closes as a rest day once the last 7 days hold the split's sessions.
@@ -181,11 +180,17 @@ clean-up are done. Card reordering and decorative colour are next.
 - **First run:** the 4-card tour is now one card ("Close your three rings") showing the real
   ring graphic. "Skip" is hidden when there's only one card.
 - **Fixed while here:** the weight field pushed the Log button off the card.
-- **Still to do in Phase 2:**
-  - reorder Home cards (Today's session, Nutrition, Body weight trend, Physique target,
-    Recent sessions)
-  - retire the decorative multi-colour accents on Home
-  - decide whether per-tab first-visit tooltips stay
+- **Home order:** rings, Next, today's session, nutrition targets, body weight with its 30-day
+  trend directly below, physique target, then Coach View (collapsed).
+- **Calmer colour:**
+  - the stat strip lost its pulsing accent outline; "today" is marked in words
+  - dividers are hairlines
+  - training-day dots use the Train ring colour
+  - the physique card's dot only shows when approaching or at the goal
+- **Open decision:** whether the first-visit tab tooltips stay. They are the last thing that
+  dims the screen.
+- **Noted for Phase 4:** the 30-day trend is a rotating 3D chart, hard to read with few points.
+  Replace it with a flat trend line and a rate band when Trends is built.
 
 - **Hero:** the three rings with today's values, and a 7-day ring history underneath.
 - **One "Next" card** replaces the weigh-in banner, the auto-opening check-in sheet and the

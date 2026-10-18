@@ -526,12 +526,13 @@ input:focus,textarea:focus,select:focus{
 .cube-btn.saved:not(:disabled):hover{box-shadow:var(--shadow-1);}
 .cube-btn.saved:not(:disabled):active{box-shadow:var(--shadow-1);}
 /* Secondary stat strip */
-.stat-strip{display:grid;grid-template-columns:1fr 1fr 1fr;gap:1px;margin:0 24px 20px;background:var(--brutal);border-radius:12px;overflow:hidden;border:1px solid var(--border);box-shadow:var(--shadow-1);}
+.stat-strip{display:grid;grid-template-columns:1fr 1fr 1fr;gap:1px;margin:0 24px 20px;background:var(--border);border-radius:12px;overflow:hidden;border:1px solid var(--border);box-shadow:var(--shadow-1);}
 .stat-cell{background:var(--card);padding:14px 14px 12px;}
 .stat-cell:first-child{border-radius:13px 0 0 13px;}
 .stat-cell:last-child{border-radius:0 13px 13px 0;}
 .stat-label{font-size:12px;font-weight:600;letter-spacing:0;text-transform:none;color:var(--muted);margin-bottom:5px;}
 .stat-val{font-family:var(--font-display);font-weight:700;font-size:24px;letter-spacing:0;line-height:1;color:var(--text);}
+.stat-today{color:var(--text);font-weight:600;}
 .stat-sub{font-size:12px;color:var(--muted);margin-top:3px;line-height:1.3;}
 /* Training block */
 .dash-banner{margin:0 24px 20px;background:var(--card);border:1px solid var(--border);border-radius:12px;padding:20px;box-shadow:var(--shadow-1);}
@@ -540,7 +541,7 @@ input:focus,textarea:focus,select:focus{
 .db-sub{font-size:13px;color:var(--muted);margin-top:3px;}
 .streak{display:flex;align-items:center;gap:6px;margin-top:14px;padding-top:14px;border-top:1px solid var(--border);}
 .sdot{width:26px;height:26px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;}
-.sdot.on{background:var(--accent);color:#FFF;}
+.sdot.on{background:var(--ring-train);color:#FFF;}
 .sdot.off{background:var(--up);color:var(--muted);border:1px solid var(--border);}
 
 /* TRAINING */

@@ -5095,6 +5095,98 @@ function DashboardScreen({ user, weightLog, onLogWeight, onDeleteWeight, onEditW
       <ActivityRingsCard rings={rings} history={ringWeek} onOpen={(t) => t !== "home" && onNavigate(t)} />
       <NextCard action={next} onAction={handleNext} />
 
+      {/* Order follows Apple's Summary: what to do today first, then nutrition,
+          body weight with its trend, the physique goal, and the coach view last. */}
+      {/* TRAINING BLOCK — only once a split exists; before that the Next card asks for setup */}
+      {splitDef && <div className="dash-banner" onClick={() => onNavigate("training")}
+        style={{cursor:"pointer",transition:"border-color .15s"}}
+        onMouseOver={e=>e.currentTarget.style.borderColor="var(--accent)"}
+        onMouseOut={e=>e.currentTarget.style.borderColor="var(--border)"}>
+        <div style={{display:"flex",alignItems:"flex-start",justifyContent:"space-between"}}>
+          <div style={{flex:1}}>
+            {splitDef ? (
+              <>
+                <div className="db-tag">{splitDef.label}</div>
+                <div className="db-title">{history.length} session{history.length !== 1 ? "s" : ""} logged</div>
+                <div className="db-sub">{splitDef.frequency} days/week · {history.length > 0 ? `last: ${new Date(history[history.length-1].ts).toLocaleDateString("en-US",{month:"short",day:"numeric"})}` : "no sessions yet"}</div>
+              </>
+            ) : (
+              <>
+                <div className="db-tag">Get started</div>
+                <div className="db-title">Set up training</div>
+                <div className="db-sub">Configure your split in the Training tab</div>
+              </>
+            )}
+          </div>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" style={{width:16,height:16,color:"var(--muted)",flexShrink:0,marginTop:2}}>
+            <path d="M9 18l6-6-6-6"/>
+          </svg>
+        </div>
+        <div className="streak">
+          {last7Days.map((d,i) => (
+            <div key={i} className={`sdot ${d.done?"on":"off"}`}>{d.done ? "✓" : d.label}</div>
+          ))}
+          <span style={{fontSize:12,color:"var(--muted)",marginLeft:6}}>
+            {streak > 0 ? `${streak}-day streak` : "No sessions yet"}
+          </span>
+        </div>
+      </div>}
+
+      {/* SECONDARY STAT STRIP — Sessions / Train / Rest / Weekly Avg */}
+      <div className="stat-strip" style={{gridTemplateColumns: calTarget?.cyclingActive ? "1fr 1fr 1fr 1fr" : "1fr 1fr 1fr"}}>
+        <div className="stat-cell">
+          <div className="stat-label">Sessions</div>
+          <div className="stat-val" style={{color: history.length ? "var(--text)" : "var(--muted)", fontSize: history.length ? undefined : 18}}>
+            {history.length || "—"}
+          </div>
+          <div className="stat-sub">{history.length ? "total logged" : "none yet"}</div>
+        </div>
+        {calTarget?.cyclingActive ? (
+          <>
+            <div className="stat-cell">
+              <div className="stat-label">Train day{calTarget.isTrainDay && <span className="stat-today"> · today</span>}</div>
+              <div className="stat-val" style={{color: calTarget.isTrainDay ? "var(--text)" : "var(--muted)"}}>
+                {calTarget.trainCal?.toLocaleString() ?? "—"}
+              </div>
+              <div className="stat-sub">{calTarget.trainP ?? calTarget.p}g protein</div>
+            </div>
+            <div className="stat-cell">
+              <div className="stat-label">Rest day{!calTarget.isTrainDay && <span className="stat-today"> · today</span>}</div>
+              <div className="stat-val" style={{color: !calTarget.isTrainDay ? "var(--text)" : "var(--muted)"}}>
+                {calTarget.restCal?.toLocaleString() ?? "—"}
+              </div>
+              <div className="stat-sub">{calTarget.restP ?? calTarget.p}g protein</div>
+            </div>
+            <div className="stat-cell">
+              <div className="stat-label">Weekly avg</div>
+              <div className="stat-val">{calTarget.weeklyAvg?.toLocaleString() ?? "—"}</div>
+              <div className="stat-sub">
+                {calTarget.tdee ? `TDEE ${calTarget.tdee.toLocaleString()}` : "per day"}
+              </div>
+            </div>
+          </>
+        ) : (
+          <>
+            <div className="stat-cell">
+              <div className="stat-label">Daily target</div>
+              <div className="stat-val">{calTarget ? calTarget.cal.toLocaleString() : "—"}</div>
+              <div className="stat-sub">{calTarget ? `${calTarget.p}g protein` : "Not set"}</div>
+            </div>
+            <div className="stat-cell">
+              <div className="stat-label">{reboundData ? "Ceiling" : "TDEE"}</div>
+              <div className="stat-val" style={{color: reboundData && currentWeight >= reboundData.ceiling * 0.97 ? "var(--red)" : "var(--text)"}}>
+                {reboundData ? reboundData.ceiling : (calTarget?.tdee?.toLocaleString() ?? "—")}
+              </div>
+              <div className="stat-sub" style={{color: reboundData ? (currentWeight >= reboundData.ceiling ? "var(--red)" : "var(--green)") : "var(--muted)"}}>
+                {reboundData
+                  ? (reboundData.ceiling - currentWeight > 0 ? `${(reboundData.ceiling - currentWeight).toFixed(1)} remaining` : "At ceiling")
+                  : (calTarget?.pal ? `PAL ${calTarget.pal.toFixed(2)}` : "maintenance")}
+              </div>
+            </div>
+          </>
+        )}
+      </div>
+
       {/* BODY WEIGHT — DOMINANT HERO BLOCK */}
       <div className={`wt-hero${inputFocused?" focused":""}${justLogged?" logged":""}`}>
         <div className="wt-hero-top">
@@ -5349,6 +5441,21 @@ function DashboardScreen({ user, weightLog, onLogWeight, onDeleteWeight, onEditW
         )}
       </div>
 
+      {/* WEIGHT GRAPH */}
+      <div style={{margin:"0 24px 20px",background:"var(--surface)",border:"1px solid var(--border)",borderRadius:16,overflow:"hidden"}}>
+        <div style={{padding:"14px 18px 8px"}}>
+          <div style={{fontSize:12,fontWeight:600,color:"var(--muted)"}}>30-Day Bodyweight Trend</div>
+        </div>
+        {sortedLog.length >= 1 ? (
+          <WeightGraph3D logs={sortedLog} ceilingWeight={reboundData?.ceiling||null} stageWeight={reboundData?.stageWeight||null}/>
+        ) : (
+          <div style={{height:180,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:8,padding:24}}>
+            <div style={{fontFamily:"var(--font-display)", fontWeight:700,fontSize:16,color:"var(--muted)"}}>No data yet</div>
+            <div style={{fontSize:12,color:"var(--muted)",textAlign:"center",lineHeight:1.5}}>Log your first weight above to start tracking.</div>
+          </div>
+        )}
+      </div>
+
       {/* GOAL CONFIG CARD — Phase 2: live delta, progress bar, revision banner */}
       {goalConfig && (() => {
         const totalDelta   = Math.abs(goalConfig.effectiveGoalWeight - goalConfig.startWeight);
@@ -5386,8 +5493,10 @@ function DashboardScreen({ user, weightLog, onLogWeight, onDeleteWeight, onEditW
             <div style={{padding:"14px 16px 10px",borderBottom:"1px solid var(--border)",display:"flex",alignItems:"center",justifyContent:"space-between"}}>
               <div>
                 <div style={{fontSize:12,marginBottom:2,display:"flex",alignItems:"center",gap:6}}>
-                  <span style={{color: completionState==="reached" ? "var(--green)" : completionState==="approaching" ? "#FBBF24" : "var(--accent-ink)"}}>●</span>
-                  <span style={{color:"var(--accent-ink)"}}>Physique Target</span>
+                  {(completionState === "reached" || completionState === "approaching") && (
+                    <span aria-hidden="true" style={{color: completionState==="reached" ? "var(--green)" : "#FBBF24"}}>●</span>
+                  )}
+                  <span style={{color:"var(--muted)",fontWeight:600}}>Physique target</span>
                   {completionState === "approaching" && <span style={{color:"#FBBF24",fontSize:12}}>Approaching</span>}
                   {completionState === "reached"     && <span style={{color:"var(--green)",fontSize:12}}>Goal reached</span>}
                   {completionState === "exceeded"    && <span style={{color:"var(--accent-ink)",fontSize:12}}>Overshot</span>}
@@ -5878,111 +5987,6 @@ function DashboardScreen({ user, weightLog, onLogWeight, onDeleteWeight, onEditW
           </div>
         );
       })()}
-
-      {/* SECONDARY STAT STRIP — Sessions / Train / Rest / Weekly Avg */}
-      <div className="stat-strip" style={{gridTemplateColumns: calTarget?.cyclingActive ? "1fr 1fr 1fr 1fr" : "1fr 1fr 1fr"}}>
-        <div className="stat-cell">
-          <div className="stat-label">Sessions</div>
-          <div className="stat-val" style={{color: history.length ? "var(--text)" : "var(--muted)", fontSize: history.length ? undefined : 18}}>
-            {history.length || "—"}
-          </div>
-          <div className="stat-sub">{history.length ? "total logged" : "none yet"}</div>
-        </div>
-        {calTarget?.cyclingActive ? (
-          <>
-            <div className="stat-cell" style={calTarget.isTrainDay ? {animation:"chargePulse 3s ease-in-out 1",boxShadow:"0 0 0 1px var(--accent)"} : {}}>
-              <div className="stat-label" style={{color:"var(--accent-ink)"}}>Train Day</div>
-              <div className="stat-val" style={{color: calTarget.isTrainDay ? "var(--accent-ink)" : "var(--text)"}}>
-                {calTarget.trainCal?.toLocaleString() ?? "—"}
-              </div>
-              <div className="stat-sub">{calTarget.trainP ?? calTarget.p}g protein</div>
-            </div>
-            <div className="stat-cell" style={!calTarget.isTrainDay ? {animation:"chargePulse 3s ease-in-out 1",boxShadow:"0 0 0 1px var(--accent)"} : {}}>
-              <div className="stat-label">Rest Day</div>
-              <div className="stat-val" style={{color: !calTarget.isTrainDay ? "var(--text)" : "var(--muted)"}}>
-                {calTarget.restCal?.toLocaleString() ?? "—"}
-              </div>
-              <div className="stat-sub">{calTarget.restP ?? calTarget.p}g protein</div>
-            </div>
-            <div className="stat-cell">
-              <div className="stat-label">Wkly Avg</div>
-              <div className="stat-val">{calTarget.weeklyAvg?.toLocaleString() ?? "—"}</div>
-              <div className="stat-sub">
-                {calTarget.tdee ? `TDEE ${calTarget.tdee.toLocaleString()}` : "per day"}
-              </div>
-            </div>
-          </>
-        ) : (
-          <>
-            <div className="stat-cell">
-              <div className="stat-label">Daily Target</div>
-              <div className="stat-val">{calTarget ? calTarget.cal.toLocaleString() : "—"}</div>
-              <div className="stat-sub">{calTarget ? `${calTarget.p}g protein` : "Not set"}</div>
-            </div>
-            <div className="stat-cell">
-              <div className="stat-label">{reboundData ? "Ceiling" : "TDEE"}</div>
-              <div className="stat-val" style={{color: reboundData && currentWeight >= reboundData.ceiling * 0.97 ? "var(--red)" : "var(--text)"}}>
-                {reboundData ? reboundData.ceiling : (calTarget?.tdee?.toLocaleString() ?? "—")}
-              </div>
-              <div className="stat-sub" style={{color: reboundData ? (currentWeight >= reboundData.ceiling ? "var(--red)" : "var(--green)") : "var(--muted)"}}>
-                {reboundData
-                  ? (reboundData.ceiling - currentWeight > 0 ? `${(reboundData.ceiling - currentWeight).toFixed(1)} remaining` : "At ceiling")
-                  : (calTarget?.pal ? `PAL ${calTarget.pal.toFixed(2)}` : "maintenance")}
-              </div>
-            </div>
-          </>
-        )}
-      </div>
-
-      {/* TRAINING BLOCK — only once a split exists; before that the Next card asks for setup */}
-      {splitDef && <div className="dash-banner" onClick={() => onNavigate("training")}
-        style={{cursor:"pointer",transition:"border-color .15s"}}
-        onMouseOver={e=>e.currentTarget.style.borderColor="var(--accent)"}
-        onMouseOut={e=>e.currentTarget.style.borderColor="var(--border)"}>
-        <div style={{display:"flex",alignItems:"flex-start",justifyContent:"space-between"}}>
-          <div style={{flex:1}}>
-            {splitDef ? (
-              <>
-                <div className="db-tag">{splitDef.label}</div>
-                <div className="db-title">{history.length} session{history.length !== 1 ? "s" : ""} logged</div>
-                <div className="db-sub">{splitDef.frequency} days/week · {history.length > 0 ? `last: ${new Date(history[history.length-1].ts).toLocaleDateString("en-US",{month:"short",day:"numeric"})}` : "no sessions yet"}</div>
-              </>
-            ) : (
-              <>
-                <div className="db-tag">Get started</div>
-                <div className="db-title">Set up training</div>
-                <div className="db-sub">Configure your split in the Training tab</div>
-              </>
-            )}
-          </div>
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" style={{width:16,height:16,color:"var(--muted)",flexShrink:0,marginTop:2}}>
-            <path d="M9 18l6-6-6-6"/>
-          </svg>
-        </div>
-        <div className="streak">
-          {last7Days.map((d,i) => (
-            <div key={i} className={`sdot ${d.done?"on":"off"}`}>{d.done ? "✓" : d.label}</div>
-          ))}
-          <span style={{fontSize:12,color:"var(--muted)",marginLeft:6}}>
-            {streak > 0 ? `${streak}-day streak` : "No sessions yet"}
-          </span>
-        </div>
-      </div>}
-
-      {/* WEIGHT GRAPH */}
-      <div style={{margin:"0 24px 20px",background:"var(--surface)",border:"1px solid var(--border)",borderRadius:16,overflow:"hidden"}}>
-        <div style={{padding:"14px 18px 8px"}}>
-          <div style={{fontSize:12,fontWeight:600,color:"var(--muted)"}}>30-Day Bodyweight Trend</div>
-        </div>
-        {sortedLog.length >= 1 ? (
-          <WeightGraph3D logs={sortedLog} ceilingWeight={reboundData?.ceiling||null} stageWeight={reboundData?.stageWeight||null}/>
-        ) : (
-          <div style={{height:180,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:8,padding:24}}>
-            <div style={{fontFamily:"var(--font-display)", fontWeight:700,fontSize:16,color:"var(--muted)"}}>No data yet</div>
-            <div style={{fontSize:12,color:"var(--muted)",textAlign:"center",lineHeight:1.5}}>Log your first weight above to start tracking.</div>
-          </div>
-        )}
-      </div>
 
       {/* ── PROTOCOL INTELLIGENCE — collapsed by default ─────────────────────── */}
       <div style={{margin:"0 24px 10px"}}>
