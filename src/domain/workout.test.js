@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { effortLabel, findPRs, parseRepRange, restSecondsFor, sessionVolume, suggestNextLoad, summarizeSession } from "./workout.js";
+import { e1rmSeries, effortLabel, findPRs, parseRepRange, restSecondsFor, sessionVolume, suggestNextLoad, summarizeSession } from "./workout.js";
 
 const set = (weight, reps) => ({ weight: String(weight), reps: String(reps) });
 const bench = { id: "b", name: "Bench Press", muscle: "chest", category: "compound", repRange: "6–10" };
@@ -83,5 +83,17 @@ describe("session summary", () => {
       expect.objectContaining({ name: "Bench Press", kind: "up", text: "+5 lb next time" }),
       expect.objectContaining({ name: "Squat", kind: "reps" }),
     ]);
+  });
+});
+
+describe("exercise history", () => {
+  it("returns each session's best estimated 1-rep max for one lift, oldest first", () => {
+    const history = [
+      { ts: 3, completedExercises: [{ name: "Bench Press", loggedSets: [set(195, 8)] }] },
+      { ts: 1, completedExercises: [{ name: "Bench Press", loggedSets: [set(185, 8), set(185, 6)] }] },
+      { ts: 2, completedExercises: [{ name: "Squat", loggedSets: [set(225, 5)] }] },
+    ];
+    expect(e1rmSeries(history, "Bench Press")).toEqual([{ ts: 1, e1rm: 234 }, { ts: 3, e1rm: 247 }]);
+    expect(e1rmSeries(history, "Deadlift")).toEqual([]);
   });
 });

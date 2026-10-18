@@ -243,10 +243,20 @@ end to end in the preview (light and dark): start, log a set, rest, effort, summ
   - the workout-type choices are real buttons (they were clickable divs that keyboards and
     VoiceOver couldn't reach), without the brutalist press effect
   - the rest timer and sheets no longer pick up the screen's entrance animation
-- **Not yet:**
-  - feeding effort into `runAdaptation` (see the SFR note in Phase 0)
-  - per-exercise history charts
-  - a one-exercise-at-a-time focused layout
+- **Part 2 (2026-10-18):**
+  - **Adaptation judges fatigue from session effort** (your decision). It flags fatigue on a
+    9–10 rating or a volume drop of more than 10%, and progresses on volume up more than 5%
+    with effort 8 or less. SFR no longer feeds it.
+  - **Tab tooltips removed** (your decision).
+  - **Exercise history:** each open exercise shows its estimated 1-rep max across past
+    sessions, using the shared `TrendChart`.
+  - **Focused flow:** a "Next: …" button appears once an exercise's planned sets are done.
+- **Two regressions found and fixed in this round:**
+  - removing the tooltips also deleted `generateGoalRationale`, which crashed onboarding,
+    and left a stray "/> )}" fragment
+  - `npm run check` had missed it: Windows never expanded its file globs, and syntax errors
+    make TypeScript skip name checks. It now uses `tsconfig.check.json`, fails on syntax
+    errors, and was confirmed to catch the broken commit.
 - **Live workout:**
   - full-screen, with a large elapsed time
   - one focused exercise at a time and a preview of what's next

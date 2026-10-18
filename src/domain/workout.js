@@ -61,6 +61,19 @@ export function bestE1RMByName(history) {
   return best;
 }
 
+/** Best estimated 1-rep max per past session for one exercise, oldest first. */
+export function e1rmSeries(history, name) {
+  return (history || [])
+    .map((h) => {
+      const ex = (h.completedExercises || []).find((e) => e.name === name);
+      const sets = workingSets(ex?.loggedSets);
+      if (!sets.length) return null;
+      return { ts: h.ts, e1rm: Math.max(...sets.map((x) => computeE1RM(x.weight, x.reps))) };
+    })
+    .filter(Boolean)
+    .sort((a, b) => a.ts - b.ts);
+}
+
 /** Exercises where this session beat every earlier session's estimated 1-rep max. */
 export function findPRs(completedExercises, priorHistory) {
   const best = bestE1RMByName(priorHistory);

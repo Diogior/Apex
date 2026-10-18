@@ -996,6 +996,28 @@ input[type="number"]{min-height:44px;}
 .path-option:active{transform:scale(.97);}
 .path-option:focus-visible{outline:2px solid var(--accent);outline-offset:2px;}
 
+
+/* ═══ TREND CHART (shared: exercise history, weight trend) ═════════════════ */
+.trend-chart{position:relative;margin:0;touch-action:pan-y;}
+.trend-chart svg{display:block;width:100%;height:auto;overflow:visible;outline:none;}
+.trend-chart svg:focus-visible{outline:2px solid var(--accent);outline-offset:4px;border-radius:8px;}
+.trend-grid line{stroke:var(--border);stroke-width:1;}
+.trend-axis text{fill:var(--muted);font-size:12px;font-family:var(--font-text);font-variant-numeric:tabular-nums;}
+.trend-line{fill:none;stroke-width:2;stroke-linejoin:round;stroke-linecap:round;}
+.trend-dot{stroke:var(--surface);stroke-width:2;}
+.trend-end{fill:var(--text);font-size:13px;font-weight:600;font-family:var(--font-num);font-variant-numeric:tabular-nums;}
+.trend-cross{stroke:var(--faint);stroke-width:1;}
+.trend-band{fill:color-mix(in srgb,var(--ring-fuel) 14%,transparent);}
+.trend-tip{position:absolute;top:-6px;transform:translateX(-50%);padding:6px 10px;border-radius:10px;background:var(--up);border:1px solid var(--border);pointer-events:none;white-space:nowrap;font-size:12px;color:var(--muted);box-shadow:var(--shadow-1);}
+.trend-tip strong{display:block;font-size:15px;color:var(--text);font-family:var(--font-num);font-variant-numeric:tabular-nums;}
+.trend-caption{display:flex;align-items:center;gap:6px;margin-top:6px;font-size:12px;color:var(--muted);}
+.trend-swatch{width:14px;height:8px;border-radius:2px;background:color-mix(in srgb,var(--ring-fuel) 30%,transparent);}
+.ex-trend{margin:0 0 12px;padding:10px 12px 6px;border-radius:12px;background:var(--up);}
+.ex-trend-head{display:flex;justify-content:space-between;align-items:baseline;font-size:12px;color:var(--muted);margin-bottom:2px;}
+.ex-trend-head strong{color:var(--text);font-weight:600;}
+.next-ex-btn{margin-top:12px;width:100%;min-height:48px;border-radius:999px;border:0;background:var(--text);color:var(--bg);font-size:16px;font-weight:600;cursor:pointer;}
+.next-ex-btn:active{transform:scale(.98);}
+
 /* REDUCED MOTION */
 @media(prefers-reduced-motion:reduce){
   *,*::before,*::after{
