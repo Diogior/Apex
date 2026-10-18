@@ -66,20 +66,36 @@ describe("program generation", () => {
 });
 
 describe("adaptation", () => {
-  const session = (dayKey, ts, weight, rpe) => ({ dayKey, ts, completedExercises: [{ name: "Bench Press", loggedSets: sets(3, weight, 8, rpe) }] });
+  const session = (dayKey, ts, weight, effort) => ({ dayKey, ts, ...(effort ? { effort } : {}), completedExercises: [{ name: "Bench Press", loggedSets: sets(3, weight, 8) }] });
 
   it("waits for at least two sessions", () => {
     expect(runAdaptation({ program: {}, history: [session("push1", 1, 100, 7)], level: "intermediate" }).signal).toBe("neutral");
   });
 
   it("adds a set when volume climbs and effort is manageable", () => {
-    const r = runAdaptation({ program: {}, history: [session("push1", 1, 100, 7), session("push1", 2, 110, 7.5)], level: "intermediate" });
-    expect(r.adjustments.push1).toMatchObject({ signal: "progress", setDelta: 1 });
+    const r = runAdaptation({ program: {}, history: [session("push1", 1, 100, 7), session("push1", 2, 110, 7)], level: "intermediate" });
+    expect(r.adjustments.push1).toMatchObject({ signal: "progress", setDelta: 1, lastEffort: 7 });
   });
 
-  it("pulls back a set when effort is near maximal", () => {
-    const r = runAdaptation({ program: {}, history: [session("push1", 1, 100, 8), session("push1", 2, 100, 9.5)], level: "intermediate" });
+  it("still progresses on volume when the session wasn't rated", () => {
+    const r = runAdaptation({ program: {}, history: [session("push1", 1, 100), session("push1", 2, 110)], level: "intermediate" });
+    expect(r.adjustments.push1).toMatchObject({ signal: "progress", lastEffort: null });
+  });
+
+  it("pulls back a set after an all-out session, even if volume rose", () => {
+    const r = runAdaptation({ program: {}, history: [session("push1", 1, 100, 7), session("push1", 2, 110, 9)], level: "intermediate" });
     expect(r.adjustments.push1).toMatchObject({ signal: "fatigue", setDelta: -1 });
     expect(r.signal).toBe("fatigue");
+  });
+
+  it("pulls back when volume drops by more than 10%", () => {
+    const r = runAdaptation({ program: {}, history: [session("push1", 1, 100, 6), session("push1", 2, 85, 6)], level: "intermediate" });
+    expect(r.adjustments.push1.signal).toBe("fatigue");
+  });
+
+  it("ignores per-set SFR values when judging fatigue", () => {
+    const sfrSession = (ts, weight) => ({ dayKey: "push1", ts, completedExercises: [{ name: "Bench Press", loggedSets: sets(3, weight, 8, 2) }] });
+    const r = runAdaptation({ program: {}, history: [sfrSession(1, 100), sfrSession(2, 110)], level: "intermediate" });
+    expect(r.adjustments.push1.signal).toBe("progress");
   });
 });

@@ -7529,114 +7529,6 @@ function OnboardingCarousel({ onComplete }) {
   );
 }
 
-// Tab-contextual tooltip — appears once per tab on first visit
-const TAB_TIPS = {
-  home:     "Log your weight above — even a rough number starts your trend.",
-  training: "Tap a split card below to generate your full program.",
-  nutrition:"Tap + to log your first meal — describe it, or use a photo.",
-  coach:    "Ask APEX anything — it knows your goal, your lifts, your trend.",
-};
-
-function TabTooltip({ tabId, onDismiss }) {
-  const [vis, setVis] = useState(false);
-  const text = TAB_TIPS[tabId];
-
-  useEffect(() => {
-    const t1 = setTimeout(() => setVis(true), 500);
-    const t2 = setTimeout(() => { setVis(false); setTimeout(onDismiss, 350); }, 7000);
-    return () => { clearTimeout(t1); clearTimeout(t2); };
-  }, [tabId]);
-
-  const dismiss = () => { setVis(false); setTimeout(onDismiss, 350); };
-  if (!text) return null;
-
-  const isTop = tabId === "home";
-
-  return (
-    <div style={{
-      position:"fixed",
-      ...(isTop ? { top: 130 } : { bottom: 160 }),
-      left:"50%",
-      transform:`translateX(-50%) translateY(${vis ? 0 : isTop ? -16 : 16}px)`,
-      opacity: vis ? 1 : 0,
-      transition:"transform 0.35s cubic-bezier(.22,1,.36,1), opacity 0.3s ease",
-      zIndex:600,
-      width:"calc(100% - 48px)",
-      maxWidth:340,
-      pointerEvents: vis ? "auto" : "none",
-    }}>
-      {/* Arrow for home (points up) */}
-      {isTop && (
-        <div style={{display:"flex",justifyContent:"center",marginBottom:-1}}>
-          <svg width="16" height="9" viewBox="0 0 16 9" style={{display:"block"}}>
-            <path d="M8 0 L16 9 L0 9 Z" fill="#1A1917"/>
-            <path d="M8 1.5 L14.5 9 L1.5 9" fill="none" stroke="rgba(245,166,35,0.5)" strokeWidth="1"/>
-          </svg>
-        </div>
-      )}
-      <div style={{
-        background:"#1A1917",
-        border:"1px solid rgba(245,166,35,0.5)",
-        borderRadius:12,
-        padding:"12px 14px 12px 16px",
-        display:"flex",alignItems:"center",gap:10,
-        boxShadow:"0 8px 32px rgba(0,0,0,0.5), 0 0 0 1px rgba(245,166,35,0.1)",
-      }}>
-        <div style={{width:6,height:6,borderRadius:"50%",background:"#F5A623",flexShrink:0,boxShadow:"0 0 8px rgba(245,166,35,0.6)"}}/>
-        <span style={{fontSize:13,color:"#F0EDE8",lineHeight:1.55,flex:1}}>{text}</span>
-        <button onClick={dismiss} style={{background:"none",border:"none",color:"rgba(134,140,150,0.7)",fontSize:15,cursor:"pointer",padding:"0 0 0 4px",flexShrink:0,lineHeight:1}}>✕</button>
-      </div>
-      {/* Arrow for non-home (points down toward nav) */}
-      {!isTop && (
-        <div style={{display:"flex",justifyContent:"center",marginTop:-1}}>
-          <svg width="16" height="9" viewBox="0 0 16 9" style={{display:"block"}}>
-            <path d="M8 9 L0 0 L16 0 Z" fill="#1A1917"/>
-            <path d="M8 7.5 L1.5 0 L14.5 0" fill="none" stroke="rgba(245,166,35,0.5)" strokeWidth="1"/>
-          </svg>
-        </div>
-      )}
-    </div>
-  );
-}
-
-// Fires once after onboarding; sends GoalConfig data to Claude for a
-// personalised opening analysis, saves to GOAL_ANALYSIS_KEY for injection
-// into the Coach tab on first open.
-async function generateGoalRationale(user, gc) {
-  try {
-    const res = await apiChat({
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        model: "claude-haiku-4-5-20251001",
-        max_tokens: 420,
-        system: `You are APEX, an elite AI performance coach. Deliver a direct, specific post-onboarding goal analysis. 3 short paragraphs. No fluff — real training and physiology terminology only.`,
-        messages: [{
-          role: "user",
-          content: `New athlete:
-- ${user.name}, ${user.sex || "male"}, ${user.age}yo, ${user.level || "intermediate"} level
-- Current: ${gc.startWeight} lbs at ~${gc.startBfPct}% BF (${gc.currentVisualOutcome})
-- Goal: ${gc.goalType} → ${gc.effectiveGoalWeight} lbs at ${gc.goalBfPct}% BF
-- Target look: ${gc.projectedVisualOutcome}
-- Timeline: ${gc.etaWeeks} weeks · ${gc.realisticRating} · ${gc.sustainabilityScore}/100 sustainability
-
-Deliver their opening goal analysis:
-1. Why this target weight makes physiological sense for their specific body composition (reference lean mass and BF%)
-2. What the first 2 weeks should focus on to build the right foundation
-3. The single most important metric to track that will confirm they're on course
-
-Be specific and direct. Use their actual numbers. Don't hedge.`,
-        }],
-      }),
-    });
-    const data = await res.json();
-    const text = data.content?.find(b => b.type === "text")?.text;
-    if (!text) return;
-    const entry = { text, ts: Date.now(), goalType: gc.goalType, goalWeight: gc.effectiveGoalWeight, read: false };
-    window.storage.set(GOAL_ANALYSIS_KEY, JSON.stringify(entry)).catch(() => {});
-  } catch {}
-}
-
 function AppInner() {
   const [user,setUser]=useState(null);
   const [userLoaded, setUserLoaded]=useState(false);
@@ -7649,7 +7541,6 @@ function AppInner() {
   const [retryFailed, setRetryFailed] = useState(false);
   const sessionRestoredRef = useRef(false);
   const [obState, setObState] = useState(null);      // onboarding state
-  const [activeTooltip, setActiveTooltip] = useState(null); // tab id or null
 
   // If an active session exists when the app loads (e.g. after iOS Safari refresh),
   // immediately restore to the Training tab so the workout is not hidden
@@ -7697,17 +7588,6 @@ function AppInner() {
       setObState(init);
     }).catch(() => setObState({ welcomeDone:true, tabsSeen:[] }));
   }, []);
-
-  // Show tab tooltip on first visit after welcome is done
-  useEffect(() => {
-    if (!obState?.welcomeDone) return;
-    if (obState.tabsSeen?.includes(tab)) return;
-    if (!TAB_TIPS[tab]) return;
-    setActiveTooltip(tab);
-    const updated = { ...obState, tabsSeen: [...(obState.tabsSeen || []), tab] };
-    setObState(updated);
-    window.storage.set(ONBOARDING_KEY, JSON.stringify(updated)).catch(() => {});
-  }, [tab, obState?.welcomeDone]);
 
   const handleWelcomeDone = () => {
     const updated = { ...obState, welcomeDone:true };
@@ -7980,8 +7860,7 @@ function AppInner() {
               <OnboardingCarousel onComplete={handleWelcomeDone}/>
             )}
             {/* Tab tooltip — fires once per tab on first visit */}
-            {activeTooltip && (
-              <TabTooltip key={activeTooltip} tabId={activeTooltip} onDismiss={() => setActiveTooltip(null)}/>
+/>
             )}
             {/* The weigh-in reminder lives in Home's Next card now, not as a banner over every tab. */}
             {tab==="home"&&<ErrorBoundary label="Home" resetKey={tab}><DashboardScreen user={enrichedUser} weightLog={weightLog} onLogWeight={handleLogWeight} onDeleteWeight={handleDeleteWeight} onEditWeight={handleEditWeight} onNavigate={setTab} onEditProfile={()=>setShowProfileEdit(true)} onGoalTransition={handleGoalTransition}/></ErrorBoundary>}

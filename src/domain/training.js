@@ -446,24 +446,24 @@ export function runAdaptation({ program, history, level }) {
     const prevVol = calcVol(prev);
     const volDelta = prevVol > 0 ? (lastVol - prevVol) / prevVol : 0;
 
-    // Compute avg RPE
-    const avgRpe = (sess) => {
-      const allSets = (sess.completedExercises || []).flatMap(ex => ex.loggedSets || []);
-      const rpeSets = allSets.filter(s => s.rpe);
-      return rpeSets.length ? rpeSets.reduce((s, x) => s + x.rpe, 0) / rpeSets.length : 7;
-    };
-    const lastRpe = avgRpe(last);
+    // Fatigue comes from the athlete's session effort rating (1-10, Apple Watch style).
+    // The per-set "rpe" field holds SFR (stimulus-to-fatigue, 1-5), so it can't signal fatigue.
+    const effort = Number(last.effort) || null;
 
     // Determine signal
     let signal, setDelta = 0, note = "";
-    if (volDelta > 0.05 && lastRpe < 8.5) {
+    if (effort !== null && effort >= 9) {
+      signal = "fatigue";
+      setDelta = -1;
+      note = `Last session rated ${effort}/10. Reducing volume slightly so you recover.`;
+    } else if (volDelta < -0.1) {
+      signal = "fatigue";
+      setDelta = -1;
+      note = "Volume dropped from last time. Reducing slightly to rebuild.";
+    } else if (volDelta > 0.05 && (effort === null || effort <= 8)) {
       signal = "progress";
       setDelta = +1;
       note = "Volume increasing well. Adding 1 set to compounds.";
-    } else if (lastRpe > 9 || volDelta < -0.1) {
-      signal = "fatigue";
-      setDelta = -1;
-      note = "High RPE or volume drop detected. Reducing volume slightly.";
     } else if (sessions.length >= 3 && Math.abs(volDelta) < 0.03) {
       signal = "stall";
       setDelta = 0;
@@ -474,7 +474,7 @@ export function runAdaptation({ program, history, level }) {
       note = "Progressing normally. Stay the course.";
     }
 
-    adjustments[dayKey] = { signal, setDelta, lastVol, lastRpe: lastRpe.toFixed(1), note };
+    adjustments[dayKey] = { signal, setDelta, lastVol, lastEffort: effort, note };
     signals.push(signal);
   });
 
