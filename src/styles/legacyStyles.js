@@ -1018,6 +1018,48 @@ input[type="number"]{min-height:44px;}
 .next-ex-btn{margin-top:12px;width:100%;min-height:48px;border-radius:999px;border:0;background:var(--text);color:var(--bg);font-size:16px;font-weight:600;cursor:pointer;}
 .next-ex-btn:active{transform:scale(.98);}
 
+
+/* ═══ TRENDS, AWARDS, CELEBRATION (Phase 4) ════════════════════════════════ */
+.pcard{margin:0 24px 16px;padding:18px 20px;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);box-shadow:var(--shadow-1);display:flex;flex-direction:column;gap:12px;}
+.pcard-head{display:flex;align-items:baseline;justify-content:space-between;gap:12px;}
+.pcard-title{font-family:var(--font-display);font-size:20px;font-weight:700;color:var(--text);}
+.pcard-sub{font-size:12px;color:var(--muted);text-align:right;}
+.pcard-empty{font-size:15px;color:var(--muted);line-height:1.4;}
+.trend-list{list-style:none;display:flex;flex-direction:column;}
+.trend-row{display:grid;grid-template-columns:28px 1fr auto;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--border);min-height:52px;}
+.trend-row:last-child{border-bottom:0;}
+.trend-arrow{width:28px;height:28px;border-radius:999px;display:grid;place-items:center;font-size:15px;font-weight:700;background:var(--up);color:var(--muted);}
+.trend-arrow.good{background:color-mix(in srgb,var(--green) 16%,transparent);color:var(--green);}
+.trend-arrow.bad{background:color-mix(in srgb,var(--red) 14%,transparent);color:var(--red);}
+.trend-text{display:flex;flex-direction:column;min-width:0;}
+.trend-label{font-size:15px;font-weight:600;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.trend-detail{font-size:12px;color:var(--muted);}
+.trend-status.good{color:var(--green);font-weight:600;}
+.trend-status.bad{color:var(--red);font-weight:600;}
+.trend-value{font-family:var(--font-num);font-variant-numeric:tabular-nums;font-size:18px;font-weight:600;color:var(--text);text-align:right;white-space:nowrap;}
+.trend-value small{font-family:var(--font-text);font-size:12px;font-weight:500;color:var(--muted);}
+.challenge{display:flex;align-items:center;gap:14px;padding:12px;border-radius:12px;background:var(--up);}
+.challenge-text{display:flex;flex-direction:column;}
+.challenge-title{font-size:16px;font-weight:600;color:var(--text);}
+.challenge-detail{font-size:13px;color:var(--muted);}
+.badge-row{list-style:none;display:flex;gap:10px;overflow-x:auto;padding-bottom:2px;scrollbar-width:none;}
+.badge-row::-webkit-scrollbar{display:none;}
+.badge{flex:0 0 76px;display:flex;flex-direction:column;align-items:center;gap:6px;text-align:center;}
+.badge-medal{width:56px;height:56px;border-radius:999px;display:grid;place-items:center;font-family:var(--font-num);font-variant-numeric:tabular-nums;font-size:18px;font-weight:700;color:#fff;
+  background:radial-gradient(circle at 30% 25%,color-mix(in srgb,var(--accent) 70%,#fff),var(--accent-dim));box-shadow:inset 0 0 0 3px color-mix(in srgb,#fff 35%,transparent);}
+.badge-title{font-size:12px;line-height:1.25;color:var(--text);}
+.next-awards{list-style:none;display:flex;flex-direction:column;gap:10px;}
+.next-awards li{display:grid;grid-template-columns:1fr auto;gap:4px 10px;align-items:baseline;}
+.next-award-title{font-size:14px;color:var(--text);}
+.next-award-progress{font-size:12px;color:var(--muted);font-variant-numeric:tabular-nums;}
+.next-award-meter{grid-column:1/-1;height:4px;border-radius:999px;background:var(--up);overflow:hidden;}
+.next-award-meter span{display:block;height:100%;background:var(--accent);border-radius:999px;}
+.ring-celebration{position:fixed;z-index:160;top:calc(14px + env(safe-area-inset-top,0px));left:50%;transform:translateX(-50%);display:flex;align-items:center;gap:12px;
+  padding:8px 18px 8px 8px;border-radius:999px;background:var(--surface);border:1px solid var(--border);box-shadow:0 12px 32px rgba(0,0,0,.22);font-size:16px;font-weight:600;color:var(--text);white-space:nowrap;}
+@media(prefers-reduced-motion:no-preference){.ring-celebration{animation:celebrate 3.2s cubic-bezier(.16,1,.3,1) both;}}
+@keyframes celebrate{0%{opacity:0;transform:translate(-50%,-16px) scale(.92);}12%{opacity:1;transform:translate(-50%,0) scale(1.03);}20%{transform:translate(-50%,0) scale(1);}85%{opacity:1;}100%{opacity:0;transform:translate(-50%,-8px);}}
+.screen>.ring-celebration{animation:celebrate 3.2s cubic-bezier(.16,1,.3,1) both!important;}
+
 /* REDUCED MOTION */
 @media(prefers-reduced-motion:reduce){
   *,*::before,*::after{

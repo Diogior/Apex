@@ -27,6 +27,8 @@ export function TrendChart({
   height = 160,
   compact = false,
   band = null, // { from: number, to: number, label } drawn behind the line
+  corridor = null, // [{ x, lo, hi }] a band that changes over time, e.g. a goal's healthy pace
+  corridorLabel = "",
   formatY = (v) => (Math.round(v * 10) / 10).toLocaleString(),
 }) {
   const W = 340;
@@ -38,14 +40,14 @@ export function TrendChart({
 
   const geo = useMemo(() => {
     if (data.length < 2) return null;
-    const ys = data.map((p) => p.y).concat(band ? [band.from, band.to] : []);
+    const ys = data.map((p) => p.y).concat(band ? [band.from, band.to] : []).concat(corridor ? corridor.flatMap((c) => [c.lo, c.hi]) : []);
     const ticks = niceTicks(Math.min(...ys), Math.max(...ys));
     const y0 = ticks[0], y1 = ticks[ticks.length - 1];
     const x0 = data[0].x, x1 = data[data.length - 1].x;
     const x = (v) => pad.l + (x1 === x0 ? (W - pad.l - pad.r) / 2 : ((v - x0) / (x1 - x0)) * (W - pad.l - pad.r));
     const y = (v) => pad.t + (1 - (v - y0) / (y1 - y0 || 1)) * (H - pad.t - pad.b);
     return { ticks, x, y };
-  }, [data, band, H, pad.l, pad.r, pad.t, pad.b]);
+  }, [data, band, corridor, H, pad.l, pad.r, pad.t, pad.b]);
 
   if (!geo) return null;
   const { ticks, x, y } = geo;
@@ -89,6 +91,10 @@ export function TrendChart({
             y={y(Math.max(band.from, band.to))} height={Math.abs(y(band.from) - y(band.to))}
             className="trend-band" />
         )}
+        {corridor?.length > 1 && (
+          <path className="trend-band"
+            d={`${corridor.map((c, i) => `${i ? "L" : "M"}${x(c.x).toFixed(1)},${y(c.hi).toFixed(1)}`).join(" ")} ${[...corridor].reverse().map((c) => `L${x(c.x).toFixed(1)},${y(c.lo).toFixed(1)}`).join(" ")} Z`} />
+        )}
         {!compact && (
           <g className="trend-grid">
             {ticks.map((t) => <line key={t} x1={pad.l} x2={W - pad.r} y1={y(t)} y2={y(t)} />)}
@@ -120,7 +126,7 @@ export function TrendChart({
           <span>{fmtDate(shown.x)}</span>
         </div>
       )}
-      {band?.label && !compact && <figcaption className="trend-caption"><span className="trend-swatch" aria-hidden="true" /> {band.label}</figcaption>}
+      {(band?.label || corridorLabel) && !compact && <figcaption className="trend-caption"><span className="trend-swatch" aria-hidden="true" /> {band?.label || corridorLabel}</figcaption>}
     </figure>
   );
 }

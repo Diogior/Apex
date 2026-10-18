@@ -15,6 +15,9 @@ import { ActivityRingsCard, NextCard, RingStack } from "./components/ActivityRin
 import { computeRings, ringHistory, nextAction, nextSessionDay } from "./domain/rings.js";
 import { summarizeSession, restSecondsFor, effortLabel, e1rmSeries } from "./domain/workout.js";
 import { TrendChart } from "./components/TrendChart.jsx";
+import { TrendsCard, AwardsCard, RingCelebration, useRingCelebration } from "./components/Progress.jsx";
+import { computeTrends, weightCorridor } from "./domain/trends.js";
+import { computeAwards } from "./domain/awards.js";
 import { RestTimer, EffortSheet, WorkoutSummary, useWakeLock } from "./components/Workout.jsx";
 import { CANVAS_DARK, CANVAS_LIGHT, getCanvasC, useThemeColors } from "./styles/theme.js";
 import {
@@ -4328,269 +4331,6 @@ const WT_KEY = "apex_weight_log_v1";
 // Isometric-projection interactive canvas graph
 // X=days, Y=weight, Z=7-day avg delta (rate of change tinted surface)
 
-function WeightGraph3D({ logs, ceilingWeight, stageWeight }) {
-  const canvasRef = useRef(null);
-  const stateRef = useRef({ rotX: 28, rotY: -38, scale: 1, dragging: false, lastX: 0, lastY: 0, hovered: -1 });
-  const animRef = useRef(null);
-
-  useEffect(() => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    const cc = getCanvasC(); // theme-aware canvas palette
-    const hex2rgba = (hex, a) => { const r=parseInt(hex.slice(1,3),16),g=parseInt(hex.slice(3,5),16),b=parseInt(hex.slice(5,7),16); return `rgba(${r},${g},${b},${a})`; };
-    const ctx = canvas.getContext("2d");
-    const W = canvas.width = canvas.offsetWidth * window.devicePixelRatio;
-    const H = canvas.height = canvas.offsetHeight * window.devicePixelRatio;
-    ctx.scale(window.devicePixelRatio, window.devicePixelRatio);
-    const cW = canvas.offsetWidth, cH = canvas.offsetHeight;
-
-    const data = logs.slice(-30); // max 30 points
-    if (data.length < 1) return;
-
-    const weights = data.map(d => d.weight);
-    const minW = Math.min(...weights) - 2;
-    const maxW = Math.max(...weights) + 2;
-    const wRange = maxW - minW || 10;
-    const n = data.length;
-
-    // Compute 7-day rolling delta for Z (rate of change)
-    const deltas = data.map((d, i) => {
-      if (i < 1) return 0;
-      const prev = data[Math.max(0, i - Math.min(i, 6))];
-      return d.weight - prev.weight;
-    });
-    const maxAbsDelta = Math.max(...deltas.map(Math.abs), 0.1);
-
-    function project(x, y, z) {
-      // x: 0–1 along time axis, y: 0–1 height, z: 0–1 depth
-      const s = stateRef.current;
-      const rx = s.rotX * Math.PI / 180;
-      const ry = s.rotY * Math.PI / 180;
-      // Scale world coords
-      const wx = (x - 0.5) * 220 * s.scale;
-      const wy = (y - 0.5) * 120 * s.scale;
-      const wz = (z - 0.5) * 80 * s.scale;
-      // Rotate around Y then X
-      const cx2 = wx * Math.cos(ry) + wz * Math.sin(ry);
-      const cz2 = -wx * Math.sin(ry) + wz * Math.cos(ry);
-      const cy2 = wy * Math.cos(rx) - cz2 * Math.sin(rx);
-      const cz3 = wy * Math.sin(rx) + cz2 * Math.cos(rx);
-      return { px: cW / 2 + cx2, py: cH / 2 - cy2 + cz3 * 0.3 };
-    }
-
-    function draw() {
-      ctx.clearRect(0, 0, cW, cH);
-      const s = stateRef.current;
-
-      // Background — match card color
-      ctx.fillStyle = cc.card || cc.bg; ctx.fillRect(0, 0, cW, cH);
-
-      const gridY = 0.05;
-
-      // ── AXES — thick, brutal ──
-      const origin = project(0, gridY, 0);
-      const axX = project(1, gridY, 0);
-      const axY = project(0, 1, 0);
-      const axZ = project(0, gridY, 1);
-
-      // Base floor line (single clean baseline, not a full grid)
-      ctx.beginPath(); ctx.moveTo(project(0,gridY,0).px, project(0,gridY,0).py);
-      ctx.lineTo(project(1,gridY,0).px, project(1,gridY,0).py);
-      ctx.strokeStyle = hex2rgba(cc.brutal||cc.accent, 0.5); ctx.lineWidth = 2; ctx.stroke();
-
-      ctx.beginPath(); ctx.moveTo(origin.px, origin.py); ctx.lineTo(axX.px, axX.py);
-      ctx.strokeStyle = hex2rgba(cc.brutal||cc.accent, 0.6); ctx.lineWidth = 2; ctx.stroke();
-      ctx.fillStyle = hex2rgba(cc.brutal||cc.accent, 1);
-      ctx.font = `700 ${10 / s.scale}px system-ui,sans-serif`;
-      ctx.fillText("Days", axX.px + 6, axX.py + 4);
-
-      ctx.beginPath(); ctx.moveTo(origin.px, origin.py); ctx.lineTo(axY.px, axY.py);
-      ctx.strokeStyle = hex2rgba(cc.green, 0.7); ctx.lineWidth = 2; ctx.stroke();
-      ctx.fillStyle = hex2rgba(cc.green, 1);
-      ctx.fillText("lbs", axY.px - 24, axY.py - 4);
-
-      ctx.beginPath(); ctx.moveTo(origin.px, origin.py); ctx.lineTo(axZ.px, axZ.py);
-      ctx.strokeStyle = hex2rgba(cc.brutal||cc.accent, 0.3); ctx.lineWidth = 1; ctx.stroke();
-      ctx.fillStyle = hex2rgba(cc.brutal||cc.accent, 0.6);
-      ctx.fillText("ΔRate", axZ.px + 4, axZ.py + 4);
-
-      // ── CEILING & STAGE PLANES ──
-      if (ceilingWeight && stageWeight) {
-        const ceilNorm = (ceilingWeight - minW) / wRange;
-        const stageNorm = (stageWeight - minW) / wRange;
-        if (ceilNorm >= 0 && ceilNorm <= 1) {
-          const c1 = project(0, ceilNorm, 0.5), c2 = project(1, ceilNorm, 0.5);
-          ctx.beginPath(); ctx.moveTo(c1.px, c1.py); ctx.lineTo(c2.px, c2.py);
-          ctx.setLineDash([4, 4]); ctx.strokeStyle = hex2rgba(cc.red, 0.5); ctx.lineWidth = 1.5; ctx.stroke();
-          ctx.setLineDash([]);
-          ctx.fillStyle = hex2rgba(cc.red, 0.7); ctx.font = `${8 / s.scale}px system-ui,sans-serif`;
-          ctx.fillText(`! ${ceilingWeight}`, c2.px + 4, c2.py);
-        }
-        if (stageNorm >= 0 && stageNorm <= 1) {
-          const s1 = project(0, stageNorm, 0.5), s2 = project(1, stageNorm, 0.5);
-          ctx.beginPath(); ctx.moveTo(s1.px, s1.py); ctx.lineTo(s2.px, s2.py);
-          ctx.setLineDash([3, 3]); ctx.strokeStyle = hex2rgba(cc.purple, 0.4); ctx.lineWidth = 1; ctx.stroke();
-          ctx.setLineDash([]);
-          ctx.fillStyle = hex2rgba(cc.purple, 0.6); ctx.font = `${8 / s.scale}px system-ui,sans-serif`;
-          ctx.fillText(`STAGE ${stageWeight}`, s2.px + 4, s2.py);
-        }
-      }
-
-      // ── DATA BARS ──
-      data.forEach((d, i) => {
-        const xf = n > 1 ? i / (n - 1) : 0.5;
-        const yf = (d.weight - minW) / wRange;
-        const delta = deltas[i];
-        const zf = 0.5 + (delta / maxAbsDelta) * 0.3;
-        const isHov = s.hovered === i;
-
-        const top = project(xf, yf, zf);
-        const bot = project(xf, gridY, zf);
-
-        const nearCeiling = ceilingWeight && d.weight > ceilingWeight * 0.97;
-        const baseColor = nearCeiling ? cc.red : delta > 0.3 ? cc.green : delta < -0.3 ? cc.blue : cc.accent;
-        const barColor = hex2rgba(baseColor, isHov ? 1 : 0.65);
-
-        // Thick brutalist bar
-        ctx.beginPath(); ctx.moveTo(bot.px, bot.py); ctx.lineTo(top.px, top.py);
-        ctx.strokeStyle = barColor; ctx.lineWidth = isHov ? 5 : 3; ctx.stroke();
-
-        // Square cap (brutalist — no circles)
-        const capSz = isHov ? 5 : 3;
-        ctx.fillStyle = barColor;
-        ctx.fillRect(top.px - capSz, top.py - capSz, capSz * 2, capSz * 2);
-
-        if (isHov) {
-          const label = `${d.weight} lbs`;
-          const dateStr = d.date;
-          ctx.font = `600 ${10 / s.scale}px system-ui,sans-serif`;
-          const lw = Math.max(ctx.measureText(label).width, ctx.measureText(dateStr).width) + 18;
-          const lx = top.px - lw / 2, ly = top.py - 48;
-          // Brutalist tooltip: hard offset shadow + border
-          ctx.fillStyle = cc.brutal || cc.accent;
-          ctx.fillRect(lx + 3, ly + 3, lw, 36);
-          ctx.fillStyle = cc.card || cc.surface;
-          ctx.fillRect(lx, ly, lw, 36);
-          ctx.strokeStyle = cc.brutal || cc.accent; ctx.lineWidth = 2;
-          ctx.strokeRect(lx, ly, lw, 36);
-          ctx.fillStyle = cc.brutal || cc.accent;
-          ctx.font = `700 ${10 / s.scale}px system-ui,sans-serif`;
-          ctx.textAlign = "center";
-          ctx.fillText(label, top.px, ly + 15);
-          ctx.fillStyle = cc.muted;
-          ctx.font = `500 ${9 / s.scale}px system-ui,sans-serif`;
-          ctx.fillText(dateStr, top.px, ly + 29);
-          ctx.textAlign = "left";
-        }
-      });
-
-      // ── TREND LINE ──
-      if (n > 1) {
-        ctx.beginPath();
-        data.forEach((d, i) => {
-          const xf = i / (n - 1);
-          const yf = (d.weight - minW) / wRange;
-          const zf = 0.5 + (deltas[i] / maxAbsDelta) * 0.3;
-          const pt = project(xf, yf, zf);
-          i === 0 ? ctx.moveTo(pt.px, pt.py) : ctx.lineTo(pt.px, pt.py);
-        });
-        ctx.strokeStyle = hex2rgba(cc.accent, 0.7); ctx.lineWidth = 2.5;
-        ctx.stroke();
-      }
-
-      // ── Y AXIS TICK LABELS ──
-      for (let t = 0; t <= 4; t++) {
-        const tf = t / 4;
-        const wVal = Math.round(minW + tf * wRange);
-        const pt = project(0, tf, 0);
-        ctx.fillStyle = hex2rgba(cc.muted, 0.9);
-        ctx.font = `500 ${8 / s.scale}px ui-rounded,system-ui,sans-serif`;
-        ctx.fillText(wVal, pt.px - 26, pt.py + 3);
-      }
-    }
-
-    function getHitIndex(mx, my) {
-      const dpr = window.devicePixelRatio;
-      const data = logs.slice(-30);
-      const n2 = data.length;
-      const weights2 = data.map(d => d.weight);
-      const minW2 = Math.min(...weights2) - 2;
-      const maxW2 = Math.max(...weights2) + 2;
-      const wRange2 = maxW2 - minW2 || 10;
-      const deltas2 = data.map((d, i) => {
-        if (i < 1) return 0;
-        const prev = data[Math.max(0, i - Math.min(i, 6))];
-        return d.weight - prev.weight;
-      });
-      const maxAbsDelta2 = Math.max(...deltas2.map(Math.abs), 0.1);
-      for (let i = 0; i < n2; i++) {
-        const xf = n2 > 1 ? i / (n2 - 1) : 0.5;
-        const yf = (data[i].weight - minW2) / wRange2;
-        const zf = 0.5 + (deltas2[i] / maxAbsDelta2) * 0.3;
-        const pt = project(xf, yf, zf);
-        const dx = pt.px - mx, dy = pt.py - my;
-        if (Math.sqrt(dx * dx + dy * dy) < 14) return i;
-      }
-      return -1;
-    }
-
-    function loop() { draw(); animRef.current = requestAnimationFrame(loop); }
-    loop();
-
-    // Touch / Mouse handlers
-    function onMouseDown(e) {
-      const rect = canvas.getBoundingClientRect();
-      stateRef.current.dragging = true;
-      stateRef.current.lastX = (e.clientX || e.touches?.[0]?.clientX) - rect.left;
-      stateRef.current.lastY = (e.clientY || e.touches?.[0]?.clientY) - rect.top;
-    }
-    function onMouseMove(e) {
-      const rect = canvas.getBoundingClientRect();
-      const mx = (e.clientX || e.touches?.[0]?.clientX) - rect.left;
-      const my = (e.clientY || e.touches?.[0]?.clientY) - rect.top;
-      if (stateRef.current.dragging) {
-        stateRef.current.rotY += (mx - stateRef.current.lastX) * 0.5;
-        stateRef.current.rotX -= (my - stateRef.current.lastY) * 0.4;
-        stateRef.current.rotX = Math.max(-60, Math.min(80, stateRef.current.rotX));
-        stateRef.current.lastX = mx; stateRef.current.lastY = my;
-      } else {
-        stateRef.current.hovered = getHitIndex(mx, my);
-      }
-    }
-    function onMouseUp() { stateRef.current.dragging = false; }
-    function onWheel(e) {
-      e.preventDefault();
-      stateRef.current.scale = Math.max(0.5, Math.min(2.5, stateRef.current.scale - e.deltaY * 0.002));
-    }
-
-    canvas.addEventListener("mousedown", onMouseDown);
-    canvas.addEventListener("mousemove", onMouseMove);
-    canvas.addEventListener("mouseup", onMouseUp);
-    canvas.addEventListener("touchstart", onMouseDown, { passive: true });
-    canvas.addEventListener("touchmove", onMouseMove, { passive: true });
-    canvas.addEventListener("touchend", onMouseUp);
-    canvas.addEventListener("wheel", onWheel, { passive: false });
-
-    return () => {
-      cancelAnimationFrame(animRef.current);
-      canvas.removeEventListener("mousedown", onMouseDown);
-      canvas.removeEventListener("mousemove", onMouseMove);
-      canvas.removeEventListener("mouseup", onMouseUp);
-      canvas.removeEventListener("touchstart", onMouseDown);
-      canvas.removeEventListener("touchmove", onMouseMove);
-      canvas.removeEventListener("touchend", onMouseUp);
-      canvas.removeEventListener("wheel", onWheel);
-    };
-  }, [logs, ceilingWeight, stageWeight]);
-
-  return (
-    <canvas
-      ref={canvasRef}
-      style={{ width: "100%", height: "220px", display: "block", cursor: "grab", touchAction: "none" }}
-    />
-  );
-}
-
 // ─── TIP — lightweight tap/hover tooltip for terminology ─────────────────────
 function Tip({ label, children }) {
   const C = useThemeColors();
@@ -4849,6 +4589,10 @@ function DashboardScreen({ user, weightLog, onLogWeight, onDeleteWeight, onEditW
     lastCheckInTs: checkIn?.ts,
     nextDay: nextSessionDay(splitDef?.schedule, history),
   });
+  const trends = computeTrends({ now, weightLog: sortedLog, nutLogs, proteinTarget: calTarget?.p || 0, history, goal: user.goal });
+  const awards = computeAwards({ history, weightLog: sortedLog, ringDays: ringHistory(ringArgs, 30), frequency: splitDef?.frequency || 4, now });
+  const celebration = useRingCelebration(rings);
+  const weight30 = sortedLog.filter(e => e.ts >= now - 30 * 86400000).map(e => ({ x: e.ts, y: Number(e.weight) }));
   const handleNext = (kind) => {
     if (kind === "weigh") {
       const el = document.querySelector(".wt-input");
@@ -5145,6 +4889,7 @@ function DashboardScreen({ user, weightLog, onLogWeight, onDeleteWeight, onEditW
 
       <ActivityRingsCard rings={rings} history={ringWeek} onOpen={(t) => t !== "home" && onNavigate(t)} />
       <NextCard action={next} onAction={handleNext} />
+      <RingCelebration message={celebration} rings={rings} />
 
       {/* Order follows Apple's Summary: what to do today first, then nutrition,
           body weight with its trend, the physique goal, and the coach view last. */}
@@ -5495,14 +5240,18 @@ function DashboardScreen({ user, weightLog, onLogWeight, onDeleteWeight, onEditW
       {/* WEIGHT GRAPH */}
       <div style={{margin:"0 24px 20px",background:"var(--surface)",border:"1px solid var(--border)",borderRadius:16,overflow:"hidden"}}>
         <div style={{padding:"14px 18px 8px"}}>
-          <div style={{fontSize:12,fontWeight:600,color:"var(--muted)"}}>30-Day Bodyweight Trend</div>
+          <div style={{fontSize:13,fontWeight:600,color:"var(--muted)"}}>Body weight, last 30 days</div>
         </div>
-        {sortedLog.length >= 1 ? (
-          <WeightGraph3D logs={sortedLog} ceilingWeight={reboundData?.ceiling||null} stageWeight={reboundData?.stageWeight||null}/>
+        {weight30.length >= 2 ? (
+          <div style={{padding:"4px 14px 14px"}}>
+            <TrendChart points={weight30} label="Body weight, last 30 days" unit=" lb" color="var(--text)"
+              corridor={weightCorridor(weight30, user.goal)}
+              corridorLabel="Healthy pace for your goal" />
+          </div>
         ) : (
-          <div style={{height:180,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:8,padding:24}}>
-            <div style={{fontFamily:"var(--font-display)", fontWeight:700,fontSize:16,color:"var(--muted)"}}>No data yet</div>
-            <div style={{fontSize:12,color:"var(--muted)",textAlign:"center",lineHeight:1.5}}>Log your first weight above to start tracking.</div>
+          <div style={{height:150,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:8,padding:24}}>
+            <div style={{fontFamily:"var(--font-display)", fontWeight:700,fontSize:16,color:"var(--muted)"}}>{sortedLog.length ? "One more weigh-in" : "No data yet"}</div>
+            <div style={{fontSize:13,color:"var(--muted)",textAlign:"center",lineHeight:1.5}}>{sortedLog.length ? "Your trend appears after your second weigh-in." : "Log your first weight above to start tracking."}</div>
           </div>
         )}
       </div>
@@ -6038,6 +5787,9 @@ function DashboardScreen({ user, weightLog, onLogWeight, onDeleteWeight, onEditW
           </div>
         );
       })()}
+
+      <TrendsCard trends={trends} />
+      <AwardsCard awards={awards} />
 
       {/* ── PROTOCOL INTELLIGENCE — collapsed by default ─────────────────────── */}
       <div style={{margin:"0 24px 10px"}}>

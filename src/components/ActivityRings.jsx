@@ -8,11 +8,11 @@ const RINGS = [
 ];
 
 /** Concentric rings in an SVG of `size`. `values` is { train, fuel, track } fractions 0..1. */
-export function RingStack({ values, size = 132, stroke = 12, gap = 3, animate = true }) {
+export function RingStack({ values, size = 132, stroke = 12, gap = 3, animate = true, only = null }) {
   const c = size / 2;
   return (
     <svg viewBox={`0 0 ${size} ${size}`} width={size} height={size} aria-hidden="true" style={{ display: "block", flexShrink: 0 }}>
-      {RINGS.map((ring, i) => {
+      {RINGS.filter((ring) => !only || ring.id === only).map((ring, i) => {
         const r = c - stroke / 2 - i * (stroke + gap);
         if (r <= stroke / 2) return null;
         const circ = 2 * Math.PI * r;

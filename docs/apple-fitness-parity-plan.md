@@ -274,6 +274,28 @@ end to end in the preview (light and dark): start, log a set, rest, effort, summ
 - **Session detail:** per-exercise charts (estimated 1-rep max, volume) from history.
 
 ### Phase 4: Trends, awards and celebrations (about 2 weeks)
+
+**Status (2026-10-18, branch `phase-4/trends`):** done. Checked with a month of seeded data in
+light and dark.
+- **Logic:**
+  - `src/domain/trends.js` compares the last 7 days with the 90-day weekly average. Weight
+    rate is judged against the goal's band, plus protein adherence, working sets, sessions,
+    and the most-logged lift's estimated 1-rep max. Baselines wait for two weeks of data, and
+    a change under 3% counts as steady.
+  - `src/domain/awards.js` covers: first workout; session milestones (10–250); personal-record
+    milestones; weigh-in streaks (7/30/100); perfect days (all rings closed, last 30 days);
+    and a monthly challenge sized to the split.
+  - 12 tests, 75 in total.
+- **Weight chart:** the rotating 3D chart is replaced by the shared `TrendChart`, a flat
+  30-day line with a shaded "healthy pace for your goal" corridor. The 3D component is deleted.
+- **Home:** a Trends card (arrow, value, 90-day average, and "on track / off track" in words,
+  not just colour) and an Awards card (monthly challenge ring, earned medals, next
+  milestones with progress), both above Coach View.
+- **Celebration:** when a ring closes, a banner ("Track ring closed", or "All three rings
+  closed") drops in with the mini rings and a haptic tap. It shows once per ring per day and
+  is remembered across reloads.
+- **Not done:** the rebound ceiling and stage-weight lines from the old 3D chart aren't on the
+  new chart yet (contest-prep users only).
 - **Trends**, compared with your 90-day average as Apple does:
   - rate of weight change
   - protein adherence
