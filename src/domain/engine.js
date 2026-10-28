@@ -106,6 +106,9 @@ export function computeBodyComp(user) {
     : (1.20 * bmi) + (0.23 * age) - 5.4;
   const levelAdj = { beginner: 0, intermediate: -2, advanced: -4, competitor: -5.5 };
   bfPct = Math.max(4, Math.min(45, bfPct + (levelAdj[level] || -2)));
+  // A measured value (physique scan or manual entry, saved on the profile) beats the estimate.
+  const measuredBf = parseFloat(user.bfPct);
+  if (measuredBf >= 3 && measuredBf <= 60) bfPct = measuredBf;
 
   const lbmKg = weightKg * (1 - bfPct / 100);
   const fatKg = weightKg * (bfPct / 100);

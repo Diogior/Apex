@@ -5,6 +5,7 @@ import {
   classifyRate,
   computeBMR,
   computeBodyComp,
+  computeGoalConfig,
   computeE1RM,
   computeTDEE,
   computeWeighInStreak,
@@ -139,5 +140,25 @@ describe("post-show protocol calculator", () => {
       const proto = calcProtocol({ stageWeight: "175", stageCalories: "1800", prepWeeks: "16", sex: "male", mode });
       expect(proto).toBeTruthy();
     }
+  });
+});
+
+describe("measured body fat", () => {
+  it("uses a scanned or entered body fat instead of the BMI estimate", () => {
+    expect(computeBodyComp({ ...male, bfPct: 12 }).bfPct).toBe(12);
+    expect(computeBodyComp({ ...male, bfPct: "14.5" }).bfPct).toBe(14.5);
+  });
+
+  it("ignores missing or impossible values", () => {
+    expect(computeBodyComp({ ...male, bfPct: null }).bfPct).toBe(18.8);
+    expect(computeBodyComp({ ...male, bfPct: 90 }).bfPct).toBe(18.8);
+  });
+
+  it("recalibrates goal targets from the measured value and current weight", () => {
+    const estimated = computeGoalConfig({ ...male, goal: "cut" });
+    const scanned = computeGoalConfig({ ...male, goal: "cut", bfPct: 14, weight: 176 });
+    expect(scanned.startBfPct).toBe(14);
+    expect(scanned.startWeight).toBeCloseTo(176, 0); // round-trips through kg
+    expect(scanned.effectiveGoalWeight).not.toBe(estimated.effectiveGoalWeight);
   });
 });

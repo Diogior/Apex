@@ -4413,7 +4413,7 @@ function AvatarMenu({ initial, onEditProfile }) {
   );
 }
 
-function DashboardScreen({ user, weightLog, onLogWeight, onDeleteWeight, onEditWeight, onNavigate, onEditProfile, onGoalTransition }) {
+function DashboardScreen({ user, weightLog, onLogWeight, onDeleteWeight, onEditWeight, onNavigate, onEditProfile, onGoalTransition, onProfileUpdate }) {
   const C = useThemeColors();
   const [inputVal, setInputVal] = useState("");
   const [inputFocused, setInputFocused] = useState(false);
@@ -4675,6 +4675,11 @@ function DashboardScreen({ user, weightLog, onLogWeight, onDeleteWeight, onEditW
   const weightTrend     = analyzeWeightTrend(sortedLog);
   const weighInStreak   = computeWeighInStreak(sortedLog);
   const goalPacing      = computeGoalPacing(sortedLog, user);
+  useEffect(() => {
+    window.storage.get(GOAL_CONFIG_KEY).then(r => {
+      if (r?.value) try { setStoredGoalConfig(JSON.parse(r.value)); } catch {}
+    }).catch(() => {});
+  }, [user.goal, user.bfPct, user.height, user.age, user.sex, user.level, user.activity]);
   // Use stored config if it matches current goal; otherwise recompute live
   const goalConfig = useMemo(() => {
     if (storedGoalConfig && storedGoalConfig.goalType === user.goal) return storedGoalConfig;
@@ -4693,12 +4698,23 @@ function DashboardScreen({ user, weightLog, onLogWeight, onDeleteWeight, onEditW
       ))
     : 0;
 
-  // Save physique scan result → update bfOverride + append to history
+  // Every body-fat change (scan, manual entry, photo estimate, reset) goes through here:
+  // it's saved, written to the profile with the current weight, and the goal targets are
+  // recalculated immediately, so Home and the profile show the new numbers right away.
+  const applyBodyFat = (val) => {
+    setBfOverride(val);
+    window.storage.set(BF_KEY, val == null ? "" : String(val)).catch(() => {});
+    const calibrated = { ...user, weight: String(currentWeight || user.weight), bfPct: val ?? undefined };
+    const gc = computeGoalConfig(calibrated);
+    window.storage.set(GOAL_CONFIG_KEY, JSON.stringify(gc)).catch(() => {});
+    setStoredGoalConfig(gc);
+    onProfileUpdate?.({ weight: calibrated.weight, bfPct: val ?? null });
+  };
+
+  // Save physique scan result → update body fat, profile and goals, then append to history
   const handlePhysiqueSave = (result) => {
     if (!result?.estimatedBfPct) return;
-    // Update BF% override
-    setBfOverride(result.estimatedBfPct);
-    window.storage.set(BF_KEY, String(result.estimatedBfPct)).catch(() => {});
+    applyBodyFat(result.estimatedBfPct);
     // Append to physique history (photos not stored — analysis only)
     const entry = {
       id: String(Date.now()), ts: Date.now(),
@@ -4708,11 +4724,6 @@ function DashboardScreen({ user, weightLog, onLogWeight, onDeleteWeight, onEditW
     const updated = [entry, ...physiqueHistory].slice(0, 24); // keep 2 years max
     setPhysiqueHistory(updated);
     window.storage.set(PHYSIQUE_KEY, JSON.stringify(updated)).catch(() => {});
-    // Recompute goal config with new BF% if user allows
-    const updatedUser = { ...user };
-    const newGc = computeGoalConfig(updatedUser);
-    window.storage.set(GOAL_CONFIG_KEY, JSON.stringify(newGc)).catch(() => {});
-    setStoredGoalConfig(newGc);
   };
 
   const handleGenerateReport = async () => {
@@ -4805,8 +4816,7 @@ function DashboardScreen({ user, weightLog, onLogWeight, onDeleteWeight, onEditW
   const saveBfManual = () => {
     const val = parseFloat(bfInput);
     if (!val || val < 4 || val > 45) return;
-    setBfOverride(val);
-    window.storage.set(BF_KEY, String(val)).catch(() => {});
+    applyBodyFat(val);
     setShowBfEditor(false);
     setBfInput("");
   };
@@ -4840,8 +4850,7 @@ function DashboardScreen({ user, weightLog, onLogWeight, onDeleteWeight, onEditW
       const raw = data?.content?.[0]?.text?.trim() || "";
       const num = parseFloat(raw.replace(/[^0-9.]/g, ""));
       if (num >= 4 && num <= 45) {
-        setBfOverride(num);
-        window.storage.set(BF_KEY, String(num)).catch(() => {});
+        applyBodyFat(num);
         setBfPhotoStatus("done");
         setTimeout(() => { setShowBfEditor(false); setBfPhotoStatus("idle"); }, 1200);
       } else {
@@ -4853,8 +4862,7 @@ function DashboardScreen({ user, weightLog, onLogWeight, onDeleteWeight, onEditW
   };
 
   const clearBfOverride = () => {
-    setBfOverride(null);
-    window.storage.set(BF_KEY, "").catch(() => {});
+    applyBodyFat(null);
     setShowBfEditor(false);
   };
 
@@ -7538,9 +7546,19 @@ function AppInner() {
     setUser(newUser);
   };
 
+  // Home updates the profile when body fat changes (physique scan or manual entry).
+  const handleProfileUpdate = (patch) => {
+    if (!user) return;
+    const newUser = { ...user, ...patch };
+    if (patch.bfPct === null) delete newUser.bfPct;
+    window.storage.set(USER_KEY, JSON.stringify(newUser)).catch(() => {});
+    setUser(newUser);
+  };
+
   const handleGoalTransition = async (newGoalType) => {
     if (!user) return;
-    const newUser = { ...user, goal: newGoalType };
+    // Recalibrate from where the athlete actually is now, not the onboarding weight.
+    const newUser = { ...user, weight: String(currentWeight || user.weight), goal: newGoalType };
     window.storage.set(USER_KEY, JSON.stringify(newUser)).catch(() => {});
     const gc = computeGoalConfig(newUser);
     window.storage.set(GOAL_CONFIG_KEY, JSON.stringify(gc)).catch(() => {});
@@ -7653,7 +7671,7 @@ function AppInner() {
   return (
     <div className="app">
       {showProfileEdit && user && (
-        <ProfileEditModal user={user} onSave={handleProfileSave} onClose={()=>setShowProfileEdit(false)}/>
+        <ProfileEditModal user={enrichedUser} onSave={handleProfileSave} onClose={()=>setShowProfileEdit(false)}/>
       )}
       {!user ? <OnboardScreen onComplete={u=>{
         window.storage.set(USER_KEY, JSON.stringify(u)).catch(()=>{});
@@ -7680,7 +7698,7 @@ function AppInner() {
               <OnboardingCarousel onComplete={handleWelcomeDone}/>
             )}
             {/* The weigh-in reminder lives in Home's Next card now, not as a banner over every tab. */}
-            {tab==="home"&&<ErrorBoundary label="Home" resetKey={tab}><DashboardScreen user={enrichedUser} weightLog={weightLog} onLogWeight={handleLogWeight} onDeleteWeight={handleDeleteWeight} onEditWeight={handleEditWeight} onNavigate={setTab} onEditProfile={()=>setShowProfileEdit(true)} onGoalTransition={handleGoalTransition}/></ErrorBoundary>}
+            {tab==="home"&&<ErrorBoundary label="Home" resetKey={tab}><DashboardScreen user={enrichedUser} weightLog={weightLog} onLogWeight={handleLogWeight} onDeleteWeight={handleDeleteWeight} onEditWeight={handleEditWeight} onNavigate={setTab} onEditProfile={()=>setShowProfileEdit(true)} onGoalTransition={handleGoalTransition} onProfileUpdate={handleProfileUpdate}/></ErrorBoundary>}
             {tab==="training"&&<ErrorBoundary label="Training" resetKey={tab}><TrainingScreen user={enrichedUser} onNavigate={setTab}/></ErrorBoundary>}
             {tab==="nutrition"&&<ErrorBoundary label="Nutrition" resetKey={tab}><NutritionScreen user={enrichedUser}/></ErrorBoundary>}
             {tab==="postprep"&&user?.goal==="contest"&&<ErrorBoundary label="Post-prep" resetKey={tab}><PostPrepScreen user={enrichedUser}/></ErrorBoundary>}
